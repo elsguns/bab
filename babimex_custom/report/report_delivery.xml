@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <template id="report_delivery_document_babimex"  inherit_id="stock.report_delivery_document">
+        <xpath expr="//div[@name='partner_header']//div[@t-field='partner.commercial_partner_id']" position="attributes">
+            <attribute name="t-options">
+                {"widget": "contact", "fields": ["address", "name", "phone", "vat"], "no_marker": True, "phone_icons": True, "babimex_commercial_name": True}
+            </attribute>
+        </xpath>
+    </template>
+</odoo>

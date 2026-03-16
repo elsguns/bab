@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+    <template id="product_long_description" inherit_id="website_sale.product">
+        <xpath expr="//div[@id='product_full_description']" position="before">
+            <div class="container" id="product_long_descri">
+                <t t-if="product.long_description">
+                    <div itemprop="description" t-field="product.long_description" class="row  mt16"
+                         id="product_long_description"/>
+                </t>
+            </div>
+        </xpath>
+        <xpath expr="//p[hasclass('css_not_available_msg')]" position="before">
+            <div class="mb-4">
+                <div class="col-12" t-if="product_variant.default_code">
+                    <b>Ref: </b><span class="o_wsale_product_default_code" t-field="product_variant.default_code"/>
+                </div>
+                <div class="col-12" t-if="product_variant.barcode">
+                    <b>EAN: </b><span class="o_wsale_product_barcode" t-field="product_variant.barcode"/>
+                </div>
+            </div>
+        </xpath>
+    </template>
+</odoo>

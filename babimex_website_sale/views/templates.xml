@@ -1,0 +1,15 @@
+<odoo>
+    <template id="address_row" inherit_id="website_sale.address_row">
+<!--        hide the add address button-->
+        <xpath expr="//a[hasclass('o_wsale_add_address')]" position="replace"/>
+    </template>
+
+    <template id="address_kanban" inherit_id="website_sale.address_kanban">
+<!--        hide the edit address button-->
+        <xpath expr="//t[@t-if='contact._can_be_edited_by_current_customer(website_sale_order, address_type)']" position="replace"/>
+    </template>
+
+    <template id="side_content" inherit_id="portal.side_content">
+        <xpath expr="//a[@href='/my/account']" position="replace"/>
+    </template>
+</odoo>

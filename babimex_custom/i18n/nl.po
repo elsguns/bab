@@ -1,0 +1,118 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* babimex_custom
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 18.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-26 03:48+0000\n"
+"PO-Revision-Date: 2025-03-26 03:48+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: babimex_custom
+#: model:ir.model,name:babimex_custom.model_commercial_name
+#: model:ir.model.fields,field_description:babimex_custom.field_account_bank_statement_line__commercial_name_id
+#: model:ir.model.fields,field_description:babimex_custom.field_account_invoice_report__commercial_name_id
+#: model:ir.model.fields,field_description:babimex_custom.field_account_move__commercial_name_id
+#: model:ir.model.fields,field_description:babimex_custom.field_res_partner__commercial_name_id
+#: model:ir.model.fields,field_description:babimex_custom.field_res_users__commercial_name_id
+#: model:ir.model.fields,field_description:babimex_custom.field_sale_order__commercial_name_id
+#: model:ir.model.fields,field_description:babimex_custom.field_sale_report__commercial_name_id
+#: model_terms:ir.ui.view,arch_db:babimex_custom.res_partner_view_search
+#: model_terms:ir.ui.view,arch_db:babimex_custom.view_commercial_name_form
+#: model_terms:ir.ui.view,arch_db:babimex_custom.view_commercial_name_tree
+msgid "Commercial Name"
+msgstr "Handelsnaam"
+
+#. module: babimex_custom
+#: model_terms:ir.ui.view,arch_db:babimex_custom.babimex_custom_view_partner_form
+msgid "Commercial Name..."
+msgstr "Handelsnaam"
+
+#. module: babimex_custom
+#: model:ir.actions.act_window,name:babimex_custom.action_commercial_name
+#: model:ir.ui.menu,name:babimex_custom.menu_commercial_name
+msgid "Commercial Names"
+msgstr "Handelsnamen"
+
+#. module: babimex_custom
+#: model_terms:ir.ui.view,arch_db:babimex_custom.babimex_custom_view_partner_form
+msgid "Commercial Names are managed on"
+msgstr "Handelsnaam worden beheerd bij"
+
+#. module: babimex_custom
+#: model:ir.model,name:babimex_custom.model_res_partner
+msgid "Contact"
+msgstr ""
+
+#. module: babimex_custom
+#: model:ir.model.fields,field_description:babimex_custom.field_commercial_name__create_uid
+msgid "Created by"
+msgstr ""
+
+#. module: babimex_custom
+#: model:ir.model.fields,field_description:babimex_custom.field_commercial_name__create_date
+msgid "Created on"
+msgstr ""
+
+#. module: babimex_custom
+#: model:ir.model.fields,field_description:babimex_custom.field_commercial_name__display_name
+msgid "Display Name"
+msgstr ""
+
+#. module: babimex_custom
+#: model:ir.model.fields,field_description:babimex_custom.field_commercial_name__id
+msgid "ID"
+msgstr ""
+
+#. module: babimex_custom
+#: model:ir.model,name:babimex_custom.model_account_invoice_report
+msgid "Invoices Statistics"
+msgstr "Factuuranalyses"
+
+#. module: babimex_custom
+#: model:ir.model.fields,field_description:babimex_custom.field_res_partner__is_purchasing_department
+#: model:ir.model.fields,field_description:babimex_custom.field_res_users__is_purchasing_department
+msgid "Is Purchasing Department"
+msgstr ""
+
+#. module: babimex_custom
+#: model:ir.model,name:babimex_custom.model_account_move
+msgid "Journal Entry"
+msgstr "Boeking"
+
+#. module: babimex_custom
+#: model:ir.model.fields,field_description:babimex_custom.field_commercial_name__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: babimex_custom
+#: model:ir.model.fields,field_description:babimex_custom.field_commercial_name__write_date
+msgid "Last Updated on"
+msgstr ""
+
+#. module: babimex_custom
+#: model:ir.model.fields,field_description:babimex_custom.field_commercial_name__name
+msgid "Name"
+msgstr ""
+
+#. module: babimex_custom
+#: model:ir.model,name:babimex_custom.model_sale_report
+msgid "Sales Analysis Report"
+msgstr "Verkoopanalyserapport"
+
+#. module: babimex_custom
+#: model:ir.model,name:babimex_custom.model_sale_order
+msgid "Sales Order"
+msgstr "Verkooporder"
+
+#. module: babimex_custom
+#: model_terms:ir.ui.view,arch_db:babimex_custom.babimex_custom_view_partner_form
+msgid "the parent company"
+msgstr "het bovenliggende bedrijf"

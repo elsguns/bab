@@ -1,0 +1,51 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* babimex_website_sale
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 18.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-16 06:38+0000\n"
+"PO-Revision-Date: 2025-01-16 06:38+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: babimex_website_sale
+#: model:ir.model.fields,field_description:babimex_website_sale.field_website__show_line_subtotals_tax_selection_log_in_user
+msgid "Display Product Prices (Logged in User)"
+msgstr ""
+
+#. module: babimex_website_sale
+#: model:ir.model.fields,field_description:babimex_website_sale.field_website__show_line_subtotals_tax_selection_public_user
+msgid "Display Product Prices (Public/Not logged in User)"
+msgstr ""
+
+#. module: babimex_website_sale
+#: model:ir.model.fields,field_description:babimex_website_sale.field_website__show_line_subtotals_tax_selection
+msgid "Line Subtotals Tax Display"
+msgstr "Weergave van de subtotalen"
+
+#. module: babimex_website_sale
+#: model:ir.model.fields.selection,name:babimex_website_sale.selection__website__show_line_subtotals_tax_selection__tax_excluded
+#: model:ir.model.fields.selection,name:babimex_website_sale.selection__website__show_line_subtotals_tax_selection_log_in_user__tax_excluded
+#: model:ir.model.fields.selection,name:babimex_website_sale.selection__website__show_line_subtotals_tax_selection_public_user__tax_excluded
+msgid "Tax Excluded"
+msgstr "Exclusief BTW"
+
+#. module: babimex_website_sale
+#: model:ir.model.fields.selection,name:babimex_website_sale.selection__website__show_line_subtotals_tax_selection__tax_included
+#: model:ir.model.fields.selection,name:babimex_website_sale.selection__website__show_line_subtotals_tax_selection_log_in_user__tax_included
+#: model:ir.model.fields.selection,name:babimex_website_sale.selection__website__show_line_subtotals_tax_selection_public_user__tax_included
+msgid "Tax Included"
+msgstr "Inclusief BTW"
+
+#. module: babimex_website_sale
+#: model:ir.model,name:babimex_website_sale.model_website
+msgid "Website"
+msgstr ""
+

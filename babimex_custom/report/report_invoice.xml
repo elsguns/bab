@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <template id="report_invoice_document_babimex"  inherit_id="account.report_invoice_document">
+        <xpath expr="//div[@name='address_not_same_as_shipping']//address[@t-field='o.partner_id']" position="attributes">
+            <attribute name="t-options">
+                {"widget": "contact", "fields": ["address", "name"], "no_marker": True, "babimex_commercial_name": True}
+            </attribute>
+        </xpath>
+
+        <xpath expr="//div[@name='address_same_as_shipping']//address[@t-field='o.partner_id']" position="attributes">
+            <attribute name="t-options">
+                {"widget": "contact", "fields": ["address", "name"], "no_marker": True, "babimex_commercial_name": True}
+            </attribute>
+        </xpath>
+
+        <xpath expr="//div[@name='no_shipping']//address[@t-field='o.partner_id']" position="attributes">
+            <attribute name="t-options">
+                {"widget": "contact", "fields": ["address", "name"], "no_marker": True, "babimex_commercial_name": True}
+            </attribute>
+        </xpath>
+    </template>
+</odoo>

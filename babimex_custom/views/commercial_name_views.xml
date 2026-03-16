@@ -1,0 +1,33 @@
+<odoo>
+    <record id="view_commercial_name_form" model="ir.ui.view">
+        <field name="name">commercial.name.form</field>
+        <field name="model">commercial.name</field>
+        <field name="arch" type="xml">
+            <form string="Commercial Name">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_commercial_name_tree" model="ir.ui.view">
+        <field name="name">commercial.name.tree</field>
+        <field name="model">commercial.name</field>
+        <field name="arch" type="xml">
+            <list string="Commercial Name">
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_commercial_name" model="ir.actions.act_window">
+        <field name="name">Commercial Names</field>
+        <field name="res_model">commercial.name</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_commercial_name" name="Commercial Names" action="action_commercial_name" parent="contacts.res_partner_menu_config"/>
+</odoo>
