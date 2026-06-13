@@ -77,23 +77,32 @@
                      lines; never split a block across pages. Start a fresh page on each
                      new hoofdproduct (but not before the very first block). -->
                 <div class="o_matrix_block"
-                     t-attf-style="height: 99mm; box-sizing: border-box; padding: 8mm 0 6mm; page-break-inside: avoid;{{ ' page-break-before: always;' if (block['new_product'] and not block_first) else '' }}">
+                     t-attf-style="height: 99mm; box-sizing: border-box; padding: 8mm 0 6mm; overflow: hidden; page-break-inside: avoid;{{ ' page-break-before: always;' if (block['new_product'] and not block_first) else '' }}">
                     <!-- Customer + Order heading, repeated per block (= per matrix). -->
                     <div class="o_matrix_head row mb-3">
                         <div t-if="picking.partner_id" class="col-4 mw-100" name="div_customer">
                             <strong>Customer</strong>
-                            <!-- stock_location shown before the customer name (space-dash-space),
-                                 only when it carries a value so we don't print a bare "0 - ". -->
+                            <!-- stock_location shown before the customer name, bold between square
+                                 brackets (e.g. [200] Customer 2), only when it carries a value so we
+                                 don't print a bare "[]". -->
                             <div>
-                                <t t-if="picking.partner_id.stock_location"><span t-out="picking.partner_id.stock_location"/> - </t>
+                                <t t-if="picking.partner_id.stock_location"><strong>[<span t-out="picking.partner_id.stock_location"/>]</strong> </t>
                                 <span t-out="picking.partner_id.name">Customer 1</span>
                             </div>
                         </div>
-                        <!-- Picking name dropped as a big title; shown in parentheses after the order. -->
-                        <div t-if="picking.origin" class="col-4 mw-100" name="div_origin">
+                        <!-- Picking name dropped as a big title; shown in parentheses after the order.
+                             Wider (col-8) than the customer column because a grouped delivery can carry
+                             dozens of source orders; even so, a long list would make this heading taller
+                             than the 99mm block and overlap the next slip, so the order list is capped
+                             and truncated with "..." (the picking name always stays visible after it). -->
+                        <div t-if="picking.origin" class="col-8 mw-100" name="div_origin">
                             <strong>Order</strong>
+                            <!-- picking.origin is the space-joined source order names (merged by
+                                 stock_picking_group_by_partner_by_carrier); show at most origin_cap. -->
+                            <t t-set="origins" t-value="(picking.origin or '').split()"/>
+                            <t t-set="origin_cap" t-value="12"/>
                             <div class="m-0">
-                                <span t-out="picking.origin">S0001</span>
+                                <span t-out="' '.join(origins[:origin_cap])">S0001</span><t t-if="len(origins) &gt; origin_cap"> ...</t>
                                 <span> (<span t-out="picking.name">WH/OUT/0001</span>)</span>
                             </div>
                         </div>
@@ -104,6 +113,10 @@
                             <tr>
                                 <th t-foreach="grid['header']" t-as="column_header" class="o_grid_title_header text-center">
                                     <span t-esc="column_header['name']">Column name</span>
+                                    <!-- After the hoofdproduct name (first header cell) the total ordered
+                                         quantity of this grid, separated by two (non-breaking) spaces and
+                                         shown bold between square brackets with "stuks", e.g. [18 stuks]. -->
+                                    <t t-if="column_header_first and 'total_qty' in grid"><span>&#160;&#160;</span><strong>[<span t-esc="grid['total_qty']" t-options='{"widget": "integer"}'>0</span> stuks]</strong></t>
                                     <t t-call="product_matrix.extra_price">
                                         <t t-set="price" t-value="column_header.get('price', False)"/>
                                     </t>
