@@ -70,6 +70,29 @@
                 table.o_product_variant_grid { border-collapse: collapse; }
                 table.o_product_variant_grid th,
                 table.o_product_variant_grid td { border: 0.3mm solid #000 !important; }
+                /* Default look: roomy cells for the common case (up to ~10 colour rows),
+                   which keeps the matrix readable in a 99mm strip. */
+                .o_matrix_block { font-size: 10pt; line-height: 1.25; }
+                .o_matrix_head { margin-bottom: 1.5mm !important; }
+                table.o_product_variant_grid th,
+                table.o_product_variant_grid td { padding: 0.9mm 1.8mm; }
+                /* Auto-shrink: a product with many colours (>10 rows) would overflow the
+                   99mm strip at the roomy size, so such blocks fall back to a smaller font
+                   and tighter padding to fit (handles the rare 13-20 colour products).
+                   Set on the block via o_matrix_block_compact, see the foreach below. */
+                .o_matrix_block_compact { font-size: 8pt; line-height: 1.1; }
+                .o_matrix_block_compact table.o_product_variant_grid th,
+                .o_matrix_block_compact table.o_product_variant_grid td { padding: 0.15mm 1.2mm; }
+                /* Equal, fixed-width size columns wide enough for the widest value
+                   (164/170); the product-name column absorbs the remaining width, so
+                   the size columns stay the same width across every product. All
+                   header cells bold; product name left-aligned, size headers centered. */
+                table.o_product_variant_grid { table-layout: fixed; width: 100%; }
+                table.o_product_variant_grid th { font-weight: bold; }
+                table.o_product_variant_grid th:first-child { text-align: left; }
+                table.o_product_variant_grid th:not(:first-child),
+                table.o_product_variant_grid td:not(:first-child) { width: 13mm; }
+                table.o_product_variant_grid th:not(:first-child) { text-align: center; }
             </style>
             <!-- One continuous stream of blocks across ALL selected deliveries, sorted by
                  hoofdproduct (see stock.picking._get_matrix_blocks): a bulk print groups
@@ -82,8 +105,9 @@
                 <!-- One physical third of the A4 (297/3); the sheet is cut at 99mm and
                      198mm into three equal strips. Padding keeps content off the cut
                      lines; never split a block across pages. Start a fresh page on each
-                     new hoofdproduct (but not before the very first block). -->
-                <div class="o_matrix_block"
+                     new hoofdproduct (but not before the very first block). Blocks with
+                     more than 10 colour rows get the compact style so they still fit. -->
+                <div t-attf-class="o_matrix_block{{ ' o_matrix_block_compact' if len(grid['matrix']) > 10 else '' }}"
                      t-attf-style="height: 99mm; box-sizing: border-box; padding: 8mm 0 6mm; overflow: hidden; page-break-inside: avoid;{{ ' page-break-before: always;' if (block['new_product'] and not block_first) else '' }}">
                     <!-- Customer + Order heading, repeated per block (= per matrix). -->
                     <div class="o_matrix_head row mb-3">
@@ -118,7 +142,7 @@
                     <table class="o_view_grid o_product_variant_grid table table-sm table-striped table-bordered">
                         <thead>
                             <tr>
-                                <th t-foreach="grid['header']" t-as="column_header" class="o_grid_title_header text-center">
+                                <th t-foreach="grid['header']" t-as="column_header" class="o_grid_title_header">
                                     <span t-esc="column_header['name']">Column name</span>
                                     <!-- After the hoofdproduct name (first header cell) the total ordered
                                          quantity of this grid, separated by two (non-breaking) spaces and

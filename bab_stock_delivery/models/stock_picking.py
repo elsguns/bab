@@ -103,7 +103,12 @@ class StockPicking(models.Model):
             orders = picking._get_picking_orders()
             if not orders:
                 continue
-            orders = orders.with_context(lang=picking._get_report_lang())
+            # matrix_hide_single_value_attrs drops constant attributes (e.g.
+            # material) from the row labels, see product.template.attribute.value.
+            orders = orders.with_context(
+                lang=picking._get_report_lang(),
+                matrix_hide_single_value_attrs=True,
+            )
             for grid in picking._get_combined_matrixes(orders):
                 blocks.append({'picking': picking, 'grid': grid})
         # grid['header'][0]['name'] is the product template's display_name (see
