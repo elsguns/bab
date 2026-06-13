@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- "Customers" entry in the website account dropdown (top-right), next to
+         Apps/Logout. The groups= attribute hides it for non-salespersons (same
+         idiom as the stock "Apps" link); the routes also re-check the group. -->
+    <template id="user_dropdown" inherit_id="portal.user_dropdown" name="Salesperson Order: Select Customer link">
+        <xpath expr="//div[@id='o_logout_divider']" position="before">
+            <a groups="sales_team.group_sale_salesman" href="/shop/select_customer"
+               role="menuitem" class="dropdown-item ps-3" id="o_salesperson_order_link">
+                <i class="fa fa-fw fa-users me-1 small text-primary-emphasis"/> Customers
+            </a>
+        </xpath>
+    </template>
+
+    <!-- Customer selection page (rendered by /shop/select_customer). -->
+    <template id="shop_select_customer" name="Select Customer">
+        <t t-call="website.layout">
+            <div class="oe_structure"/>
+            <div class="container my-4">
+                <h2 class="text-center mb-4">Select Customer</h2>
+                <t t-set="order_sudo" t-value="website.sale_get_order()"/>
+                <t t-set="cart_locked" t-value="order_sudo and order_sudo.order_line"/>
+                <form action="/shop/set_customer" method="post" class="mx-auto" style="max-width: 32rem;">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <div class="mb-3">
+                        <label for="partner_id" class="form-label">Customer</label>
+                        <select id="partner_id" name="partner_id" class="form-select" required="required"
+                                t-att-disabled="cart_locked and 'disabled' or None">
+                            <option value="">Customer...</option>
+                            <t t-foreach="customers" t-as="customer">
+                                <option t-att-value="customer.id" t-att-selected="customer == selected_partner">
+                                    <t t-esc="customer.name"/><t t-if="customer.phone"> - <t t-esc="customer.phone"/></t>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+                    <div t-if="cart_locked" class="alert alert-warning" role="alert">
+                        Please pay the current order before selecting a different customer.
+                    </div>
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary" t-att-disabled="cart_locked and 'disabled' or None">
+                            Shop Now
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="oe_structure"/>
+        </t>
+    </template>
+
+    <!-- Reusable banner showing which customer the salesperson is ordering for.
+         Reads the live session, so it shows during shopping (shop/cart/payment)
+         but not on the confirmation page, where the selection is already cleared. -->
+    <template id="order_for_banner" name="Salesperson Order: Customer Banner">
+        <t t-set="order_for_partner" t-value="website._get_order_for_partner()"/>
+        <div t-if="order_for_partner" class="alert alert-info py-1 px-2 my-2 d-inline-block">
+            <b>Customer:</b> <span t-esc="order_for_partner.name"/>
+        </div>
+    </template>
+
+    <template id="products" inherit_id="website_sale.products" name="Salesperson Order: banner on shop">
+        <xpath expr="//t[@t-call='website_sale.search']" position="before">
+            <t t-call="bab_website_sale_salesperson_order.order_for_banner"/>
+        </xpath>
+    </template>
+
+    <template id="product" inherit_id="website_sale.product" name="Salesperson Order: banner on product">
+        <xpath expr="//div[@id='product_detail_main']" position="before">
+            <t t-call="bab_website_sale_salesperson_order.order_for_banner"/>
+        </xpath>
+    </template>
+
+    <template id="cart" inherit_id="website_sale.cart" name="Salesperson Order: banner in cart">
+        <xpath expr="//t[@t-call='website_sale.cart_lines']" position="before">
+            <t t-call="bab_website_sale_salesperson_order.order_for_banner"/>
+        </xpath>
+    </template>
+
+    <template id="checkout" inherit_id="website_sale.checkout" name="Salesperson Order: banner on checkout">
+        <xpath expr="//div[@id='shop_checkout']" position="before">
+            <t t-call="bab_website_sale_salesperson_order.order_for_banner"/>
+        </xpath>
+    </template>
+
+    <template id="payment" inherit_id="website_sale.payment" name="Salesperson Order: banner on payment">
+        <xpath expr="//div[@id='address_on_payment']" position="before">
+            <t t-call="bab_website_sale_salesperson_order.order_for_banner"/>
+        </xpath>
+    </template>
+
+    <!-- Confirmation: the selection is cleared by now, so read the booked
+         customer straight off the order (shown only when it differs from the
+         logged-in salesperson). -->
+    <template id="confirmation" inherit_id="website_sale.confirmation" name="Salesperson Order: banner on confirmation">
+        <xpath expr="//t[@t-set='tx_sudo']" position="before">
+            <div t-if="order and order.partner_id != request.env.user.partner_id"
+                 class="alert alert-info py-1 px-2 my-2 d-inline-block">
+                <b>Customer:</b> <span t-field="order.partner_id"/>
+            </div>
+        </xpath>
+    </template>
+
+</odoo>
