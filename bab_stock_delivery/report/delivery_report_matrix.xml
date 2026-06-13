@@ -63,6 +63,13 @@
                  last block spills onto a second page. -->
             <style>
                 .o_body_html, #wrapwrap, main, .article { margin-top: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; }
+                /* Explicit borders in a real mm width: Bootstrap's table-bordered draws
+                   ~1px (sub-pixel at 96dpi with smart-shrinking off) lines that poppler
+                   (GNOME Document Viewer/Evince) drops while Chrome's PDFium still shows
+                   them. A defined 0.3mm border renders in every PDF viewer. */
+                table.o_product_variant_grid { border-collapse: collapse; }
+                table.o_product_variant_grid th,
+                table.o_product_variant_grid td { border: 0.3mm solid #000 !important; }
             </style>
             <!-- One continuous stream of blocks across ALL selected deliveries, sorted by
                  hoofdproduct (see stock.picking._get_matrix_blocks): a bulk print groups
