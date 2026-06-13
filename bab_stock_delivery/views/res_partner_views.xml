@@ -11,9 +11,18 @@
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
+            <!-- Main partner form: after the delivery method. -->
             <field name="property_delivery_carrier_id" position="after">
                 <field name="stock_location"/>
             </field>
+            <!-- "Create Contact" dialog: the inline form embedded in the child_ids
+                 one2many of view_partner_form (NOT view_partner_address_form). Scope to
+                 the <form> specifically: child_ids also has a kanban with its own
+                 <field name="name"> (the card title), which would otherwise be matched
+                 first. Right after "Contact Name", only for delivery addresses. -->
+            <xpath expr="//field[@name='child_ids']/form//field[@name='name']" position="after">
+                <field name="stock_location" invisible="type != 'delivery'"/>
+            </xpath>
         </field>
     </record>
 </odoo>
