@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Dedicated paperformat: NO top/bottom margin so the printable area is the
+        full A4 height (297mm). The page is meant to be physically cut into three
+        equal strips of 99mm, so we want each block to coincide exactly with a
+        physical third; any top margin would shift the blocks off the cut lines
+        (99mm / 198mm). Left/right margins stay for horizontal framing. The company
+        default is unusable here as it reserves ~52mm at the top for the external
+        layout header/logo, which we don't render.
+    -->
+    <record id="paperformat_productmatrix" model="report.paperformat">
+        <field name="name">Productenmatrix A4</field>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">0</field>
+        <field name="margin_bottom">0</field>
+        <field name="margin_left">10</field>
+        <field name="margin_right">10</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <!-- dpi 96 (not the usual 90): Odoo passes a "zoom = 96/dpi" flag to
+             wkhtmltopdf, so dpi 90 would enlarge everything 1.067x and our mm thirds
+             overflow. dpi 96 gives zoom 1.0, so mm renders 1:1. -->
+        <field name="dpi">96</field>
+        <!-- Critical: wkhtmltopdf's smart shrinking (on by default) scales the whole
+             page ~0.8x, so absolute mm heights render short and the thirds don't fill
+             the sheet. Disabling it makes mm accurate, so 3 x 99mm = 297mm fills the
+             A4 exactly. (Odoo's own label/badge reports do the same.) -->
+        <field name="disable_shrinking" eval="True"/>
+    </record>
+
+    <!--
+        Standalone "Productenmatrix" delivery report.
+
+        Deliberately does NOT reuse stock.report_delivery_document: that template
+        is shared with the standard "Delivery Slip" and carries (a) the company
+        header/logo/footer via web.external_layout and (b) the standard product
+        move list. We want neither here, so we build our own document. The STANDARD
+        "Delivery Slip" therefore stays exactly as Odoo ships it.
+
+        Layout: one block per variant matrix. Each block is exactly one physical
+        third of the A4 (99mm) so the sheet can be cut into three equal strips, each
+        a self-contained slip with its own Customer + Order heading. Blocks pack
+        three to a page; a 4th+ flows onto the next page, again in thirds
+        (page-break-inside: avoid keeps a block whole).
+
+        The blocks come from stock.picking._get_matrix_blocks() over ALL selected
+        deliveries, sorted by hoofdproduct, so a bulk print groups the matrices per
+        product instead of per customer/delivery (the headings still tell you which
+        delivery each block belongs to). Each grid is rendered as a single matrix
+        table, reusing product_matrix.extra_price exactly as Odoo's own
+        product_matrix.matrix template does.
+
+        The 99mm height is only accurate because the paperformat disables wkhtmltopdf
+        smart shrinking (see paperformat_productmatrix); otherwise mm units render
+        ~0.8x and the thirds wouldn't fill the sheet.
+    -->
+    <template id="report_deliveryslip_matrix">
+        <t t-call="web.basic_layout">
+            <!-- Zero the report wrappers' vertical spacing so block 1 starts at the very
+                 top of the sheet; otherwise a ~6mm offset pushes the thirds down and the
+                 last block spills onto a second page. -->
+            <style>
+                .o_body_html, #wrapwrap, main, .article { margin-top: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; }
+            </style>
+            <!-- One continuous stream of blocks across ALL selected deliveries, sorted by
+                 hoofdproduct (see stock.picking._get_matrix_blocks): a bulk print groups
+                 the matrices per product instead of per customer/delivery. Blocks pack
+                 three to a page regardless of which delivery they belong to. -->
+            <t t-set="blocks" t-value="docs._get_matrix_blocks()"/>
+            <t t-foreach="blocks" t-as="block">
+                <t t-set="picking" t-value="block['picking']"/>
+                <t t-set="grid" t-value="block['grid']"/>
+                <!-- One physical third of the A4 (297/3); the sheet is cut at 99mm and
+                     198mm into three equal strips. Padding keeps content off the cut
+                     lines; never split a block across pages. Start a fresh page on each
+                     new hoofdproduct (but not before the very first block). -->
+                <div class="o_matrix_block"
+                     t-attf-style="height: 99mm; box-sizing: border-box; padding: 8mm 0 6mm; page-break-inside: avoid;{{ ' page-break-before: always;' if (block['new_product'] and not block_first) else '' }}">
+                    <!-- Customer + Order heading, repeated per block (= per matrix). -->
+                    <div class="o_matrix_head row mb-3">
+                        <div t-if="picking.partner_id" class="col-4 mw-100" name="div_customer">
+                            <strong>Customer</strong>
+                            <!-- stock_location shown before the customer name (space-dash-space),
+                                 only when it carries a value so we don't print a bare "0 - ". -->
+                            <div>
+                                <t t-if="picking.partner_id.stock_location"><span t-out="picking.partner_id.stock_location"/> - </t>
+                                <span t-out="picking.partner_id.name">Customer 1</span>
+                            </div>
+                        </div>
+                        <!-- Picking name dropped as a big title; shown in parentheses after the order. -->
+                        <div t-if="picking.origin" class="col-4 mw-100" name="div_origin">
+                            <strong>Order</strong>
+                            <div class="m-0">
+                                <span t-out="picking.origin">S0001</span>
+                                <span> (<span t-out="picking.name">WH/OUT/0001</span>)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Single matrix table for this grid (mirrors product_matrix.matrix). -->
+                    <table class="o_view_grid o_product_variant_grid table table-sm table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th t-foreach="grid['header']" t-as="column_header" class="o_grid_title_header text-center">
+                                    <span t-esc="column_header['name']">Column name</span>
+                                    <t t-call="product_matrix.extra_price">
+                                        <t t-set="price" t-value="column_header.get('price', False)"/>
+                                    </t>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="grid['matrix']" t-as="row">
+                                <td t-foreach="row" t-as="cell" t-if="cell.get('name', False)" class="text-start">
+                                    <strong t-esc="cell['name']">Cell name</strong>
+                                    <t t-call="product_matrix.extra_price">
+                                        <t t-set="price" t-value="cell.get('price', False)"/>
+                                    </t>
+                                </td>
+                                <td t-else="" class="text-end">
+                                    <!-- Quantities as whole numbers on the report. -->
+                                    <span t-out="cell.get('qty', 0)" t-options='{"widget": "integer"}'
+                                          class="o_grid_cell_container"/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <!-- New print action in the Print menu of deliveries. -->
+    <record id="action_report_delivery_matrix" model="ir.actions.report">
+        <field name="name">Productenmatrix</field>
+        <field name="model">stock.picking</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bab_stock_delivery.report_deliveryslip_matrix</field>
+        <field name="report_file">bab_stock_delivery.report_deliveryslip_matrix</field>
+        <field name="print_report_name">'Productenmatrix - %s - %s' % (object.partner_id.name or '', object.name)</field>
+        <field name="paperformat_id" ref="paperformat_productmatrix"/>
+        <field name="binding_model_id" ref="stock.model_stock_picking"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>

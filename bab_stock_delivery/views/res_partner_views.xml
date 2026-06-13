@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Place stock_location right after property_delivery_carrier_id on the contact
+        form. The delivery module adds that field into group name="sale" of
+        base.view_partner_form; this module depends on delivery, so its view loads
+        first and the field exists when we xpath after it.
+    -->
+    <record id="view_partner_form_stock_location" model="ir.ui.view">
+        <field name="name">res.partner.form.stock.location.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <field name="property_delivery_carrier_id" position="after">
+                <field name="stock_location"/>
+            </field>
+        </field>
+    </record>
+</odoo>
