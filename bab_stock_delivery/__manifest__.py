@@ -23,7 +23,10 @@ the new report.
     # delivery -> res.partner.property_delivery_carrier_id (anchor for stock_location field)
     'depends': ['stock', 'sale_stock', 'sale_product_matrix', 'delivery'],
     'data': [
+        'security/ir.model.access.csv',
         'views/res_partner_views.xml',
+        'views/stock_picking_views.xml',
+        'wizard/matrix_reprint_confirm_views.xml',
         'report/delivery_report_matrix.xml',
     ],
     'license': 'LGPL-3',

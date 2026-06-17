@@ -1,9 +1,39 @@
 # Part of the o.s.admin add-ons.
-from odoo import models
+from odoo import _, fields, models
 
 
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
+
+    # Set the first time the Productenmatrix is rendered for this picking (see
+    # report.bab_stock_delivery.report_deliveryslip_matrix._get_report_values).
+    # Used to warn before a reprint. copy=False so a duplicated transfer starts
+    # "not yet printed".
+    matrix_printed = fields.Boolean(
+        string="Productenmatrix printed", default=False, copy=False, readonly=True)
+
+    def action_print_matrix(self):
+        """Print the Productenmatrix, asking to confirm a reprint.
+
+        Entry point of the "* Productenmatrix" Action-menu server action (works on
+        a single delivery and on a multi-selection from the list). For any picking
+        already printed once we open a confirmation wizard instead of printing
+        straight away; the wizard re-calls this with ``matrix_reprint_confirmed``
+        so the second pass goes through. The outgoing-only guard lives in the
+        report's _get_report_values, which also flips ``matrix_printed``.
+        """
+        report = self.env.ref('bab_stock_delivery.action_report_delivery_matrix')
+        already_printed = self.filtered('matrix_printed')
+        if already_printed and not self.env.context.get('matrix_reprint_confirmed'):
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _("Reprint Productenmatrix?"),
+                'res_model': 'bab.matrix.reprint.confirm',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {'default_picking_ids': [(6, 0, self.ids)]},
+            }
+        return report.report_action(self)
 
     def _get_picking_orders(self):
         """All sales orders bundled in this picking.
@@ -19,6 +49,41 @@ class StockPicking(models.Model):
             return self.sale_ids
         return self.sale_id
 
+    @staticmethod
+    def _line_has_ptavs(line, sorted_ptav_ids):
+        """True if this order line's attribute combination matches a matrix cell.
+
+        Mirrors the ``has_ptavs`` helper inside sale.order._get_matrix: a cell is
+        identified by its sorted (no_variant + template) attribute-value ids.
+        """
+        ptavs = line.product_no_variant_attribute_value_ids.ids \
+            + line.product_template_attribute_value_ids.ids
+        ptavs.sort()
+        return ptavs == sorted_ptav_ids
+
+    def _add_order_qty_to_matrix(self, matrix, order, template):
+        """Overlay one order's ordered quantities onto a prebuilt matrix skeleton.
+
+        This is the cheap half of sale.order._get_matrix: it only does the
+        cell↔line attribute matching and ADDS onto each cell's running ``qty``.
+        It deliberately does NOT rebuild the skeleton (headers + cells +
+        per-cell ``_is_combination_possible``), which is the expensive part of
+        _get_template_matrix and is identical for every order of the template.
+        Used by _get_combined_matrixes to sum a delivery's bundled orders while
+        building that skeleton only once.
+        """
+        order_lines = order.order_line.filtered(lambda line: line.product_template_id == template)
+        if not order_lines:
+            return
+        for row in matrix['matrix']:
+            for cell in row:
+                # Label cells (first column) carry a 'name' and no 'ptav_ids'.
+                if cell.get('name', False):
+                    continue
+                lines = order_lines.filtered(lambda line: self._line_has_ptavs(line, cell['ptav_ids']))
+                if lines and not lines.combo_item_id:
+                    cell['qty'] += sum(lines.mapped('product_uom_qty'))
+
     def _get_combined_matrixes(self, orders):
         """Variant matrices summed across ALL bundled orders of this picking.
 
@@ -30,18 +95,25 @@ class StockPicking(models.Model):
 
         Every order's ``_get_matrix(template)`` returns the same skeleton for a
         given template (headers/cells come from product.template._get_template_
-        matrix, which depends only on the template's attributes + company), so
-        the cells line up position-by-position and we can sum their ``qty``.
+        matrix, which depends only on the template's attributes + company). The
+        skeleton is the expensive bit (a ``_is_combination_possible`` check per
+        cell), so we build it ONCE — via the first order's _get_matrix — and then
+        only overlay each remaining order's quantities (_add_order_qty_to_matrix)
+        instead of rebuilding it per order. Matters for bulk prints where
+        stock_picking_group_by_partner_by_carrier bundles many orders per delivery.
         """
         self.ensure_one()
         # Only orders that actually print their grids contribute (mirrors the
         # report_grids guard inside get_report_matrixes).
         orders = orders.filtered('report_grids')
         all_lines = orders.order_line
-        # Templates configured for matrix display, across the bundled orders'
-        # lines (same selection as get_report_matrixes, widened to all orders).
-        grid_templates = all_lines.filtered('is_configurable_product') \
-            .product_template_id.filtered(lambda t: t.product_add_mode == 'matrix')
+        # Every configurable product -- i.e. a product WITH variants -- gets a
+        # matrix, regardless of its Sales "Variant Selection" (product_add_mode).
+        # We deliberately diverge here from stock sale.order.get_report_matrixes,
+        # which only grids products set to Order Grid Entry
+        # (product_add_mode == 'matrix'): for this delivery slip the matrix must
+        # always be built as soon as the product has variants.
+        grid_templates = all_lines.filtered('is_configurable_product').product_template_id
 
         matrixes = []
         for template in grid_templates:
@@ -52,16 +124,12 @@ class StockPicking(models.Model):
                 continue
             combined = None
             for order in orders:
-                matrix = order._get_matrix(template)
                 if combined is None:
-                    combined = matrix
-                    continue
-                # Add this order's quantities onto the running total, cell by
-                # cell. Label cells (first column) have no 'qty' and are skipped.
-                for row_idx, row in enumerate(matrix['matrix']):
-                    for cell_idx, cell in enumerate(row):
-                        if 'qty' in cell:
-                            combined['matrix'][row_idx][cell_idx]['qty'] += cell.get('qty', 0)
+                    # First order builds the skeleton AND fills its own quantities.
+                    combined = order._get_matrix(template)
+                else:
+                    # Remaining orders: only add their quantities onto the skeleton.
+                    self._add_order_qty_to_matrix(combined, order, template)
             if combined is None:
                 continue
             # Drop all-zero rows, exactly as get_report_matrixes does, but only

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="matrix_reprint_confirm_form" model="ir.ui.view">
+        <field name="name">bab.matrix.reprint.confirm.form</field>
+        <field name="model">bab.matrix.reprint.confirm</field>
+        <field name="arch" type="xml">
+            <form>
+                <field name="picking_ids" invisible="1"/>
+                <div class="alert alert-warning" role="alert">
+                    The Productenmatrix has already been printed for the following
+                    deliveries. Print it again?
+                </div>
+                <field name="already_printed_ids" readonly="1" nolabel="1">
+                    <list>
+                        <field name="name"/>
+                        <field name="partner_id"/>
+                    </list>
+                </field>
+                <footer>
+                    <!-- Print again: reprint everything selected, including the
+                         already-printed ones above. -->
+                    <button name="action_confirm" type="object" string="Print again"
+                            class="btn-primary" data-hotkey="q"/>
+                    <!-- Cancel: don't reprint the ones above, but still print the
+                         rest of the selection that was not printed yet. (Use the
+                         dialog's close button to abort the whole print.) -->
+                    <button name="action_skip_reprints" type="object" string="Cancel"
+                            class="btn-secondary" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

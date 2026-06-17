@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Surface the "already printed" flag on the delivery form, in the existing
+        "Other Information" group of the Additional Info tab. Read-only (the flag
+        is maintained by the report render) and only relevant for outgoing
+        transfers, so hidden for incoming/internal via picking_type_code (already
+        present, invisible, in that group).
+    -->
+    <record id="view_picking_form_matrix_printed" model="ir.ui.view">
+        <field name="name">stock.picking.form.matrix.printed</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='extra']//field[@name='user_id']" position="after">
+                <field name="matrix_printed" invisible="picking_type_code != 'outgoing'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
