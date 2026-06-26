@@ -29,6 +29,7 @@ the new report.
         'views/stock_picking_views.xml',
         'wizard/matrix_reprint_confirm_views.xml',
         'report/delivery_report_matrix.xml',
+        'report/product_overview_report.xml',
     ],
     'license': 'LGPL-3',
     'installable': True,

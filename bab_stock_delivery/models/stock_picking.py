@@ -66,6 +66,167 @@ class StockPicking(models.Model):
             }
         return report.report_action(self)
 
+    def _get_customer_matrix_blocks(self):
+        """Per hoofdproduct+kleur a customer×size matrix of ordered quantities.
+
+        Backs the always-printable "Productenmatrix per kleur en klant" report.
+        Across ALL selected delivery pickings (``self``) it buckets every variant
+        order line by its product template + colour -- colour being every attribute
+        except the first one, which is the size (maat) by BAB convention, see the
+        T-shirt template: line 1 = Maat, line 2 = Kleur. Within each bucket the
+        rows are the customers that ordered and the columns are the sizes; each
+        cell holds the summed *ordered* quantity.
+
+        Each cell carries two numbers: the *ordered* quantity (from the sales
+        order) and the *reserved* quantity (from the delivery moves). They have
+        different scopes on purpose. Ordered is summed per unique sales order --
+        a backorder carries the same order as its origin, so iterating pickings
+        would double count; we deduplicate the orders (recordset union) and read
+        each order's full ordered amount once, even when only part of it sits in
+        the selected pickings. Reserved is summed straight from the moves on the
+        selected pickings (``self.move_ids``), so it reflects what is actually
+        reserved on exactly those transfers -- letting the slip show "besteld 6 /
+        gereserveerd 4". Incoming, the third number, is not customer dependent and
+        lives in the size column header instead of in the cells.
+
+        A product+colour table is only emitted once it has at least one reservation
+        somewhere: a table with ordered-but-nothing-reserved quantities is not yet
+        actionable, so it is left off the report entirely.
+
+        Returns one block per (template, colour), sorted by product then colour:
+            {'template', 'colour_name',
+             'sizes': [{'name', 'incoming'} per size column],
+             'rows': [{'customer',
+                       'cells': [{'ordered', 'reserved'} per size],
+                       'total_ordered', 'total_reserved'}]}
+        """
+        Ptav = self.env['product.template.attribute.value']
+
+        # bucket key (template id, sorted colour ptav ids) -> aggregation
+        buckets = {}
+
+        def split_size_colour(template, ptavs):
+            """Split a variant's attribute values into its size and its colour.
+
+            The first attribute line is the size (maat) by BAB convention (see the
+            T-shirt template: line 1 = Maat, line 2 = Kleur); its value is the
+            matrix column, every other value forms the colour group. Returns
+            (size_ptav, colour_ptavs) or (None, None) when the product has no size.
+            """
+            attribute_lines = template.valid_product_template_attribute_line_ids
+            if not attribute_lines:
+                return None, None
+            size_ptav = ptavs.filtered(
+                lambda v: v.attribute_line_id == attribute_lines[0])
+            if not size_ptav:
+                return None, None
+            return size_ptav, ptavs - size_ptav
+
+        def get_row(template, size_ptav, colour_ptavs, customer, variant):
+            """Fetch (creating if needed) the customer row for a template+colour."""
+            bucket = buckets.setdefault(
+                (template.id, tuple(colour_ptavs.ids)), {
+                    'template': template,
+                    'colour_ptavs': colour_ptavs,
+                    'sizes': Ptav,
+                    'variants': {},
+                    'rows': {},
+                })
+            bucket['sizes'] |= size_ptav
+            # One variant per size column (this template+colour+size); used to read
+            # the size's incoming quantity for the column header.
+            bucket['variants'].setdefault(size_ptav.id, variant)
+            return bucket['rows'].setdefault(customer.id, {
+                'customer': customer, 'ordered': {}, 'reserved': {}})
+
+        # Ordered quantities. Gathered from the sales orders behind every selected
+        # picking, deduplicated (recordset union) so an order split over a pick +
+        # its outgoing transfer, or over a backorder, is only counted once. We
+        # deliberately do NOT restrict to outgoing transfers: the matrix must also
+        # be printable from the pick step (WH/PICK) of a multi-step delivery route.
+        orders = self.env['sale.order']
+        for picking in self:
+            orders |= picking._get_picking_orders()
+        for order in orders:
+            for line in order.order_line:
+                if line.combo_item_id:
+                    # Combo/kit child lines would double count against their parent.
+                    continue
+                size_ptav, colour_ptavs = split_size_colour(
+                    line.product_template_id, line.product_template_attribute_value_ids)
+                if not size_ptav:
+                    continue
+                row = get_row(line.product_template_id, size_ptav, colour_ptavs,
+                              order.partner_id, line.product_id)
+                row['ordered'][size_ptav.id] = \
+                    row['ordered'].get(size_ptav.id, 0) + line.product_uom_qty
+
+        # Reserved quantities. Straight from the moves on the selected pickings, so
+        # the figure reflects what is actually reserved on exactly those transfers
+        # (move.quantity is the reserved quantity on an assigned move). Each move's
+        # variant gives the same size/colour split as the ordered line above.
+        for move in self.move_ids:
+            if move.state == 'cancel' or not move.sale_line_id:
+                continue
+            variant = move.product_id
+            size_ptav, colour_ptavs = split_size_colour(
+                variant.product_tmpl_id, variant.product_template_attribute_value_ids)
+            if not size_ptav:
+                continue
+            row = get_row(variant.product_tmpl_id, size_ptav, colour_ptavs,
+                          move.sale_line_id.order_id.partner_id, variant)
+            row['reserved'][size_ptav.id] = \
+                row['reserved'].get(size_ptav.id, 0) + move.quantity
+
+        # Warm the incoming-qty cache for every size variant in one batch so the
+        # per-size header reads below don't each trigger a separate stock compute.
+        self.env['product.product'].browse(list({
+            v.id for b in buckets.values() for v in b['variants'].values()
+        })).mapped('incoming_qty')
+
+        blocks = []
+        for bucket in buckets.values():
+            template = bucket['template']
+            # Columns: only sizes that occur (ordered or reserved), but kept in the
+            # template's own size order (the size attribute's value sequence). Each
+            # size header also carries its incoming quantity (forecasted stock
+            # coming in for that template+colour+size variant) -- not customer
+            # dependent, hence in the header rather than in the cells.
+            size_line = template.valid_product_template_attribute_line_ids[0]
+            ordered_sizes = size_line.product_template_value_ids._only_active()
+            sizes = [s for s in ordered_sizes if s in bucket['sizes']]
+            size_headers = [{
+                'name': s.name,
+                'incoming': bucket['variants'][s.id].incoming_qty,
+            } for s in sizes]
+            rows = []
+            for row in bucket['rows'].values():
+                cells = [{
+                    'ordered': row['ordered'].get(s.id, 0),
+                    'reserved': row['reserved'].get(s.id, 0),
+                } for s in sizes]
+                rows.append({
+                    'customer': row['customer'],
+                    'cells': cells,
+                    'total_ordered': sum(c['ordered'] for c in cells),
+                    'total_reserved': sum(c['reserved'] for c in cells),
+                })
+            # A product+colour table is only meaningful once something is reserved
+            # somewhere in it; with nothing reserved yet it is dropped from the
+            # report (the ordered-only quantities are not actionable on their own).
+            if not any(row['total_reserved'] for row in rows):
+                continue
+            rows.sort(key=lambda r: (r['customer'].name or '').lower())
+            blocks.append({
+                'template': template,
+                'colour_name': ' • '.join(bucket['colour_ptavs'].mapped('name')),
+                'sizes': size_headers,
+                'rows': rows,
+            })
+        blocks.sort(key=lambda b: (
+            (b['template'].display_name or '').lower(), b['colour_name'].lower()))
+        return blocks
+
     def _get_picking_orders(self):
         """All sales orders bundled in this picking.
 
