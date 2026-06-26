@@ -12,6 +12,37 @@ class StockPicking(models.Model):
     matrix_printed = fields.Boolean(
         string="Productenmatrix printed", default=False, copy=False, readonly=True)
 
+    def _create_backorder_picking(self):
+        """A backorder starts out as "already printed".
+
+        A backorder only carries the quantities that could not be delivered yet;
+        it is a continuation of a transfer whose Productenmatrix has already been
+        handled, so it must NOT generate a fresh print on its own. We therefore
+        force ``matrix_printed`` on the new backorder (``matrix_printed`` is
+        ``copy=False``, so without this it would start out False). Any later print
+        of the backorder then still goes through the reprint confirmation wizard.
+        """
+        backorder = super()._create_backorder_picking()
+        backorder.matrix_printed = True
+        return backorder
+
+    def _action_done(self):
+        """Flag outgoing deliveries that reach "done" without ever being printed.
+
+        If an outgoing transfer is validated while its Productenmatrix was never
+        printed, the slip clearly shipped without one and we don't want it to
+        silently produce a fresh print afterwards. We mark it as printed on
+        completion so any later print attempt goes through the reprint
+        confirmation wizard, exactly like a backorder (see
+        _create_backorder_picking).
+        """
+        res = super()._action_done()
+        to_flag = self.filtered(
+            lambda p: p.picking_type_id.code == 'outgoing' and not p.matrix_printed)
+        if to_flag:
+            to_flag.matrix_printed = True
+        return res
+
     def action_print_matrix(self):
         """Print the Productenmatrix, asking to confirm a reprint.
 
