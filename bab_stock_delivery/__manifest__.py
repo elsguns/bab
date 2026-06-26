@@ -24,6 +24,7 @@ the new report.
     'depends': ['stock', 'sale_stock', 'sale_product_matrix', 'delivery'],
     'data': [
         'security/ir.model.access.csv',
+        'data/sale_order_stock_location_action.xml',
         'views/res_partner_views.xml',
         'views/stock_picking_views.xml',
         'wizard/matrix_reprint_confirm_views.xml',

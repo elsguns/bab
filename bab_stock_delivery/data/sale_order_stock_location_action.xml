@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Contextual server action on sale.order: number the delivery addresses.
+
+        For every selected sales order it collects the delivery addresses
+        (partner_shipping_id), de-duplicates them, and writes a fresh,
+        sequential stock_location number (1..N) on each unique address.
+        The number is the value shown between square brackets before the
+        customer name on the "Productenmatrix" delivery report.
+
+        Re-running the action always recomputes from scratch, so any previous
+        stock_location values on the selected orders' addresses are overwritten.
+    -->
+    <record id="action_sale_order_assign_stock_location" model="ir.actions.server">
+        <field name="name">* Stocklocatie toekennen aan afleveradressen</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+# Verzamel de unieke afleveradressen over alle geselecteerde orders.
+# mapped() op een many2one geeft een recordset zonder duplicaten terug,
+# in volgorde van eerste voorkomen.
+delivery_partners = records.mapped('partner_shipping_id')
+
+# Ken elk uniek afleveradres een opeenvolgend stocklocatie-nummer toe (1..N).
+# Bestaande waarden worden bij elke run overschreven.
+for index, partner in enumerate(delivery_partners, start=1):
+    partner['stock_location'] = index
+        </field>
+    </record>
+</odoo>
