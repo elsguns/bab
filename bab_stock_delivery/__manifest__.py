@@ -29,6 +29,10 @@ the new report.
         'views/stock_picking_views.xml',
         'wizard/matrix_reprint_confirm_views.xml',
         'report/delivery_report_matrix.xml',
+        # reservation_matrix must load BEFORE product_overview so its report
+        # action gets a lower id and lands first in the Print menu (report
+        # bindings are ordered by action id); see reservation_matrix_report.xml.
+        'report/reservation_matrix_report.xml',
         'report/product_overview_report.xml',
     ],
     'license': 'LGPL-3',

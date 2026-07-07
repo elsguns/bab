@@ -66,6 +66,152 @@ class StockPicking(models.Model):
             }
         return report.report_action(self)
 
+    def _split_size_colour(self, template, ptavs):
+        """Split a variant's attribute values into its size (maat) and its colour.
+
+        The first attribute line is the size (maat) by BAB convention (see the
+        T-shirt template: line 1 = Maat, line 2 = Kleur); its value is the matrix
+        column, every other value forms the colour group (the matrix row).
+        Returns (size_ptav, colour_ptavs) or (None, None) when the product has no
+        size attribute. Shared by both matrix reports.
+        """
+        attribute_lines = template.valid_product_template_attribute_line_ids
+        if not attribute_lines:
+            return None, None
+        size_ptav = ptavs.filtered(
+            lambda v: v.attribute_line_id == attribute_lines[0])
+        if not size_ptav:
+            return None, None
+        return size_ptav, ptavs - size_ptav
+
+    def _get_reservation_matrix_blocks(self):
+        """Per hoofdproduct a kleur×maat matrix of reservation figures.
+
+        Backs the "Productenmatrix met reservaties" report. Across the selected
+        transfers (``self``) it buckets every move by product template, with the
+        colour (all attributes except the size) as the ROW and the size (maat --
+        the first attribute line by BAB convention) as the COLUMN, so there is one
+        grid per hoofdproduct just like the "* Productenmatrix" slip -- but here
+        aggregated over all customers instead of the sales-order grid.
+
+        Per template+colour+size variant it gathers, from the selected transfers'
+        moves and the variant's live stock:
+
+          * reserved : Σ reserved qty on the selected transfers (move.quantity)
+          * demand   : Σ demand qty on the selected transfers (move.product_uom_qty)
+          * free     : the variant's free-to-use stock (product.product.free_qty)
+          * incoming : the variant's forecasted inbound (product.product.incoming_qty)
+
+        From these the report shows, per cell, three figures:
+          1. reserved (black);
+          2. ONE signed figure -- a shortage ``-(demand - reserved)`` (red) when
+             the demand is not fully reserved, otherwise a surplus ``+free`` (green).
+             Shortage and surplus never appear together: as soon as anything is
+             short the surplus is suppressed, so the two are mutually exclusive by
+             construction (matching "het ene is altijd 0 als het andere er is");
+          3. the incoming quantity ``+incoming`` (blue).
+
+        Only hoofdproducten with an actual reservation are listed: a block where
+        nothing is reserved anywhere (e.g. make-to-order products not yet received,
+        whose moves stay "waiting" with quantity 0) is dropped, since a reservation
+        slip has nothing to act on for it.
+
+        Returns one block per reserved hoofdproduct, sorted by product:
+            {'template',
+             'sizes': [{'name'} per size column (maat)],
+             'rows':  [{'colour_name',
+                        'cells': [cell-or-None per size]}]}
+        where a cell is {'reserved', 'shortage', 'surplus', 'incoming'} and None
+        marks a colour/size combination that is not on any selected transfer.
+        """
+        Ptav = self.env['product.template.attribute.value']
+
+        # template.id -> {'template', 'sizes' (seen size ptavs), 'rows'}; each row
+        # is keyed by its colour ptav ids and collects one cell per size.
+        buckets = {}
+        for move in self.move_ids:
+            if move.state == 'cancel':
+                continue
+            variant = move.product_id
+            template = variant.product_tmpl_id
+            size_ptav, colour_ptavs = self._split_size_colour(
+                template, variant.product_template_attribute_value_ids)
+            if not size_ptav:
+                continue
+            bucket = buckets.setdefault(template.id, {
+                'template': template, 'sizes': Ptav, 'rows': {}})
+            bucket['sizes'] |= size_ptav
+            row = bucket['rows'].setdefault(tuple(colour_ptavs.ids), {
+                'colour_ptavs': colour_ptavs, 'cells': {}})
+            cell = row['cells'].setdefault(size_ptav.id, {
+                'variant': variant, 'reserved': 0, 'demand': 0})
+            cell['reserved'] += move.quantity
+            cell['demand'] += move.product_uom_qty
+
+        # Warm the free/incoming stock caches for every variant in one batch so the
+        # per-cell reads below don't each trigger a separate stock compute.
+        variants = self.env['product.product'].browse(list({
+            cell['variant'].id
+            for b in buckets.values() for r in b['rows'].values()
+            for cell in r['cells'].values()
+        }))
+        variants.mapped('free_qty')
+        variants.mapped('incoming_qty')
+
+        blocks = []
+        for bucket in buckets.values():
+            template = bucket['template']
+            # Columns: only sizes that occur on the transfers, kept in the
+            # template's own size order (the size attribute's value sequence).
+            size_line = template.valid_product_template_attribute_line_ids[0]
+            ordered_sizes = size_line.product_template_value_ids._only_active()
+            sizes = [s for s in ordered_sizes if s in bucket['sizes']]
+            size_headers = [{'name': s.name} for s in sizes]
+            rows = []
+            for row in bucket['rows'].values():
+                cells = []
+                for s in sizes:
+                    cell = row['cells'].get(s.id)
+                    if not cell:
+                        # This colour was not ordered in this size on the
+                        # selected transfers -> empty matrix cell.
+                        cells.append(None)
+                        continue
+                    reserved = cell['reserved']
+                    shortage = max(cell['demand'] - reserved, 0)
+                    variant = cell['variant']
+                    # Surplus (free stock) only when the demand is fully reserved;
+                    # while anything is short the cell shows the shortage instead,
+                    # so shortage and surplus are never both non-zero.
+                    surplus = variant.free_qty if not shortage else 0
+                    cells.append({
+                        'reserved': reserved,
+                        'shortage': shortage,
+                        'surplus': surplus if surplus > 0 else 0,
+                        'incoming': variant.incoming_qty,
+                    })
+                rows.append({
+                    'colour_name': ' • '.join(row['colour_ptavs'].mapped('name')),
+                    'cells': cells,
+                })
+            # A hoofdproduct is only listed once something is actually reserved on
+            # it. Make-to-order products that are not yet received cannot be
+            # reserved (their moves stay "waiting" with quantity 0), so a block
+            # with nothing reserved anywhere is not yet actionable on a
+            # reservation slip and is dropped -- which is also why the remaining
+            # blocks no longer show incoming merely echoing an ordered-but-not-
+            # reserved quantity.
+            if not any(cell and cell['reserved'] for row in rows for cell in row['cells']):
+                continue
+            rows.sort(key=lambda r: r['colour_name'].lower())
+            blocks.append({
+                'template': template,
+                'sizes': size_headers,
+                'rows': rows,
+            })
+        blocks.sort(key=lambda b: (b['template'].display_name or '').lower())
+        return blocks
+
     def _get_customer_matrix_blocks(self):
         """Per hoofdproduct+kleur a customer×size matrix of ordered quantities.
 
@@ -107,23 +253,6 @@ class StockPicking(models.Model):
         # bucket key (template id, sorted colour ptav ids) -> aggregation
         buckets = {}
 
-        def split_size_colour(template, ptavs):
-            """Split a variant's attribute values into its size and its colour.
-
-            The first attribute line is the size (maat) by BAB convention (see the
-            T-shirt template: line 1 = Maat, line 2 = Kleur); its value is the
-            matrix column, every other value forms the colour group. Returns
-            (size_ptav, colour_ptavs) or (None, None) when the product has no size.
-            """
-            attribute_lines = template.valid_product_template_attribute_line_ids
-            if not attribute_lines:
-                return None, None
-            size_ptav = ptavs.filtered(
-                lambda v: v.attribute_line_id == attribute_lines[0])
-            if not size_ptav:
-                return None, None
-            return size_ptav, ptavs - size_ptav
-
         def get_row(template, size_ptav, colour_ptavs, customer, variant):
             """Fetch (creating if needed) the customer row for a template+colour."""
             bucket = buckets.setdefault(
@@ -154,7 +283,7 @@ class StockPicking(models.Model):
                 if line.combo_item_id:
                     # Combo/kit child lines would double count against their parent.
                     continue
-                size_ptav, colour_ptavs = split_size_colour(
+                size_ptav, colour_ptavs = self._split_size_colour(
                     line.product_template_id, line.product_template_attribute_value_ids)
                 if not size_ptav:
                     continue
@@ -171,7 +300,7 @@ class StockPicking(models.Model):
             if move.state == 'cancel' or not move.sale_line_id:
                 continue
             variant = move.product_id
-            size_ptav, colour_ptavs = split_size_colour(
+            size_ptav, colour_ptavs = self._split_size_colour(
                 variant.product_tmpl_id, variant.product_template_attribute_value_ids)
             if not size_ptav:
                 continue

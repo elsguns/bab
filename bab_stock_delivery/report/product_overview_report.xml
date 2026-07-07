@@ -118,17 +118,30 @@
         can be run on a single delivery or a multi-selection. No reprint guard:
         this overview may be printed at will.
     -->
+    <!--
+        Force this report to be re-created AFTER action_report_reservation_matrix
+        so it gets a HIGHER ir.actions id and therefore lands second in the Print
+        menu (report bindings are ordered by id, see reservation_matrix_report.xml).
+        The search-based delete is a no-op on a fresh install (the report does not
+        exist yet when this runs) and, on an upgrade, drops the existing record so
+        the <record> below re-creates it with a fresh, higher id than the (already
+        created) reservation report. Cascade removes only this report's binding,
+        which the re-create restores.
+    -->
+    <delete model="ir.actions.report"
+            search="[('report_name', '=', 'bab_stock_delivery.report_product_overview')]"/>
+
     <record id="action_report_product_overview" model="ir.actions.report">
         <!-- The report name is the Print-menu label AND, for a multi-record print
              (the usual case here), the PDF filename. So it is kept clean: a leading
              "* " would surface in the menu but also leak into the filename as "_"
              (browsers replace the invalid "*"). -->
-        <field name="name">Productenmatrix per kleur en klant</field>
+        <field name="name">Productenmatrix met reservaties per kleur en klant</field>
         <field name="model">stock.picking</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">bab_stock_delivery.report_product_overview</field>
         <field name="report_file">bab_stock_delivery.report_product_overview</field>
-        <field name="print_report_name">'Productenmatrix per kleur en klant'</field>
+        <field name="print_report_name">'Productenmatrix met reservaties per kleur en klant'</field>
         <field name="paperformat_id" ref="paperformat_product_overview"/>
         <field name="binding_model_id" ref="stock.model_stock_picking"/>
         <field name="binding_type">report</field>

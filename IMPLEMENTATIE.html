@@ -99,7 +99,12 @@
 <p>Eigen leveringsbon per variantmatrix (hoofdproduct met maat × kleur). De A4 wordt in drie gelijke stroken van 99&nbsp;mm geknipt, één matrix per strook met een eigen klant- en orderkop. Een bulk-print over meerdere leveringen groepeert de matrices per hoofdproduct. Bewaking tegen dubbel afprinten: de eerste afdruk print meteen, een herafdruk vraagt eerst bevestiging.</p>
 <p><span class="tag">[code]</span> <span class="tag">[view]</span> <code>bab_stock_delivery</code> (osa)</p>
 
-<h2>Productenmatrix per kleur en klant</h2>
+<h2>Productenmatrix met reservaties</h2>
+<p>Overzichtsrapport (liggend A4): één matrix per hoofdproduct, rijen = kleur, kolommen = maat. Per cel drie getallen, gescheiden door <code>|</code>: het aantal <strong>gereserveerd</strong> (zwart), dan één gecombineerd getal — <span style="color:#dc3545">−tekort</span> (rood) bij ondervoorziening óf <span style="color:#198754">+overschot</span> (groen, de vrije voorraad, +0 als exact gedekt) — en tot slot de <span style="color:#0d6efd">+inkomende</span> voorraad (blauw). Zo staan er altijd drie getallen voor de leesbaarheid.</p>
+<p>Toont enkel hoofdproducten waar effectief <strong>iets gereserveerd</strong> is. Make-to-order producten die nog niet ontvangen zijn kunnen niet gereserveerd worden (moves blijven "waiting") en vallen dus weg uit de lijst. Staat vóór "per kleur en klant" in het Print-menu.</p>
+<p><span class="tag">[code]</span> <code>bab_stock_delivery</code> (osa)</p>
+
+<h2>Productenmatrix met reservaties per kleur en klant</h2>
 <p>Overzichtsrapport (liggend A4): per hoofdproduct+kleur een raster van klanten (rijen) × maten (kolommen), met per cel de bestelde hoeveelheid en tussen haakjes de gereserveerde. Groen = volledig gereserveerd (besteld == gereserveerd), rood = niet volledig. Onder elke maat staat in het blauw de verwachte inkomende voorraad.</p>
 <p>Toont enkel producten die <strong>deels</strong> gereserveerd zijn: producten waar nog niets van gereserveerd is én producten die volledig gereserveerd zijn, vallen weg — zo blijft enkel over wat nog aandacht vraagt.</p>
 <p><span class="tag">[code]</span> <code>bab_stock_delivery</code> (osa)</p>

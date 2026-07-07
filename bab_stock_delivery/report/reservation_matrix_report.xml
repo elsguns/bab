@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Landscape A4 for the reservation matrix: a hoofdproduct block is a
+        colours (rows) x sizes (columns) grid where every cell carries three
+        numbers, which is wider than tall, so landscape gives the size columns
+        room. Standard company margins/header (a normal office overview).
+    -->
+    <record id="paperformat_reservation_matrix" model="report.paperformat">
+        <field name="name">Productenmatrix met reservaties A4 landscape</field>
+        <field name="format">A4</field>
+        <field name="orientation">Landscape</field>
+        <field name="margin_top">12</field>
+        <field name="margin_bottom">12</field>
+        <field name="margin_left">7</field>
+        <field name="margin_right">7</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <!--
+        "Productenmatrix met reservaties".
+
+        One block per hoofdproduct, summed over ALL selected transfers (see
+        stock.picking._get_reservation_matrix_blocks): rows are the colours,
+        columns the sizes (maat). Each cell shows three figures for that
+        template+colour+size variant:
+          1. reserved quantity on the selected transfers (black);
+          2. ONE signed figure: shortage -(demand - reserved) in red when the
+             demand is not fully reserved, otherwise surplus +free stock in green
+             (the two never appear together);
+          3. incoming (forecasted inbound) quantity +N in blue.
+        Separated by a pipe. Printable as often as needed (no reprint guard).
+    -->
+    <template id="report_reservation_matrix">
+        <!-- web.basic_layout drops the company external header/footer; it already
+             includes web.html_container, so it is the only wrapper needed. -->
+        <t t-call="web.basic_layout">
+            <div class="page">
+                <style>
+                    table.o_reservation_grid { border-collapse: collapse; table-layout: fixed; width: 100%; }
+                    table.o_reservation_grid th,
+                    table.o_reservation_grid td { border: 0.3mm solid #000 !important; padding: 0.8mm 1.6mm; }
+                    table.o_reservation_grid th { font-weight: bold; text-align: center; }
+                    /* Colour column takes the slack; size columns stay narrow but
+                       wide enough for "res | ±x | +y". */
+                    table.o_reservation_grid th:first-child,
+                    table.o_reservation_grid td:first-child { text-align: left; }
+                    table.o_reservation_grid th:not(:first-child),
+                    table.o_reservation_grid td:not(:first-child) { width: 26mm; text-align: center; white-space: nowrap; }
+                    .o_reservation_block { page-break-inside: avoid; margin-bottom: 6mm; }
+                    /* The three cell figures. Reserved stays the default black.
+                       Shortage red (with a leading minus), surplus green (leading
+                       plus), incoming blue (leading plus). The pipe separators are
+                       grey so they stay subordinate to the numbers. */
+                    .o_res_shortage { color: #dc3545; }
+                    .o_res_surplus  { color: #198754; }
+                    .o_res_incoming { color: #0d6efd; }
+                    .o_res_sep { color: #999; }
+                    /* Legend explaining the three numbers, once at the top. */
+                    .o_res_legend { font-size: 9pt; margin-bottom: 4mm; }
+                </style>
+
+                <p class="o_res_legend">
+                    Per maat: <strong>gereserveerd</strong>
+                    <span class="o_res_sep">|</span>
+                    <span class="o_res_shortage">−tekort</span> of
+                    <span class="o_res_surplus">+overschot (vrije voorraad)</span>
+                    <span class="o_res_sep">|</span>
+                    <span class="o_res_incoming">+inkomend</span>
+                </p>
+
+                <t t-if="not blocks">
+                    <p>Geen gereserveerde productvarianten in de selectie.</p>
+                </t>
+
+                <!-- One grid per hoofdproduct, already sorted by product. -->
+                <div t-foreach="blocks" t-as="block" class="o_reservation_block">
+                    <h4 class="mb-2"><span t-out="block['template'].display_name">Hoofdproduct</span></h4>
+                    <table class="o_reservation_grid table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Kleur</th>
+                                <th t-foreach="block['sizes']" t-as="size" t-out="size['name']">Maat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="block['rows']" t-as="row">
+                                <td><span t-out="row['colour_name']">Kleur</span></td>
+                                <!-- Each populated cell shows: reserved (black), then a
+                                     single shortage/surplus figure, then incoming. The
+                                     shortage/surplus figure always shows: a red tekort when
+                                     the demand is not fully reserved, otherwise a green
+                                     +overschot, which is +0 (green) when the demand is
+                                     exactly reserved with no free stock left over. Incoming
+                                     is likewise always shown (+0 blue when nothing is
+                                     inbound), so a populated cell always carries three
+                                     figures for readability. A grey pipe separates the
+                                     parts; an empty (unordered) combination stays blank. -->
+                                <td t-foreach="row['cells']" t-as="cell">
+                                    <t t-if="cell">
+                                        <span t-out="cell['reserved']" t-options='{"widget": "integer"}'>0</span>
+                                        <t t-if="cell['shortage']">
+                                            <span class="o_res_sep">|</span>
+                                            <span class="o_res_shortage">−<t t-out="cell['shortage']" t-options='{"widget": "integer"}'/></span>
+                                        </t>
+                                        <t t-else="">
+                                            <span class="o_res_sep">|</span>
+                                            <span class="o_res_surplus">+<t t-out="cell['surplus']" t-options='{"widget": "integer"}'/></span>
+                                        </t>
+                                        <span class="o_res_sep">|</span>
+                                        <span class="o_res_incoming">+<t t-out="cell['incoming']" t-options='{"widget": "integer"}'/></span>
+                                    </t>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!--
+        The "Productenmatrix met reservaties" report, bound to the Print menu on
+        deliveries. Deliberately declared in a data file loaded BEFORE
+        product_overview_report.xml so it gets a LOWER ir.actions id than the
+        overview report: the Print menu orders report bindings purely by their
+        action id (ir.actions.actions._get_bindings sorts reports by id, the
+        sequence field only affects the Action/cog menu), so a lower id makes
+        this report appear first in Print. product_overview_report.xml then
+        re-creates the overview report after this one to keep that order on an
+        already-installed database (see the <delete> there).
+    -->
+    <record id="action_report_reservation_matrix" model="ir.actions.report">
+        <field name="name">Productenmatrix met reservaties</field>
+        <field name="model">stock.picking</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bab_stock_delivery.report_reservation_matrix</field>
+        <field name="report_file">bab_stock_delivery.report_reservation_matrix</field>
+        <field name="print_report_name">'Productenmatrix met reservaties'</field>
+        <field name="paperformat_id" ref="paperformat_reservation_matrix"/>
+        <field name="binding_model_id" ref="stock.model_stock_picking"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>
