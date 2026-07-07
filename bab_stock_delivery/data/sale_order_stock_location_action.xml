@@ -4,13 +4,20 @@
         Contextual server action on sale.order: number the delivery addresses.
 
         For every selected sales order it collects the delivery addresses
-        (partner_shipping_id), de-duplicates them, and writes a fresh,
-        sequential stock_location number (1..N) on each unique address.
-        The number is the value shown between square brackets before the
-        customer name on the "Productenmatrix" delivery report.
+        (partner_shipping_id), de-duplicates them, and writes a fresh
+        stock_location number on each unique address. The number is the value
+        shown between square brackets before the customer name on the
+        "Productenmatrix" delivery report.
 
-        Re-running the action always recomputes from scratch, so any previous
-        stock_location values on the selected orders' addresses are overwritten.
+        The number is taken from a country-specific range:
+            Belgian customers   : 1000-1999
+            Dutch customers     : 2000-3999
+            Customers elsewhere : from 4000 on
+
+        Re-running the action always recomputes from scratch. Before numbering
+        it first clears stock_location on ALL partners (not just the ones on the
+        selected orders), so a customer who ordered last year but not this year
+        no longer keeps a stale number.
     -->
     <record id="action_sale_order_assign_stock_location" model="ir.actions.server">
         <field name="name">* Stocklocatie toekennen aan afleveradressen</field>
@@ -19,15 +26,32 @@
         <field name="binding_view_types">list,form</field>
         <field name="state">code</field>
         <field name="code">
-# Verzamel de unieke afleveradressen over alle geselecteerde orders.
-# mapped() op een many2one geeft een recordset zonder duplicaten terug,
-# in volgorde van eerste voorkomen.
+# 1. Maak eerst het stocklocatie-nummer leeg op ALLE partners, niet enkel op
+#    de adressen van de geselecteerde orders. Zo houdt een klant die vorig
+#    jaar bestelde maar dit jaar niet, geen verouderd nummer over.
+env['res.partner'].search([('stock_location', '&gt;', 0)]).write({'stock_location': 0})
+
+# 2. Verzamel de unieke afleveradressen over alle geselecteerde orders.
+#    mapped() op een many2one geeft een recordset zonder duplicaten terug,
+#    in volgorde van eerste voorkomen.
 delivery_partners = records.mapped('partner_shipping_id')
 
-# Ken elk uniek afleveradres een opeenvolgend stocklocatie-nummer toe (1..N).
-# Bestaande waarden worden bij elke run overschreven.
-for index, partner in enumerate(delivery_partners, start=1):
-    partner['stock_location'] = index
+# 3. Ken elk uniek afleveradres een nummer toe binnen een landspecifieke reeks:
+#      Belgische klanten  : 1000-1999
+#      Nederlandse klanten: 2000-3999
+#      Overige landen     : vanaf 4000
+#    Per reeks lopen de nummers op in volgorde van eerste voorkomen.
+next_number = {'BE': 1000, 'NL': 2000, 'other': 4000}
+for partner in delivery_partners:
+    country_code = partner.country_id.code
+    if country_code == 'BE':
+        key = 'BE'
+    elif country_code == 'NL':
+        key = 'NL'
+    else:
+        key = 'other'
+    partner['stock_location'] = next_number[key]
+    next_number[key] += 1
         </field>
     </record>
 </odoo>

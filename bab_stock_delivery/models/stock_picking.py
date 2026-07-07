@@ -89,9 +89,11 @@ class StockPicking(models.Model):
         gereserveerd 4". Incoming, the third number, is not customer dependent and
         lives in the size column header instead of in the cells.
 
-        A product+colour table is only emitted once it has at least one reservation
-        somewhere: a table with ordered-but-nothing-reserved quantities is not yet
-        actionable, so it is left off the report entirely.
+        Only PARTIALLY reserved tables are emitted: this report exists to show
+        what still needs attention. A product+colour table is therefore left off
+        when nothing is reserved yet anywhere in it (ordered-only quantities are
+        not actionable on their own) and also when everything ordered is already
+        reserved (besteld == gereserveerd in every cell -- nothing left to do).
 
         Returns one block per (template, colour), sorted by product then colour:
             {'template', 'colour_name',
@@ -211,10 +213,17 @@ class StockPicking(models.Model):
                     'total_ordered': sum(c['ordered'] for c in cells),
                     'total_reserved': sum(c['reserved'] for c in cells),
                 })
-            # A product+colour table is only meaningful once something is reserved
-            # somewhere in it; with nothing reserved yet it is dropped from the
-            # report (the ordered-only quantities are not actionable on their own).
-            if not any(row['total_reserved'] for row in rows):
+            # This report only lists what still needs attention, so a product+colour
+            # table is shown only when it is PARTIALLY reserved. Two cases are left
+            # off: nothing reserved yet anywhere (ordered-only quantities are not
+            # actionable on their own) and everything already reserved (besteld ==
+            # gereserveerd in every cell -> nothing left to do). "Fully reserved"
+            # mirrors the report's own green/red cells (cell ordered == reserved).
+            any_reserved = any(row['total_reserved'] for row in rows)
+            fully_reserved = all(
+                cell['ordered'] == cell['reserved']
+                for row in rows for cell in row['cells'])
+            if not any_reserved or fully_reserved:
                 continue
             rows.sort(key=lambda r: (r['customer'].name or '').lower())
             blocks.append({

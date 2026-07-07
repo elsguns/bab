@@ -85,11 +85,28 @@
 
 <h1 id="contacten">Contacten</h1>
 
+<h2>Stocklocatie-nummer op afleveradres</h2>
+<p>Genummerd veld op het contact, getoond tussen vierkante haken vóór de klantnaam op de Productenmatrix-leveringsbon. De nummers worden toegekend via een serveractie (zie Voorraad).</p>
+<p><span class="tag">[field]</span> <code>res.partner.stock_location</code> — <code>bab_stock_delivery</code> (osa)</p>
+
 <h1 id="verkopen">Verkopen</h1>
 
 <h1 id="aankoop">Aankoop</h1>
 
 <h1 id="voorraad">Voorraad</h1>
+
+<h2>Productenmatrix (leveringsbon in stroken)</h2>
+<p>Eigen leveringsbon per variantmatrix (hoofdproduct met maat × kleur). De A4 wordt in drie gelijke stroken van 99&nbsp;mm geknipt, één matrix per strook met een eigen klant- en orderkop. Een bulk-print over meerdere leveringen groepeert de matrices per hoofdproduct. Bewaking tegen dubbel afprinten: de eerste afdruk print meteen, een herafdruk vraagt eerst bevestiging.</p>
+<p><span class="tag">[code]</span> <span class="tag">[view]</span> <code>bab_stock_delivery</code> (osa)</p>
+
+<h2>Productenmatrix per kleur en klant</h2>
+<p>Overzichtsrapport (liggend A4): per hoofdproduct+kleur een raster van klanten (rijen) × maten (kolommen), met per cel de bestelde hoeveelheid en tussen haakjes de gereserveerde. Groen = volledig gereserveerd (besteld == gereserveerd), rood = niet volledig. Onder elke maat staat in het blauw de verwachte inkomende voorraad.</p>
+<p>Toont enkel producten die <strong>deels</strong> gereserveerd zijn: producten waar nog niets van gereserveerd is én producten die volledig gereserveerd zijn, vallen weg — zo blijft enkel over wat nog aandacht vraagt.</p>
+<p><span class="tag">[code]</span> <code>bab_stock_delivery</code> (osa)</p>
+
+<h2>Stocklocatie toekennen aan afleveradressen</h2>
+<p>Contextuele serveractie op verkooporders die de unieke afleveradressen nummert in landspecifieke reeksen: Belgische klanten 1000-1999, Nederlandse klanten 2000-3999, overige landen vanaf 4000. Bij elke run worden eerst alle bestaande nummers gewist, zodat een klant die vorig jaar wel maar dit jaar niet bestelde geen verouderd nummer behoudt.</p>
+<p><span class="tag">[code]</span> <code>bab_stock_delivery</code> (osa)</p>
 
 <h1 id="productie">Productie</h1>
 
