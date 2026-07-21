@@ -16,6 +16,7 @@
         pre { background: #f5f5f5; border: 1px solid #ddd; padding: .75rem; overflow-x: auto; font-size: .9rem; }
         code { background: #f5f5f5; padding: .1rem .3rem; border-radius: 3px; font-size: .9em; }
         pre code { background: none; padding: 0; }
+        img { max-width: 100%; height: auto; }
         .tag { font-family: monospace; font-size: .85em; color: #666; }
         details > summary { cursor: pointer; font-weight: bold; padding: .5rem; background: #f0f0f0; border: 1px solid #ddd; }
         details[open] { border: 1px solid #ddd; padding-bottom: .5rem; }
@@ -47,6 +48,7 @@
     <ul>
         <li><a href="#mail">Mail</a></li>
         <li><a href="#contacten">Contacten</a></li>
+        <li><a href="#producten">Producten</a></li>
         <li><a href="#verkopen">Verkopen</a></li>
         <li><a href="#aankoop">Aankoop</a></li>
         <li><a href="#voorraad">Voorraad</a></li>
@@ -67,6 +69,7 @@
     <li>[view] custom view</li>
     <li>[stud] studio</li>
     <li>[auto] automated action</li>
+    <li>[serv] server action</li>
     <li>[code] code</li>
     <li>[mail] email template</li>
 </ul>
@@ -89,9 +92,61 @@
 <p>Genummerd veld op het contact, als vette kop boven de klantnaam op de Productenmatrix-leveringsbon (enkel wanneer het een waarde heeft). Een adres krijgt automatisch het volgende vrije nummer in zijn landspecifieke reeks wanneer een order wordt <strong>bevestigd</strong>; een adres met een reeds toegekend nummer behoudt dat. Wijzigt het land van een adres waardoor zijn nummer niet meer in de juiste reeks valt, dan wordt het hernummerd. Alles opnieuw van nul nummeren blijft de taak van de serveractie (zie Voorraad).</p>
 <p><span class="tag">[field]</span> <code>res.partner.stock_location</code> — <span class="tag">[code]</span> <code>res.partner</code>, <code>sale.order</code> — <code>bab_stock_delivery</code> (osa)</p>
 
+<h1 id="producten">Producten</h1>
+
+<h2>Varianten opladen</h2>
+<p><span class="tag">[code]</span> <code>product_variant_default_code</code></p>
+
+<h2>Status</h2>
+<p><span class="tag">[code]</span> <code>product_state</code></p>
+
 <h1 id="verkopen">Verkopen</h1>
 
+<h2>Totale hoeveelheid artikelen verkocht</h2>
+<p><span class="tag">[field]</span> <code>x_qty_total</code> met afhankelijkheden <code>order_line,order_line.product_uom_qty</code> …</p>
+<pre><code>for record in self:
+    record['x_qty_total'] = 0
+    if record.order_line:
+        for line in record.order_line:
+            record['x_qty_total'] += line.product_uom_qty</code></pre>
+
+<h2>Totale hoeveelheid artikelen geleverd</h2>
+<p><span class="tag">[field]</span> <code>x_qty_delivered_total</code> met afhankelijkheden <code>order_line,order_line.qty_delivered</code> …</p>
+<pre><code>for record in self:
+    record['x_qty_delivered_total'] = 0
+    if record.order_line:
+        for line in record.order_line:
+            record['x_qty_delivered_total'] += line.qty_delivered</code></pre>
+
+<h2>Klant + referentie moet uniek zijn</h2>
+<p><span class="tag">[auto]</span></p>
+<p><img src="https://osadmin.odoo.com/web/image/11765-294b622f/image.png?access_token=9ab73ee3-89e9-4be0-a742-1bd51873bc15" alt="Automatische actie klantreferentie uniek"></p>
+<pre><code>for record in records:
+    duplicate = env['sale.order'].search([
+        ('partner_id', '=', record.partner_id.id),
+        ('client_order_ref', '=', record.client_order_ref),
+        ('id', '!=', record.id)
+    ], limit=1)
+    if duplicate:
+        raise UserError(
+            f"De klantreferentie '{record.client_order_ref}' bestaat al voor klant '{record.partner_id.name}'. Deze moet uniek zijn."
+        )</code></pre>
+
+<h2>Automatisch aantal voorstellen vd eerste package</h2>
+<p><span class="tag">[code]</span> <code>sale_packaging_default</code> (oca)</p>
+
+<h2>Reservaties kunnen switchen tussen verschillende klanten</h2>
+<p><span class="tag">[code]</span> <code>stock_quant_reservation_info</code> (oca_osa dus met eigen wijzigingen)</p>
+
 <h1 id="aankoop">Aankoop</h1>
+
+<h2>Totale hoeveelheid artikelen aangekocht</h2>
+<p><span class="tag">[field]</span> <code>x_qty_total</code> met afhankelijkheden <code>order_line,order_line.product_qty</code> …</p>
+<pre><code>for record in self:
+    record['x_qty_total'] = 0
+    if record.order_line:
+        for line in record.order_line:
+            record['x_qty_total'] += line.product_qty</code></pre>
 
 <h1 id="voorraad">Voorraad</h1>
 
@@ -113,11 +168,260 @@
 <p>Contextuele serveractie op verkooporders die de unieke afleveradressen nummert in landspecifieke reeksen: Belgische klanten 1-1999, Nederlandse klanten 2000-3999, overige landen vanaf 4000. Bij elke run worden eerst alle bestaande nummers gewist, zodat een klant die vorig jaar wel maar dit jaar niet bestelde geen verouderd nummer behoudt.</p>
 <p><span class="tag">[code]</span> <code>bab_stock_delivery</code> (osa)</p>
 
+<h2>Verplaatsingen</h2>
+
+<h3>Leveringsadres op pickbon</h3>
+<p><span class="tag">[view]</span> <code>report_picking_bab</code> &lt; <code>report_picking</code></p>
+<pre><code>&lt;data inherit_id="stock.report_picking"&gt;
+    &lt;xpath expr="//div[@name='div_outgoing_address']/div[@t-if='o.should_print_delivery_address()']" position="replace"&gt;
+        &lt;div t-if="True"&gt;
+            &lt;span&gt;
+                &lt;strong&gt;Afleveradres:&lt;/strong&gt;
+            &lt;/span&gt;
+            &lt;div t-out="o.move_ids[0].partner_id or o.partner_id" t-options="{&quot;widget&quot;: &quot;contact&quot;, &quot;fields&quot;: [&quot;address&quot;, &quot;name&quot;, &quot;phone&quot;], &quot;no_marker&quot;: True, &quot;phone_icons&quot;: True}"&gt;
+                &lt;div class="bg-light border-1 rounded h-100 d-flex flex-column align-items-center justify-content-center p-4 opacity-75 text-muted text-center"&gt;
+                    &lt;strong&gt;Afleveradres&lt;/strong&gt;
+                    &lt;div&gt;Aanwezigheid is afhankelijk van het type bewerking.&lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/xpath&gt;
+&lt;/data&gt;</code></pre>
+
+<h3>Leveringsadres op de leverbon (nodig eigenlijk?)</h3>
+<p><span class="tag">[view]</span> <code>report_delivery_document_bab</code> &lt; <code>report_delivery_document</code></p>
+<pre><code>&lt;data inherit_id="stock.report_delivery_document"&gt;
+    &lt;xpath expr="//div[@name='outgoing_delivery_address']" position="replace"&gt;
+        &lt;div name="outgoing_delivery_address" t-if="True"&gt;
+            &lt;span&gt;
+                &lt;strong&gt;Delivery Address:&lt;/strong&gt;
+            &lt;/span&gt;
+            &lt;div t-out="o.move_ids[0].partner_id or o.partner_id" t-options="{&quot;widget&quot;: &quot;contact&quot;, &quot;fields&quot;: [&quot;address&quot;, &quot;name&quot;, &quot;phone&quot;], &quot;no_marker&quot;: True, &quot;phone_icons&quot;: True}"/&gt;
+        &lt;/div&gt;
+    &lt;/xpath&gt;
+&lt;/data&gt;</code></pre>
+
+<h3>Klant/leveranciersreferentie op de pickbon en leverbon</h3>
+<p><span class="tag">[field]</span> <code>x_studio_origin_ref</code> met afhankelijkheden <code>sale_id,purchase_id</code> …</p>
+<pre><code>for record in self:
+    if record.sale_id:
+        record['x_studio_origin_ref'] = record.sale_id.client_order_ref
+    elif record.purchase_id:
+        record['x_studio_origin_ref'] = record.purchase_id.partner_ref</code></pre>
+
+<h3>Overzicht producten in bestelling met subtotaal + klantreferenties</h3>
+
+<h4>Inventory &gt; Rapportages &gt; Verplaatsingen</h4>
+<p><span class="tag">[filter]</span> Besteld per product / contact</p>
+<p><img src="https://osadmin.odoo.com/web/image/10776-04078e52/image.png?access_token=9432ba8a-4147-444b-bedd-d1929c6b8986" alt="Filter besteld per product/contact"></p>
+<p><img src="https://osadmin.odoo.com/web/image/10775-c3473647/image.png?access_token=8b3b0189-eab3-4e43-bbe5-f425f1f607e5" alt="Overzicht verplaatsingen"></p>
+<p><span class="tag">[field]</span> <strong>stock.move</strong></p>
+<p><code>x_studio_sale_line_price_unit</code> (Eenheidsprijs) met afhankelijkheden <code>sale_line_id.price_unit,sale_line_id.discount</code> …</p>
+<pre><code>for record in self:
+    record['x_studio_sale_line_price_unit'] = record.sale_line_id.price_unit * (1 - record.sale_line_id.discount / 100)</code></pre>
+<p><code>x_studio_quantity_total</code> (Aantal Totaal) met afhankelijkheden <code>quantity,x_studio_sale_line_price_unit</code> …</p>
+<pre><code>for record in self:
+    record['x_studio_quantity_total'] = record.quantity*record.x_studio_sale_line_price_unit</code></pre>
+<p><code>x_studio_uom_qty_total</code> (Gevraagd Totaal) met afhankelijkheden <code>product_uom_qty,x_studio_sale_line_price_unit</code> …</p>
+<pre><code>for record in self:
+    record['x_studio_uom_qty_total'] = record.product_uom_qty*record.x_studio_sale_line_price_unit</code></pre>
+<p><code>x_origin_ref</code> met afhankelijkheden <code>sale_line_id, purchase_line_id</code> …</p>
+<pre><code>for record in self:
+    if record.sale_line_id:
+        record['x_origin_ref'] = record.sale_line_id.order_id.client_order_ref
+    elif record.purchase_line_id:
+        record['x_origin_ref'] = record.purchase_line_id.order_id.partner_ref</code></pre>
+<p><code>x_sale_order_tag_ids</code></p>
+<p><img src="https://osadmin.odoo.com/web/image/14047-5c95b396/Verkooporderlabel-Voorraadverplaatsing--06-25-2026_09_38_PM.png?access_token=1235542a-af54-418b-a8dd-2b95bb001051" alt="Verkooporderlabel op voorraadverplaatsing"></p>
+<p><span class="tag">[serv]</span></p>
+<p><img src="https://osadmin.odoo.com/web/image/10870-1220f31e/image.png?access_token=5b6fc354-42ed-4ff9-b119-6615121b62d2" alt="Server action stock.move totalen"></p>
+<pre><code>for record in records:
+    x_studio_sale_line_price_unit = record.sale_line_id.price_unit * (1 - record.sale_line_id.discount / 100)
+    record['x_studio_sale_line_price_unit'] = x_studio_sale_line_price_unit
+    record['x_studio_quantity_total'] = record.quantity*x_studio_sale_line_price_unit
+    record['x_studio_uom_qty_total'] = record.product_uom_qty*x_studio_sale_line_price_unit
+   if record.sale_line_id:
+        record['x_origin_ref'] = record.sale_line_id.order_id.client_order_ref
+    elif record.purchase_line_id:
+        record['x_origin_ref'] = record.purchase_line_id.order_id.partner_ref</code></pre>
+<p><span class="tag">[view]</span></p>
+<p><img src="https://osadmin.odoo.com/web/image/10871-1cbfd21d/image.png?access_token=b51c07dd-3c8e-4ac4-941b-ad1933925a18" alt="Lijstweergave verplaatsingen met totalen"></p>
+
+<h3>Inventory &gt; Rapportages &gt; Batchpickings</h3>
+<p><span class="tag">[field]</span> <strong>stock.picking.batch</strong></p>
+<p><code>x_studio_move_quantity_total</code> (Aantal Totaal) met afhankelijkheden <code>move_ids.x_studio_quantity_total</code> …</p>
+<pre><code>for record in self:
+    total = 0
+    for move_id in record.move_ids:
+        total += move_id.x_studio_quantity_total
+    record['x_studio_move_quantity_total'] = total</code></pre>
+<p><code>x_studio_move_uom_qty_total</code> (Gevraagd Totaal) met afhankelijkheden <code>move_ids.x_studio_uom_qty_total</code> …</p>
+<pre><code>for record in self:
+    total = 0
+    for move_id in record.move_ids:
+        total += move_id.x_studio_uom_qty_total
+    record['x_studio_move_uom_qty_total'] = total</code></pre>
+<p><span class="tag">[serv]</span></p>
+<p><img src="https://osadmin.odoo.com/web/image/10874-71436380/image.png?access_token=77fd6de4-ee38-4211-8986-f9623b0380e7" alt="Server action batch totalen"></p>
+<pre><code>for record in records:
+    quantity_total = 0
+    uom_qty_total = 0
+    for move_id in record.move_ids:
+        quantity_total += move_id.x_studio_quantity_total
+        uom_qty_total += move_id.x_studio_uom_qty_total
+    record['x_studio_move_quantity_total'] = quantity_total
+    record['x_studio_move_uom_qty_total'] = uom_qty_total
+        record['x_studio_picking_partner_amount_free_delivery'] = record.picking_ids.partner_id.x_studio_amount_free_delivery
+    if record['x_studio_picking_partner_amount_free_delivery'] == 0.0:
+        record['x_studio_picking_partner_amount_free_delivery'] = record.picking_ids.partner_id.parent_id.x_studio_amount_free_delivery</code></pre>
+
+<h2>Batchpikings</h2>
+
+<h3>Bedrag vanaf er geen portkosten zijn</h3>
+<p><span class="tag">[field]</span> <strong>res.partner</strong> — <code>x_studio_amount_free_delivery</code> (Bedrag Gratis Levering)</p>
+<p><strong>stock.picking.batch</strong> — <code>x_studio_picking_partner_amount_free_delivery</code> (Bedrag Gratis Levering) met afhankelijkheden <code>picking_ids.partner_id</code> …</p>
+<pre><code>for record in self:
+    if len(record.picking_ids.partner_id) == 1:
+        record['x_studio_picking_partner_amount_free_delivery'] = record.picking_ids.partner_id.x_studio_amount_free_delivery
+    if record['x_studio_picking_partner_amount_free_delivery'] == 0.0:
+        record['x_studio_picking_partner_amount_free_delivery'] = record.picking_ids.partner_id.parent_id.x_studio_amount_free_delivery</code></pre>
+
+<h3>Interne leverinformatie en sluitingsdagen</h3>
+<p><span class="tag">[field]</span> <strong>res.partner</strong> — <code>x_studio_delivery_info</code> (Leverinformatie), <code>x_studio_closing_days</code> (Sluitingsdagen)</p>
+<p><strong>stock.picking.batch</strong> — <code>x_studio_picking_partner_closing_days</code>, <code>x_studio_picking_partner_delivery_info</code></p>
+<pre><code>&lt;data&gt;
+  &lt;data&gt;
+    &lt;xpath position="replace" expr="/t[@t-name='stock_picking_batch.report_picking_batch']//t[@t-call='web.html_container']//t[@t-call='web.external_layout']/div/br"/&gt;
+    &lt;xpath position="after" expr="/t[@t-name='stock_picking_batch.report_picking_batch']//t[@t-call='web.html_container']//t[@t-call='web.external_layout']/div/div[2]" meta-t-if="o.user_id"&gt;
+      &lt;strong&gt;Klant:&lt;/strong&gt;
+      &lt;span t-field="o.description"/&gt;
+      &lt;br/&gt;
+      &lt;strong&gt;Sluitingsdagen:&lt;/strong&gt;
+      &lt;span t-field="o.x_studio_picking_partner_closing_days"/&gt;
+      &lt;br/&gt;
+      &lt;strong&gt;Leverinformatie:&lt;/strong&gt;
+      &lt;span t-field="o.x_studio_picking_partner_delivery_info"/&gt;
+    &lt;/xpath&gt;
+  &lt;/data&gt;
+  &lt;data&gt;
+    &lt;xpath position="inside" expr="/t[@t-name='stock_picking_batch.report_picking_batch']//t[@t-call='web.html_container']//t[@t-call='web.external_layout']/div/div[3]" meta-class="oe_structure"&gt;
+      &lt;br/&gt;
+    &lt;/xpath&gt;
+  &lt;/data&gt;
+  &lt;data&gt;
+    &lt;xpath position="inside" expr="/t[@t-name='stock_picking_batch.report_picking_batch']//t[@t-call='web.html_container']//t[@t-call='web.external_layout']/div/p" meta-style="page-break-after: always;"&gt;
+      &lt;br/&gt;
+    &lt;/xpath&gt;
+  &lt;/data&gt;
+  &lt;data&gt;
+    &lt;xpath position="inside" expr="/t[@t-name='stock_picking_batch.report_picking_batch']//t[@t-call='web.html_container']//t[@t-call='web.external_layout']/div/div[4]" meta-class="oe_structure"&gt;
+      &lt;br/&gt;
+    &lt;/xpath&gt;
+  &lt;/data&gt;
+  &lt;data&gt;
+    &lt;xpath position="after" expr="/t[@t-name='stock_picking_batch.report_picking_batch']//t[@t-call='web.html_container']//t[@t-call='web.external_layout']/div/div[5]" meta-t-field="o.user_id"&gt;
+      &lt;strong&gt;Klant:&lt;/strong&gt;
+      &lt;span t-field="o.description"/&gt;
+      &lt;br/&gt;
+      &lt;strong&gt;Sluitingsdagen:&lt;/strong&gt;
+      &lt;span t-field="o.x_studio_picking_partner_closing_days"/&gt;
+      &lt;br/&gt;
+      &lt;strong&gt;Leverinformatie:&lt;/strong&gt;
+      &lt;span t-field="o.x_studio_picking_partner_delivery_info"/&gt;
+    &lt;/xpath&gt;
+  &lt;/data&gt;
+  &lt;data&gt;
+    &lt;xpath position="inside" expr="/t[@t-name='stock_picking_batch.report_picking_batch']//t[@t-call='web.html_container']//t[@t-call='web.external_layout']/div/div[6]" meta-class="oe_structure"&gt;
+      &lt;br/&gt;
+    &lt;/xpath&gt;
+  &lt;/data&gt;
+  &lt;data&gt;
+    &lt;xpath position="attributes" expr="/t[@t-name='stock_picking_batch.report_picking_batch']//t[@t-call='web.html_container']//t[@t-call='web.external_layout']/div/table[2]/t/t[2]/tbody/tr/td" meta-style="background-color:lightgrey" meta-colspan="6"&gt;
+      &lt;attribute name="style"&gt;background-color: lightgrey;&lt;/attribute&gt;
+    &lt;/xpath&gt;
+  &lt;/data&gt;
+&lt;/data&gt;</code></pre>
+
+<h3>Batchpickings kunnen goedkeuren</h3>
+<p><span class="tag">[field]</span> <code>stock.picking.batch</code> &gt; <code>x_studio_approved</code></p>
+
+<h3>Aanduiden wanneer voor een klant reservaties niet meer gewijzigd kunnen worden</h3>
+<p><span class="tag">[field]</span> <code>stock.picking.batch</code> &gt; <code>x_studio_reservation_blocked</code></p>
+<p><img src="https://osadmin.odoo.com/web/image/10872-aa78b8c4/image.png?access_token=cd5d3614-362e-4a31-838d-1e405bc18320" alt="Reservatie geblokkeerd 1"></p>
+<p><img src="https://osadmin.odoo.com/web/image/10873-c3d44ce4/image.png?access_token=9458a8fd-6612-40f5-a522-6bfc9e0f12c2" alt="Reservatie geblokkeerd 2"></p>
+
+<h3>Sluitingsdagen van het contact overnemen (en later ook GLS ticket)</h3>
+<p><span class="tag">[field]</span> <code>res.partner</code> &gt; <code>x_studio_closing_days</code> (Sluitingsdagen); <code>stock.picking.batch</code> &gt; <code>x_studio_picking_partner_closing_days</code> met afhankelijkheden <code>picking_ids.partner_id</code> …</p>
+<pre><code>for record in self:
+    if len(record.picking_ids.partner_id) == 1:
+        record['x_studio_picking_partner_closing_days'] = record.picking_ids.partner_id.x_studio_closing_days
+    if not record['x_studio_picking_partner_closing_days']:
+        record['x_studio_picking_partner_closing_days'] = record.picking_ids.partner_id.parent_id.x_studio_closing_days</code></pre>
+
+<h3>Leverinformatie van het contact overnemen</h3>
+<p><span class="tag">[field]</span> <code>res.partner</code> &gt; <code>x_studio_delivery_info</code> (Leverinformatie); <code>stock.picking.batch</code> &gt; <code>x_studio_picking_partner_delivery_info</code> met afhankelijkheden <code>picking_ids.partner_id</code> …</p>
+<pre><code>for record in self:
+    if len(record.picking_ids.partner_id) == 1:
+        record['x_studio_picking_partner_delivery_info'] = record.picking_ids.partner_id.x_studio_delivery_info
+    if not record['x_studio_picking_partner_delivery_info']:
+        record['x_studio_picking_partner_delivery_info'] = record.picking_ids.partner_id.parent_id.x_studio_delivery_info</code></pre>
+
+<h3>Totaal gevraagd</h3>
+<p><span class="tag">[field]</span> <code>x_uom_qty_total</code> met afhankelijkheden <code>picking_ids.move_ids,picking_ids.move_ids.product_uom_qty</code></p>
+<pre><code>for record in self:
+    record['x_uom_qty_total'] = 0
+    for move_id in record.move_ids:
+        record['x_uom_qty_total'] += move_id.product_uom_qty</code></pre>
+
+<h3>Totaal aantal (gereserveerd)</h3>
+<p><span class="tag">[field]</span> <code>x_quantity_total</code> met afhankelijkheden <code>picking_ids.move_ids,picking_ids.move_ids.quantity</code></p>
+<pre><code>for record in self:
+    record['x_quantity_total'] = 0
+    for move_id in record.move_ids:
+        record['x_quantity_total'] += move_id.quantity</code></pre>
+
+<h2>GLS</h2>
+<p><span class="tag">[code]</span></p>
+<ul>
+    <li><code>gls_shipping_integration</code> (tpa_osa dus enkele eigen aanpassingen)</li>
+    <li><code>stock_picking_group_by_partner_by_carrier</code> (oca) zodat er gegroepeerde outs gemaakt worden om vanaf daar te kunnen verzenden!</li>
+</ul>
+<p><span class="tag">[auto]</span></p>
+<p><img src="https://osadmin.odoo.com/web/image/12162-7cde04b5/image.png?access_token=781e8b72-0360-4a4b-b8b0-4b21ac5d737a" alt="Automatische actie GLS leverinformatie"></p>
+<pre><code>for record in records:
+    if record.partner_id.x_studio_closing_days:
+        record['delivery_information'] = record.partner_id.x_studio_closing_days</code></pre>
+
 <h1 id="productie">Productie</h1>
 
 <h1 id="ecommerce">eCommerce</h1>
 
+<h2>Op de productpagina moet het aantal van de eerste packaging ingevuld staan</h2>
+<p>Zakken kan, ophogen gaat per package. Hier zijn nog verder verbeteringen gewenst
+want niet voor elk product mag er gezakt kunnen worden.</p>
+<p><span class="tag">[code]</span> <code>website_sale_product_packaging_quantity</code> (osa)</p>
+<p>Enkel packagings met het vinkje <strong>Sales</strong> aangevinkt
+(<code>product.packaging.sales</code>) bepalen de default-hoeveelheid. Staat Sales
+overal uit, dan valt het aantal terug op de gewone default. De eerste sales-packaging
+(op sequence) levert het aantal.</p>
+
 <h1 id="boekhouding">Boekhouding</h1>
+
+<h2>Totale hoeveelheid artikelen</h2>
+<p><span class="tag">[field]</span> <code>x_qty_total</code> met afhankelijkheden <code>invoice_line_ids,invoice_line_ids.quantity</code> …</p>
+<pre><code>for record in self:
+    record['x_qty_total'] = 0
+    if record.invoice_line_ids:
+        for line in record.invoice_line_ids:
+            record['x_qty_total'] += line.quantity</code></pre>
+
+<h2>Lijnen groeperen per verkooporder</h2>
+<p><span class="tag">[code]</span> <code>account_invoice_section_sale_order</code></p>
+
+<h2>Leverdatum niet op factuurpdf</h2>
+<p><span class="tag">[view]</span> <code>report_invoice_document_bab</code> &lt; <code>report_invoice_document</code></p>
+<pre><code>&lt;xpath expr="//div[@t-if='o.delivery_date']" position="replace"&gt;
+&lt;/xpath&gt;</code></pre>
 
 </body>
 </html>
