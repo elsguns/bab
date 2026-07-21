@@ -41,32 +41,46 @@
                     table.o_reservation_grid th,
                     table.o_reservation_grid td { border: 0.3mm solid #000 !important; padding: 0.8mm 1.6mm; }
                     table.o_reservation_grid th { font-weight: bold; text-align: center; }
-                    /* Colour column takes the slack; size columns stay narrow but
-                       wide enough for "res | ±x | +y". */
+                    /* Colour column takes the slack; size columns are narrow now the
+                       three figures are stacked vertically (one per line). */
                     table.o_reservation_grid th:first-child,
                     table.o_reservation_grid td:first-child { text-align: left; }
                     table.o_reservation_grid th:not(:first-child),
-                    table.o_reservation_grid td:not(:first-child) { width: 26mm; text-align: center; white-space: nowrap; }
+                    table.o_reservation_grid td:not(:first-child) { width: 16mm; text-align: center; vertical-align: top; }
+                    /* Keep the size label (e.g. 50/56) on a single line. */
+                    table.o_reservation_grid th:not(:first-child) { white-space: nowrap; }
+                    /* r/s/i guide column: its own narrow column, sitting just before
+                       the first size column, letters right against that border. Its
+                       LEFT border (between Kleur and the guide) is dropped so r/s/i
+                       reads as a bare guide; the line after it (before the first size
+                       column) stays. */
+                    table.o_reservation_grid th.o_res_guide,
+                    table.o_reservation_grid td.o_res_guide { width: 6mm !important; text-align: right; border-left: none !important; }
+                    table.o_reservation_grid th:first-child,
+                    table.o_reservation_grid td:first-child { border-right: none !important; }
                     .o_reservation_block { page-break-inside: avoid; margin-bottom: 6mm; }
-                    /* The three cell figures. Reserved stays the default black.
-                       Shortage red (with a leading minus), surplus green (leading
-                       plus), incoming blue (leading plus). The pipe separators are
-                       grey so they stay subordinate to the numbers. */
+                    /* The three stacked cell figures, one per line. Reserved stays
+                       the default black; shortage red, surplus green, incoming blue.
+                       Each line reserves a fixed sign slot and a right-aligned number
+                       slot, so the digits line up and the +/- hangs in front of them. */
+                    .o_res_line { line-height: 1.15; white-space: nowrap; }
+                    .o_res_sign { display: inline-block; width: 2mm; text-align: right; }
+                    .o_res_val  { display: inline-block; min-width: 4mm; text-align: right; }
                     .o_res_shortage { color: #dc3545; }
                     .o_res_surplus  { color: #198754; }
+                    .o_res_received,
                     .o_res_incoming { color: #0d6efd; }
-                    .o_res_sep { color: #999; }
-                    /* Legend explaining the three numbers, once at the top. */
+                    /* r/s/i guide letters + legend markers, black. */
+                    .o_res_lbl { color: #000; font-weight: bold; }
+                    /* Legend explaining the r/s/i labels, once at the top. */
                     .o_res_legend { font-size: 9pt; margin-bottom: 4mm; }
                 </style>
 
                 <p class="o_res_legend">
-                    Per maat: <strong>gereserveerd</strong>
-                    <span class="o_res_sep">|</span>
-                    <span class="o_res_shortage">−tekort</span> of
-                    <span class="o_res_surplus">+overschot (vrije voorraad)</span>
-                    <span class="o_res_sep">|</span>
-                    <span class="o_res_incoming">+inkomend</span>
+                    <span class="o_res_lbl">o</span> = <span class="o_res_received">ontvangen (laatste ontvangst)</span> &#160;·&#160;
+                    <span class="o_res_lbl">r</span> = gereserveerd &#160;·&#160;
+                    <span class="o_res_lbl">s</span> = <span class="o_res_surplus">+overschot (vrije voorraad)</span> / <span class="o_res_shortage">−tekort</span> &#160;·&#160;
+                    <span class="o_res_lbl">i</span> = <span class="o_res_incoming">inkomend</span>
                 </p>
 
                 <t t-if="not blocks">
@@ -80,35 +94,53 @@
                         <thead>
                             <tr>
                                 <th>Kleur</th>
+                                <!-- Narrow guide column carrying the r/s/i letters, just
+                                     before the first size column. -->
+                                <th class="o_res_guide"/>
                                 <th t-foreach="block['sizes']" t-as="size" t-out="size['name']">Maat</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr t-foreach="block['rows']" t-as="row">
                                 <td><span t-out="row['colour_name']">Kleur</span></td>
-                                <!-- Each populated cell shows: reserved (black), then a
-                                     single shortage/surplus figure, then incoming. The
-                                     shortage/surplus figure always shows: a red tekort when
+                                <!-- r/s/i guide, one letter per stacked line, black, on
+                                     the same three baselines as every size cell. -->
+                                <td class="o_res_guide">
+                                    <div class="o_res_line o_res_lbl">o</div>
+                                    <div class="o_res_line o_res_lbl">r</div>
+                                    <div class="o_res_line o_res_lbl">s</div>
+                                    <div class="o_res_line o_res_lbl">i</div>
+                                </td>
+                                <!-- Each populated cell stacks its four figures, one per
+                                     line, digits right-aligned with a fixed sign slot so
+                                     they never shift: received in the last receipt (o,
+                                     black, no sign); reserved (r, black, no sign); then a
+                                     single shortage/surplus figure (s): a red -tekort when
                                      the demand is not fully reserved, otherwise a green
-                                     +overschot, which is +0 (green) when the demand is
-                                     exactly reserved with no free stock left over. Incoming
-                                     is likewise always shown (+0 blue when nothing is
-                                     inbound), so a populated cell always carries three
-                                     figures for readability. A grey pipe separates the
-                                     parts; an empty (unordered) combination stays blank. -->
+                                     +overschot (+0 when exactly reserved, no free stock);
+                                     then incoming (i, blue, no sign since it is always +).
+                                     An empty (unordered) combination stays blank. -->
                                 <td t-foreach="row['cells']" t-as="cell">
                                     <t t-if="cell">
-                                        <span t-out="cell['reserved']" t-options='{"widget": "integer"}'>0</span>
-                                        <t t-if="cell['shortage']">
-                                            <span class="o_res_sep">|</span>
-                                            <span class="o_res_shortage">−<t t-out="cell['shortage']" t-options='{"widget": "integer"}'/></span>
-                                        </t>
-                                        <t t-else="">
-                                            <span class="o_res_sep">|</span>
-                                            <span class="o_res_surplus">+<t t-out="cell['surplus']" t-options='{"widget": "integer"}'/></span>
-                                        </t>
-                                        <span class="o_res_sep">|</span>
-                                        <span class="o_res_incoming">+<t t-out="cell['incoming']" t-options='{"widget": "integer"}'/></span>
+                                        <!-- Every zero is left blank; the line itself stays so the four
+                                             r/s/i baselines still line up across all cells. -->
+                                        <div class="o_res_line">
+                                            <span class="o_res_sign"/><span class="o_res_val o_res_received" t-if="cell['received']" t-out="cell['received']" t-options='{"widget": "integer"}'/>
+                                        </div>
+                                        <div class="o_res_line">
+                                            <span class="o_res_sign"/><span class="o_res_val" t-if="cell['reserved']" t-out="cell['reserved']" t-options='{"widget": "integer"}'/>
+                                        </div>
+                                        <div class="o_res_line">
+                                            <t t-if="cell['shortage']">
+                                                <span class="o_res_sign o_res_shortage">−</span><span class="o_res_val o_res_shortage" t-out="cell['shortage']" t-options='{"widget": "integer"}'/>
+                                            </t>
+                                            <t t-elif="cell['surplus']">
+                                                <span class="o_res_sign o_res_surplus">+</span><span class="o_res_val o_res_surplus" t-out="cell['surplus']" t-options='{"widget": "integer"}'/>
+                                            </t>
+                                        </div>
+                                        <div class="o_res_line">
+                                            <span class="o_res_sign"/><span class="o_res_val o_res_incoming" t-if="cell['incoming']" t-out="cell['incoming']" t-options='{"widget": "integer"}'/>
+                                        </div>
                                     </t>
                                 </td>
                             </tr>

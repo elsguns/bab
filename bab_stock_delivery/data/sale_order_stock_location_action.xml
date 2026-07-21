@@ -10,7 +10,7 @@
         "Productenmatrix" delivery report.
 
         The number is taken from a country-specific range:
-            Belgian customers   : 1000-1999
+            Belgian customers   : 1-1999
             Dutch customers     : 2000-3999
             Customers elsewhere : from 4000 on
 
@@ -37,11 +37,11 @@ env['res.partner'].search([('stock_location', '&gt;', 0)]).write({'stock_locatio
 delivery_partners = records.mapped('partner_shipping_id')
 
 # 3. Ken elk uniek afleveradres een nummer toe binnen een landspecifieke reeks:
-#      Belgische klanten  : 1000-1999
+#      Belgische klanten  : 1-1999
 #      Nederlandse klanten: 2000-3999
 #      Overige landen     : vanaf 4000
 #    Per reeks lopen de nummers op in volgorde van eerste voorkomen.
-next_number = {'BE': 1000, 'NL': 2000, 'other': 4000}
+next_number = {'BE': 1, 'NL': 2000, 'other': 4000}
 for partner in delivery_partners:
     country_code = partner.country_id.code
     if country_code == 'BE':

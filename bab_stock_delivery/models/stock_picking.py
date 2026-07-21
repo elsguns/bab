@@ -97,19 +97,25 @@ class StockPicking(models.Model):
         Per template+colour+size variant it gathers, from the selected transfers'
         moves and the variant's live stock:
 
+          * received : total qty of the variant on its last completed receipt (picking)
           * reserved : Σ reserved qty on the selected transfers (move.quantity)
           * demand   : Σ demand qty on the selected transfers (move.product_uom_qty)
           * free     : the variant's free-to-use stock (product.product.free_qty)
           * incoming : the variant's forecasted inbound (product.product.incoming_qty)
 
-        From these the report shows, per cell, three figures:
-          1. reserved (black);
-          2. ONE signed figure -- a shortage ``-(demand - reserved)`` (red) when
+        From these the report shows, per cell, four figures:
+          0. received in the last receipt (o, black);
+          1. reserved (r, black);
+          2. ONE signed figure (s) -- a shortage ``-(demand - reserved)`` (red) when
              the demand is not fully reserved, otherwise a surplus ``+free`` (green).
              Shortage and surplus never appear together: as soon as anything is
              short the surplus is suppressed, so the two are mutually exclusive by
              construction (matching "het ene is altijd 0 als het andere er is");
-          3. the incoming quantity ``+incoming`` (blue).
+          3. the incoming quantity (i, blue).
+
+        A colour (kleur) row for which nothing was received is dropped: when no
+        size of that colour has an "ontvangen" (received) quantity there is no
+        receipt to act on, so the row is left off the slip.
 
         Only hoofdproducten with an actual reservation are listed: a block where
         nothing is reserved anywhere (e.g. make-to-order products not yet received,
@@ -158,6 +164,27 @@ class StockPicking(models.Model):
         variants.mapped('free_qty')
         variants.mapped('incoming_qty')
 
+        # Quantity received in the last completed receipt per variant ("ontvangen",
+        # the o-line). Done moves on an incoming-type transfer, newest first: the
+        # first one seen per variant pins its last receipt (that move's picking);
+        # every further line of the SAME picking is added, so o is the TOTAL of
+        # that variant on the last receipt, not just one line. Taken from the moves
+        # rather than r+s so it stays correct when part was already shipped, reserved
+        # to other deliveries, or stock existed before the receipt.
+        received = {}
+        last_receipt = {}
+        for move in self.env['stock.move'].search([
+                ('product_id', 'in', variants.ids),
+                ('state', '=', 'done'),
+                ('picking_id.picking_type_id.code', '=', 'incoming'),
+        ], order='date desc, id desc'):
+            product_id = move.product_id.id
+            if product_id not in last_receipt:
+                last_receipt[product_id] = move.picking_id.id
+                received[product_id] = move.quantity
+            elif move.picking_id.id == last_receipt[product_id]:
+                received[product_id] += move.quantity
+
         blocks = []
         for bucket in buckets.values():
             template = bucket['template']
@@ -185,11 +212,17 @@ class StockPicking(models.Model):
                     # so shortage and surplus are never both non-zero.
                     surplus = variant.free_qty if not shortage else 0
                     cells.append({
+                        'received': received.get(variant.id, 0),
                         'reserved': reserved,
                         'shortage': shortage,
                         'surplus': surplus if surplus > 0 else 0,
                         'incoming': variant.incoming_qty,
                     })
+                # Drop a colour row for which nothing was received: when no size of
+                # this kleur has an "ontvangen" quantity (received == 0 everywhere)
+                # there is no receipt to act on, so the row is left off the slip.
+                if not any(cell and cell['received'] for cell in cells):
+                    continue
                 rows.append({
                     'colour_name': ' • '.join(row['colour_ptavs'].mapped('name')),
                     'cells': cells,

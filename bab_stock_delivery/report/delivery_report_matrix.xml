@@ -110,24 +110,22 @@
                 <div t-attf-class="o_matrix_block{{ ' o_matrix_block_compact' if len(grid['matrix']) > 10 else '' }}"
                      t-attf-style="height: 99mm; box-sizing: border-box; padding: 8mm 0 6mm; overflow: hidden; page-break-inside: avoid;{{ ' page-break-before: always;' if (block['new_product'] and not block_first) else '' }}">
                     <!-- Customer + Order heading, repeated per block (= per matrix). -->
+                    <!-- stock_location replaces the former "Customer" caption: bold heading above the
+                         row, no square brackets, only when it carries a value. -->
+                    <strong t-if="picking.partner_id and picking.partner_id.stock_location"
+                            t-out="picking.partner_id.stock_location">200</strong>
                     <div class="o_matrix_head row mb-3">
-                        <div t-if="picking.partner_id" class="col-4 mw-100" name="div_customer">
-                            <strong>Customer</strong>
-                            <!-- stock_location shown before the customer name, bold between square
-                                 brackets (e.g. [200] Customer 2), only when it carries a value so we
-                                 don't print a bare "[]". -->
-                            <div>
-                                <t t-if="picking.partner_id.stock_location"><strong>[<span t-out="picking.partner_id.stock_location"/>]</strong> </t>
-                                <span t-out="picking.partner_id.name">Customer 1</span>
-                            </div>
+                        <!-- Customer name in the left half of the slip, order (+ transfer) in the right
+                             half so both sit on the same line. -->
+                        <div t-if="picking.partner_id" class="col-6 mw-100" name="div_customer">
+                            <span t-out="picking.partner_id.name">Customer 1</span>
                         </div>
                         <!-- Picking name dropped as a big title; shown in parentheses after the order.
-                             Wider (col-8) than the customer column because a grouped delivery can carry
-                             dozens of source orders; even so, a long list would make this heading taller
-                             than the 99mm block and overlap the next slip, so the order list is capped
-                             and truncated with "..." (the picking name always stays visible after it). -->
-                        <div t-if="picking.origin" class="col-8 mw-100" name="div_origin">
-                            <strong>Order</strong>
+                             A grouped delivery can carry dozens of source orders; a long list would make
+                             this heading taller than the 99mm block and overlap the next slip, so the
+                             order list is capped and truncated with "..." (the picking name always stays
+                             visible after it). -->
+                        <div t-if="picking.origin" class="col-6 mw-100" name="div_origin">
                             <!-- picking.origin is the space-joined source order names (merged by
                                  stock_picking_group_by_partner_by_carrier); show at most origin_cap. -->
                             <t t-set="origins" t-value="(picking.origin or '').split()"/>
@@ -143,19 +141,26 @@
                         <thead>
                             <tr>
                                 <th t-foreach="grid['header']" t-as="column_header" class="o_grid_title_header">
-                                    <span t-esc="column_header['name']">Column name</span>
+                                    <!-- Hoofdproduct name (first header cell) shown larger than the rest. -->
+                                    <span t-esc="column_header['name']" t-attf-style="{{ 'font-size: 1.4em;' if column_header_first else '' }}">Column name</span>
                                     <!-- After the hoofdproduct name (first header cell) the total ordered
                                          quantity of this grid, separated by two (non-breaking) spaces and
-                                         shown bold between square brackets with "stuks", e.g. [18 stuks]. -->
-                                    <t t-if="column_header_first and 'total_qty' in grid"><span>&#160;&#160;</span><strong>[<span t-esc="grid['total_qty']" t-options='{"widget": "integer"}'>0</span> stuks]</strong></t>
+                                         shown muted and smaller between brackets with "stuks", e.g. (18 stuks). -->
+                                    <t t-if="column_header_first and 'total_qty' in grid"><span>&#160;&#160;</span><small class="text-muted">(<span t-esc="grid['total_qty']" t-options='{"widget": "integer"}'>0</span> stuks)</small></t>
                                     <t t-call="product_matrix.extra_price">
                                         <t t-set="price" t-value="column_header.get('price', False)"/>
                                     </t>
                                 </th>
+                                <!-- Extra rightmost column with the per-row total (sum of the
+                                     row's ordered quantities across all size columns). -->
+                                <th class="o_grid_title_header">Totaal</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr t-foreach="grid['matrix']" t-as="row">
+                                <!-- Row total = sum of the row's ordered quantities (the label
+                                     cell carries no 'qty', so it contributes 0). -->
+                                <t t-set="row_total" t-value="sum([cell.get('qty', 0) for cell in row])"/>
                                 <td t-foreach="row" t-as="cell" t-if="cell.get('name', False)" class="text-start">
                                     <strong t-esc="cell['name']">Cell name</strong>
                                     <t t-call="product_matrix.extra_price">
@@ -168,6 +173,10 @@
                                          "0", so the matrix only shows the cells that were actually ordered. -->
                                     <span t-if="cell.get('qty')" t-out="cell.get('qty', 0)" t-options='{"widget": "integer"}'
                                           class="o_grid_cell_container"/>
+                                </td>
+                                <!-- Rightmost Totaal cell: the row's total, bold, blank when zero. -->
+                                <td class="text-end">
+                                    <strong t-if="row_total" t-out="row_total" t-options='{"widget": "integer"}'/>
                                 </td>
                             </tr>
                         </tbody>
@@ -184,12 +193,12 @@
         would bypass that confirmation, so it is omitted.
     -->
     <record id="action_report_delivery_matrix" model="ir.actions.report">
-        <field name="name">Productenmatrix</field>
+        <field name="name">Productenmatrix (briefjes)</field>
         <field name="model">stock.picking</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">bab_stock_delivery.report_deliveryslip_matrix</field>
         <field name="report_file">bab_stock_delivery.report_deliveryslip_matrix</field>
-        <field name="print_report_name">'Productenmatrix - %s - %s' % (object.partner_id.name or '', object.name)</field>
+        <field name="print_report_name">'Productenmatrix (briefjes) - %s - %s' % (object.partner_id.name or '', object.name)</field>
         <field name="paperformat_id" ref="paperformat_productmatrix"/>
         <!-- Explicitly clear any binding: this report was previously bound to the
              Print menu, and a module update would NOT reset a removed field, so the
@@ -205,7 +214,7 @@
         to set it apart from stock Odoo actions.
     -->
     <record id="action_print_matrix_server" model="ir.actions.server">
-        <field name="name">* Productenmatrix</field>
+        <field name="name">* Productenmatrix (briefjes)</field>
         <field name="model_id" ref="stock.model_stock_picking"/>
         <field name="binding_model_id" ref="stock.model_stock_picking"/>
         <field name="binding_type">action</field>

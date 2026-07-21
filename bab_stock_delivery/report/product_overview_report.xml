@@ -41,30 +41,44 @@
                         table.o_overview_grid { border-collapse: collapse; table-layout: fixed; width: 100%; }
                         table.o_overview_grid th,
                         table.o_overview_grid td { border: 0.3mm solid #000 !important; padding: 0.8mm 1.6mm; }
-                        /* Top-align headers so the size label always sits on the first
-                           line: columns with an incoming line below and columns without
-                           one then keep their size letters on the same baseline. */
                         table.o_overview_grid th { font-weight: bold; text-align: center; vertical-align: top; }
                         /* Customer column takes the slack; size + total columns stay narrow. */
                         table.o_overview_grid th:first-child,
                         table.o_overview_grid td:first-child { text-align: left; }
                         table.o_overview_grid th:not(:first-child),
-                        table.o_overview_grid td:not(:first-child) { width: 18mm; text-align: center; }
+                        table.o_overview_grid td:not(:first-child) { width: 18mm; text-align: center; vertical-align: top; }
+                        /* b/r guide column: its own narrow column just before the first
+                           size column; its left border (between Klant and the guide) is
+                           dropped so b/r reads as a bare guide, the line after it stays. */
+                        table.o_overview_grid th.o_ov_guide,
+                        table.o_overview_grid td.o_ov_guide { width: 6mm !important; text-align: right; border-left: none !important; }
+                        table.o_overview_grid th:first-child,
+                        table.o_overview_grid td:first-child { border-right: none !important; }
                         .o_overview_block { page-break-inside: avoid; margin-bottom: 6mm; }
-                        /* Both the ordered figure and the reserved one (between brackets)
-                           are coloured by reservation status: green when fully reserved
-                           (ordered == reserved), red otherwise (under-reserved or not
-                           reserved yet). */
+                        /* Besteld (b) and gereserveerd (r) are stacked one per line now,
+                           no longer the reserved figure between brackets. */
+                        .o_ov_line { line-height: 1.2; }
+                        .o_ov_lbl { color: #000; font-weight: bold; }
+                        /* Both figures are coloured by reservation status: green when
+                           fully reserved (ordered == reserved), red otherwise (under-
+                           reserved or not reserved yet). */
                         .o_match { color: #198754; }
                         .o_mismatch { color: #dc3545; }
-                        /* Incoming (forecasted inbound) quantity under each size in
-                           the column header; blue and small so it stays subordinate
-                           to the size label and distinct from the grey reserved. */
-                        .o_incoming { color: #0d6efd; font-weight: normal; }
+                        /* Legend explaining the b/r labels and the colours. */
+                        .o_ov_legend { font-size: 9pt; margin-bottom: 4mm; }
                     </style>
 
                     <t t-if="not blocks">
                         <p>Geen uitgaande leveringen met productvarianten in de selectie.</p>
+                    </t>
+
+                    <t t-if="blocks">
+                        <p class="o_ov_legend">
+                            <span class="o_ov_lbl">b</span> = besteld &#160;·&#160;
+                            <span class="o_ov_lbl">r</span> = gereserveerd &#160;·&#160;
+                            <span class="o_match">groen</span> = volledig gereserveerd /
+                            <span class="o_mismatch">rood</span> = niet volledig
+                        </p>
                     </t>
 
                     <!-- One grid per hoofdproduct+kleur, already sorted by product then colour. -->
@@ -77,32 +91,33 @@
                             <thead>
                                 <tr>
                                     <th>Klant</th>
-                                    <!-- Size label on top, its incoming (forecasted inbound)
-                                         quantity below in blue when there is any. -->
-                                    <th t-foreach="block['sizes']" t-as="size">
-                                        <div t-out="size['name']">Maat</div>
-                                        <div t-if="size['incoming']" class="o_incoming">+<t t-out="size['incoming']" t-options='{"widget": "integer"}'/></div>
-                                    </th>
-                                    <th>Totaal</th>
+                                    <!-- Narrow guide column carrying the b/r letters, just
+                                         before the first size column. -->
+                                    <th class="o_ov_guide"/>
+                                    <th t-foreach="block['sizes']" t-as="size" t-out="size['name']">Maat</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr t-foreach="block['rows']" t-as="row">
                                     <td><span t-out="row['customer'].name">Klant</span></td>
-                                    <!-- Each cell: ordered quantity, then the reserved one between
-                                         brackets. Both share the same colour: green when fully
-                                         reserved (ordered == reserved), red otherwise. A 0 prints
-                                         blank (separately for each), so an unordered size stays empty
-                                         and a not-yet-reserved size shows only its ordered figure. -->
+                                    <!-- b/r guide, one letter per stacked line, black, on the
+                                         same two baselines as every cell. -->
+                                    <td class="o_ov_guide">
+                                        <div class="o_ov_line o_ov_lbl">b</div>
+                                        <div class="o_ov_line o_ov_lbl">r</div>
+                                    </td>
+                                    <!-- Each cell stacks besteld (b) over gereserveerd (r), one
+                                         per line, no longer bracketed. Both share the same
+                                         colour: green when fully reserved (ordered == reserved),
+                                         red otherwise. A size the customer ordered always shows
+                                         both figures, r included when it is 0 (not yet reserved);
+                                         a size that was not ordered at all stays blank. -->
                                     <td t-foreach="row['cells']" t-as="cell">
                                         <t t-set="cls" t-value="'o_match' if cell['ordered'] == cell['reserved'] else 'o_mismatch'"/>
-                                        <span t-if="cell['ordered']" t-att-class="cls" t-out="cell['ordered']" t-options='{"widget": "integer"}'>0</span>
-                                        <span t-if="cell['reserved']" t-att-class="cls">(<t t-out="cell['reserved']" t-options='{"widget": "integer"}'/>)</span>
-                                    </td>
-                                    <td>
-                                        <t t-set="total_cls" t-value="'o_match' if row['total_ordered'] == row['total_reserved'] else 'o_mismatch'"/>
-                                        <strong t-if="row['total_ordered']" t-att-class="total_cls" t-out="row['total_ordered']" t-options='{"widget": "integer"}'>0</strong>
-                                        <span t-if="row['total_reserved']" t-att-class="total_cls">(<t t-out="row['total_reserved']" t-options='{"widget": "integer"}'/>)</span>
+                                        <t t-if="cell['ordered'] or cell['reserved']">
+                                            <div class="o_ov_line"><span t-att-class="cls" t-out="cell['ordered']" t-options='{"widget": "integer"}'>0</span></div>
+                                            <div class="o_ov_line"><span t-att-class="cls" t-out="cell['reserved']" t-options='{"widget": "integer"}'>0</span></div>
+                                        </t>
                                     </td>
                                 </tr>
                             </tbody>
