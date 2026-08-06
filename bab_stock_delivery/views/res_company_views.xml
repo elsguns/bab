@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        The stock location numbering is a per-company setting: only the company
+        that prints the "Productenmatrix" with stock locations should hand out
+        numbers. Put the switch on the company form itself rather than in the
+        general settings, because it has to be set per company and the settings
+        screen only ever edits the active one.
+    -->
+    <record id="view_company_form_stock_location" model="ir.ui.view">
+        <field name="name">res.company.form.stock.location</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='general_info']/group" position="inside">
+                <group name="stock_location" string="Stock Locations">
+                    <field name="stock_location_numbering"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -9,6 +9,11 @@
         shown between square brackets before the customer name on the
         "Productenmatrix" delivery report.
 
+        Only the orders of a company with "Assign stock locations" ticked are
+        taken into account (see res_company.py); contacts are shared between the
+        companies, so a company that never prints a stock location code must not
+        consume numbers either.
+
         The number is taken from a country-specific range:
             Belgian customers   : 1-1999
             Dutch customers     : 2000-3999
@@ -26,32 +31,38 @@
         <field name="binding_view_types">list,form</field>
         <field name="state">code</field>
         <field name="code">
-# 1. Maak eerst het stocklocatie-nummer leeg op ALLE partners, niet enkel op
-#    de adressen van de geselecteerde orders. Zo houdt een klant die vorig
-#    jaar bestelde maar dit jaar niet, geen verouderd nummer over.
-env['res.partner'].search([('stock_location', '&gt;', 0)]).write({'stock_location': 0})
+# 1. Hou enkel de orders over van een bedrijf dat stocklocaties toekent.
+#    Bevat de selectie er geen enkele, dan doen we niets: anders zou stap 2
+#    alle bestaande nummers wissen zonder er nieuwe voor in de plaats te geven.
+orders = records.filtered('company_id.stock_location_numbering')
 
-# 2. Verzamel de unieke afleveradressen over alle geselecteerde orders.
-#    mapped() op een many2one geeft een recordset zonder duplicaten terug,
-#    in volgorde van eerste voorkomen.
-delivery_partners = records.mapped('partner_shipping_id')
+if orders:
+    # 2. Maak eerst het stocklocatie-nummer leeg op ALLE partners, niet enkel op
+    #    de adressen van de geselecteerde orders. Zo houdt een klant die vorig
+    #    jaar bestelde maar dit jaar niet, geen verouderd nummer over.
+    env['res.partner'].search([('stock_location', '&gt;', 0)]).write({'stock_location': 0})
 
-# 3. Ken elk uniek afleveradres een nummer toe binnen een landspecifieke reeks:
-#      Belgische klanten  : 1-1999
-#      Nederlandse klanten: 2000-3999
-#      Overige landen     : vanaf 4000
-#    Per reeks lopen de nummers op in volgorde van eerste voorkomen.
-next_number = {'BE': 1, 'NL': 2000, 'other': 4000}
-for partner in delivery_partners:
-    country_code = partner.country_id.code
-    if country_code == 'BE':
-        key = 'BE'
-    elif country_code == 'NL':
-        key = 'NL'
-    else:
-        key = 'other'
-    partner['stock_location'] = next_number[key]
-    next_number[key] += 1
+    # 3. Verzamel de unieke afleveradressen over alle weerhouden orders.
+    #    mapped() op een many2one geeft een recordset zonder duplicaten terug,
+    #    in volgorde van eerste voorkomen.
+    delivery_partners = orders.mapped('partner_shipping_id')
+
+    # 4. Ken elk uniek afleveradres een nummer toe binnen een landspecifieke reeks:
+    #      Belgische klanten  : 1-1999
+    #      Nederlandse klanten: 2000-3999
+    #      Overige landen     : vanaf 4000
+    #    Per reeks lopen de nummers op in volgorde van eerste voorkomen.
+    next_number = {'BE': 1, 'NL': 2000, 'other': 4000}
+    for partner in delivery_partners:
+        country_code = partner.country_id.code
+        if country_code == 'BE':
+            key = 'BE'
+        elif country_code == 'NL':
+            key = 'NL'
+        else:
+            key = 'other'
+        partner['stock_location'] = next_number[key]
+        next_number[key] += 1
         </field>
     </record>
 </odoo>

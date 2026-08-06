@@ -25,6 +25,7 @@ the new report.
     'data': [
         'security/ir.model.access.csv',
         'data/sale_order_stock_location_action.xml',
+        'views/res_company_views.xml',
         'views/res_partner_views.xml',
         'views/stock_picking_views.xml',
         'wizard/matrix_reprint_confirm_views.xml',

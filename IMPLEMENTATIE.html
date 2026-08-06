@@ -18,6 +18,7 @@
         pre code { background: none; padding: 0; }
         img { max-width: 100%; height: auto; }
         .tag { font-family: monospace; font-size: .85em; color: #666; }
+        .status { font-style: italic; color: #8a6d1f; background: #fdf6e3; border-left: 3px solid #e0c060; padding: .4rem .6rem; margin: .5rem 0; }
         details > summary { cursor: pointer; font-weight: bold; padding: .5rem; background: #f0f0f0; border: 1px solid #ddd; }
         details[open] { border: 1px solid #ddd; padding-bottom: .5rem; }
         details ul { list-style: none; padding-left: 1.5rem; }
@@ -33,6 +34,10 @@
         details > ul > li > ul > li > ul > li > a::before { content: counter(toc1) "." counter(toc2) "." counter(toc3) " "; }
         .legend { margin: 1.5rem 0; }
         .legend li { font-family: monospace; font-size: .9rem; }
+        #naar-boven { position: fixed; right: 1.5rem; bottom: 1.5rem; width: 2.5rem; height: 2.5rem; line-height: 2.4rem; text-align: center; font-size: 1.2rem; text-decoration: none; color: #555; background: #f0f0f0; border: 1px solid #ccc; border-radius: 50%; opacity: 0; pointer-events: none; transition: opacity .2s; }
+        #naar-boven.zichtbaar { opacity: .85; pointer-events: auto; }
+        #naar-boven:hover { opacity: 1; }
+        @media print { #naar-boven { display: none; } }
     </style>
 </head>
 <body>
@@ -46,15 +51,93 @@
 <details open>
     <summary>Inhoudsopgave</summary>
     <ul>
-        <li><a href="#mail">Mail</a></li>
-        <li><a href="#contacten">Contacten</a></li>
-        <li><a href="#producten">Producten</a></li>
-        <li><a href="#verkopen">Verkopen</a></li>
-        <li><a href="#aankoop">Aankoop</a></li>
-        <li><a href="#voorraad">Voorraad</a></li>
+        <li><a href="#mail">Mail</a>
+            <ul>
+                <li><a href="#factuurmail-in-vier-talen">Factuurmail in vier talen</a></li>
+                <li><a href="#orderbevestiging">Orderbevestiging</a></li>
+                <li><a href="#odoo-branding-uit-uitgaande-mail">Odoo-branding uit uitgaande mail</a></li>
+            </ul>
+        </li>
+        <li><a href="#contacten">Contacten</a>
+            <ul>
+                <li><a href="#stocklocatie-nummer-op-afleveradres">Stocklocatie-nummer op afleveradres</a></li>
+                <li><a href="#handelsnaam-en-aankoopafdeling">Handelsnaam en aankoopafdeling</a></li>
+                <li><a href="#levervelden-op-het-contactformulier">Levervelden op het contactformulier</a></li>
+                <li><a href="#extra-kolommen-in-de-contactenlijst">Extra kolommen in de contactenlijst</a></li>
+                <li><a href="#zoeken-op-btw-nummer">Zoeken op btw-nummer</a></li>
+            </ul>
+        </li>
+        <li><a href="#producten">Producten</a>
+            <ul>
+                <li><a href="#varianten-opladen">Varianten opladen</a></li>
+                <li><a href="#status">Status</a></li>
+                <li><a href="#merk">Merk</a></li>
+                <li><a href="#attribuutwaarden-attribuut-en-code-in-de-lijst">Attribuutwaarden: attribuut en code in de lijst</a></li>
+                <li><a href="#volgorde-van-de-attribuutlijnen">Volgorde van de attribuutlijnen</a></li>
+                <li><a href="#extra-kolommen-in-de-productlijsten">Extra kolommen in de productlijsten</a></li>
+                <li><a href="#prijslijstregels-product-en-productcategorie">Prijslijstregels: product en productcategorie</a></li>
+                <li><a href="#negatieve-voorraad-blokkeren">Negatieve voorraad blokkeren</a></li>
+                <li><a href="#opgeslagen-filters">Opgeslagen filters</a></li>
+            </ul>
+        </li>
+        <li><a href="#verkopen">Verkopen</a>
+            <ul>
+                <li><a href="#totale-hoeveelheid-artikelen-verkocht">Totale hoeveelheid artikelen verkocht</a></li>
+                <li><a href="#totale-hoeveelheid-artikelen-geleverd">Totale hoeveelheid artikelen geleverd</a></li>
+                <li><a href="#klant-referentie-moet-uniek-zijn">Klant + referentie moet uniek zijn</a></li>
+                <li><a href="#automatisch-aantal-voorstellen-vd-eerste-package">Automatisch aantal voorstellen vd eerste package</a></li>
+                <li><a href="#reservaties-kunnen-switchen-tussen-verschillende-k">Reservaties kunnen switchen tussen verschillende klanten</a></li>
+                <li><a href="#afleveradres-rechtstreeks-vanaf-het-order-aanmaken">Afleveradres rechtstreeks vanaf het order aanmaken</a></li>
+                <li><a href="#klantreferentie-labels-en-totalen-bovenaan-het-ord">Klantreferentie, labels en totalen bovenaan het order</a></li>
+                <li><a href="#verpakking-en-btw-bedrag-op-de-orderlijnen">Verpakking en btw-bedrag op de orderlijnen</a></li>
+                <li><a href="#klantreferentie-en-orderlabels-op-de-orderlijnen">Klantreferentie en orderlabels op de orderlijnen</a></li>
+                <li><a href="#extra-kolommen-en-groeperingen-op-de-orderlijst">Extra kolommen en groeperingen op de orderlijst</a></li>
+                <li><a href="#opgeslagen-filters-2">Opgeslagen filters</a></li>
+            </ul>
+        </li>
+        <li><a href="#aankoop">Aankoop</a>
+            <ul>
+                <li><a href="#totale-hoeveelheid-artikelen-aangekocht">Totale hoeveelheid artikelen aangekocht</a></li>
+                <li><a href="#aankoophistoriek-product-en-factureerstatus">Aankoophistoriek: product en factureerstatus</a></li>
+            </ul>
+        </li>
+        <li><a href="#voorraad">Voorraad</a>
+            <ul>
+                <li><a href="#magazijnstructuur">Magazijnstructuur</a></li>
+                <li><a href="#productenmatrix-briefjes">Productenmatrix (briefjes)</a></li>
+                <li><a href="#productenmatrix-met-reservaties">Productenmatrix met reservaties</a></li>
+                <li><a href="#productenmatrix-met-reservaties-per-kleur-en-klant">Productenmatrix met reservaties per kleur en klant</a></li>
+                <li><a href="#stocklocatie-toekennen-aan-afleveradressen">Stocklocatie toekennen aan afleveradressen</a></li>
+                <li><a href="#verplaatsingen">Verplaatsingen</a></li>
+                <li><a href="#batchpikings">Batchpikings</a></li>
+                <li><a href="#backorders-per-bewerkingstype">Backorders per bewerkingstype</a></li>
+                <li><a href="#rma-retourmagazijn-voor-defecte-klantretours">RMA — retourmagazijn voor defecte klantretours</a></li>
+                <li><a href="#gls">GLS</a></li>
+            </ul>
+        </li>
         <li><a href="#productie">Productie</a></li>
-        <li><a href="#ecommerce">eCommerce</a></li>
-        <li><a href="#boekhouding">Boekhouding</a></li>
+        <li><a href="#ecommerce">eCommerce</a>
+            <ul>
+                <li><a href="#op-de-productpagina-moet-het-aantal-van-de-eerste-">Op de productpagina moet het aantal van de eerste packaging ingevuld staan</a></li>
+                <li><a href="#verkoper-bestelt-namens-zijn-klant">Verkoper bestelt namens zijn klant</a></li>
+                <li><a href="#btw-in-of-exclusief-per-bezoekerstype">Btw in- of exclusief per bezoekerstype</a></li>
+                <li><a href="#lange-productomschrijving">Lange productomschrijving</a></li>
+                <li><a href="#afrekenen-en-portaal">Afrekenen en portaal</a></li>
+                <li><a href="#odoo-branding-uit-de-website">Odoo-branding uit de website</a></li>
+            </ul>
+        </li>
+        <li><a href="#boekhouding">Boekhouding</a>
+            <ul>
+                <li><a href="#totale-hoeveelheid-artikelen">Totale hoeveelheid artikelen</a></li>
+                <li><a href="#lijnen-groeperen-per-verkooporder">Lijnen groeperen per verkooporder</a></li>
+                <li><a href="#leverdatum-niet-op-factuurpdf">Leverdatum niet op factuurpdf</a></li>
+                <li><a href="#handelsnaam-op-factuur-en-in-de-rapportage">Handelsnaam op factuur en in de rapportage</a></li>
+                <li><a href="#boekingsregels-per-contact-en-productsjabloon">Boekingsregels per contact en productsjabloon</a></li>
+                <li><a href="#omzet-per-merk">Omzet per merk</a></li>
+                <li><a href="#peppol-status-in-de-factuurlijst">Peppol-status in de factuurlijst</a></li>
+                <li><a href="#totale-hoeveelheid-op-het-factuurformulier">Totale hoeveelheid op het factuurformulier</a></li>
+            </ul>
+        </li>
     </ul>
 </details>
 <!-- ============================================================= -->
@@ -86,23 +169,142 @@
 
 <h1 id="mail">Mail</h1>
 
+<h2 id="factuurmail-in-vier-talen">Factuurmail in vier talen</h2>
+<p>De standaardsjabloon <strong>Invoice: Sending</strong> is per taal herschreven: onderwerp
+en body bestaan in <code>nl_BE</code>, <code>fr_BE</code>, <code>en_US</code> en <code>de_CH</code>.
+De klant krijgt de mail in zijn eigen taal (<code>lang</code> op het contact, standaard <code>nl_BE</code>).
+De brontekst per taal staat als los XML-bestand in de projectmap.</p>
+<p><span class="tag">[mail]</span> <code>account.email_template_edi_invoice</code> —
+<code>account.email_template_edi_invoice_{nl,fr,en,de}.xml</code></p>
+
+<h2 id="orderbevestiging">Orderbevestiging</h2>
+<p>De sjabloon <strong>Sales: Order Confirmation</strong> is inhoudelijk herwerkt (eigen aanhef en
+opmaak i.p.v. de standaard Odoo-tekst).</p>
+<p><span class="tag">[mail]</span> <code>sale.mail_template_sale_confirmation</code></p>
+
+<h2 id="odoo-branding-uit-uitgaande-mail">Odoo-branding uit uitgaande mail</h2>
+<p>Verwijdert de "Powered by Odoo"-voettekst en het Odoo-logo uit de mail-layout.</p>
+<p><span class="tag">[code]</span> <code>mail_debrand</code></p>
+
 <h1 id="contacten">Contacten</h1>
 
-<h2>Stocklocatie-nummer op afleveradres</h2>
+<h2 id="stocklocatie-nummer-op-afleveradres">Stocklocatie-nummer op afleveradres</h2>
 <p>Genummerd veld op het contact, als vette kop boven de klantnaam op de Productenmatrix-leveringsbon (enkel wanneer het een waarde heeft). Een adres krijgt automatisch het volgende vrije nummer in zijn landspecifieke reeks wanneer een order wordt <strong>bevestigd</strong>; een adres met een reeds toegekend nummer behoudt dat. Wijzigt het land van een adres waardoor zijn nummer niet meer in de juiste reeks valt, dan wordt het hernummerd. Alles opnieuw van nul nummeren blijft de taak van de serveractie (zie Voorraad).</p>
-<p><span class="tag">[field]</span> <code>res.partner.stock_location</code> — <span class="tag">[code]</span> <code>res.partner</code>, <code>sale.order</code> — <code>bab_stock_delivery</code> (osa)</p>
+<p>De nummering is een <strong>bedrijfsinstelling</strong>: enkel orders van een bedrijf met
+<em>Stocklocaties toekennen</em> aangevinkt kennen nummers toe. Contacten zijn gedeeld tussen de
+bedrijven, dus zonder die filter zou ook elke Babimex-order nummers opgebruiken uit de reeksen die
+Vasa International op zijn Productenmatrix afdrukt. Het vinkje staat op het bedrijfsformulier,
+tabblad <em>Algemene informatie</em>.</p>
+<p><span class="tag">[field]</span> <code>res.partner.stock_location</code>,
+<code>res.company.stock_location_numbering</code> — <span class="tag">[code]</span>
+<code>res.partner</code>, <code>res.company</code>, <code>sale.order</code> —
+<code>bab_stock_delivery</code> (osa)</p>
+
+<h2 id="handelsnaam-en-aankoopafdeling">Handelsnaam en aankoopafdeling</h2>
+<p>Eigen model <code>commercial.name</code> (handelsnaam): één handelsnaam kan aan meerdere contacten
+hangen en wordt doorgetrokken naar verkooporder, factuur en de verkoop-/factuurrapportage, zodat je
+per handelsnaam kan groeperen ook al staan de facturen op verschillende juridische entiteiten.
+Daarnaast een vinkje <strong>Aankoopafdeling</strong> op het contact.</p>
+<p>De module past ook de contactweergave in QWeb aan (<code>ir.qweb.field.contact</code>) zodat de
+handelsnaam op de documenten kan getoond worden, en levert eigen versies van het offerte-,
+factuur- en leveringsrapport.</p>
+<p><span class="tag">[code]</span> <code>babimex_custom</code> (bab-repo, oorspronkelijk Mainframe Monkey) —
+<code>commercial.name</code>, <code>res.partner.commercial_name_id</code>,
+<code>res.partner.is_purchasing_department</code>, <code>sale.order.commercial_name_id</code>,
+<code>account.move.commercial_name_id</code></p>
+
+<h2 id="levervelden-op-het-contactformulier">Levervelden op het contactformulier</h2>
+<p>Drie eigen velden onder de leveringsinstellingen van het contact. Ze worden door de batchpicking
+overgenomen (zie Voorraad → Batchpickings) en door de GLS-automatisering gebruikt.</p>
+<p><span class="tag">[field]</span> <code>res.partner</code> —
+<code>x_studio_amount_free_delivery</code> (Bedrag Gratis Levering),
+<code>x_studio_closing_days</code> (Sluitingsdagen),
+<code>x_studio_delivery_info</code> (Leverinformatie)</p>
+<p><span class="tag">[view]</span> geplaatst na <code>property_delivery_carrier_id</code> op het contactformulier.</p>
+
+<h2 id="extra-kolommen-in-de-contactenlijst">Extra kolommen in de contactenlijst</h2>
+<p>Stocklocatie-nummer, bedrijf/persoon, adrestype en de btw-controle (VIES) als optionele kolommen.</p>
+<p><span class="tag">[view]</span> <code>res.partner</code> lijst — <code>stock_location</code>,
+<code>company_type</code>, <code>type</code>, <code>vies_valid</code></p>
+
+<h2 id="zoeken-op-btw-nummer">Zoeken op btw-nummer</h2>
+<p><span class="tag">[view]</span> <code>res.partner</code> zoekweergave — <code>vat</code> toegevoegd
+naast de handelsnaam.</p>
 
 <h1 id="producten">Producten</h1>
 
-<h2>Varianten opladen</h2>
+<h2 id="varianten-opladen">Varianten opladen</h2>
 <p><span class="tag">[code]</span> <code>product_variant_default_code</code></p>
 
-<h2>Status</h2>
+<h2 id="status">Status</h2>
 <p><span class="tag">[code]</span> <code>product_state</code></p>
+
+<h2 id="merk">Merk</h2>
+<p>Merk als apart model op het product; wordt ook doorgetrokken naar de voorraadverplaatsingen
+(zie Voorraad) en naar de omzetrapportage (zie Boekhouding).</p>
+<p><span class="tag">[code]</span> <code>product_brand</code></p>
+
+<h3>Doelgroep per merk</h3>
+<p>Selectieveld op het merk met de waarden <strong>Mannen</strong>, <strong>Vrouwen</strong> en
+<strong>Mannen en vrouwen</strong>. Op de productenlijst zitten twee filters die daarop teruggrijpen,
+zodat je in één klik de heren- of damescollectie ziet zonder per merk te moeten selecteren.</p>
+<p><span class="tag">[field]</span> <code>product.brand.x_studio_gender</code> (selectie)</p>
+<p><span class="tag">[view]</span> <code>product.brand</code> lijst — kolom + multi-edit aan</p>
+<p><span class="tag">[filter]</span> <code>product.template</code> zoekweergave — filters <strong>Mannen</strong> /
+<strong>Vrouwen</strong>:</p>
+<pre><code>[("product_brand_id.x_studio_gender", "in", ["Mannen", "Mannen en vrouwen"])]
+[("product_brand_id.x_studio_gender", "in", ["Vrouwen", "Mannen en vrouwen"])]</code></pre>
+
+<h2 id="attribuutwaarden-attribuut-en-code-in-de-lijst">Attribuutwaarden: attribuut en code in de lijst</h2>
+<p>Bij het beheren van maten/kleuren zie je nu meteen tot welk attribuut een waarde hoort en welke
+code eraan hangt; de lijst staat op multi-edit zodat je in bulk kan aanpassen, en je kan groeperen
+per attribuut.</p>
+<p><span class="tag">[view]</span> <code>product.attribute.value</code> lijst — <code>attribute_id</code>,
+<code>code</code>, <code>multi_edit</code>; zoekweergave — zoeken en groeperen op <code>attribute_id</code></p>
+
+<h2 id="volgorde-van-de-attribuutlijnen">Volgorde van de attribuutlijnen</h2>
+<p>Sequentie zichtbaar op de attribuutlijnen van een productsjabloon, zodat de volgorde
+maat/kleur in de variantmatrix stuurbaar is.</p>
+<p><span class="tag">[view]</span> <code>product.template.attribute.line</code> lijst — <code>sequence</code></p>
+
+<h2 id="extra-kolommen-in-de-productlijsten">Extra kolommen in de productlijsten</h2>
+<p><span class="tag">[view]</span> <code>product.template</code> lijst — <code>invoice_policy</code>,
+<code>is_storable</code>, <code>sale_ok</code>, <code>purchase_ok</code>, <code>product_add_mode</code>,
+<code>route_ids</code>, <code>hs_code</code>, <code>country_of_origin</code>, <code>weight</code>,
+<code>volume</code></p>
+<p><span class="tag">[view]</span> <code>product.product</code> (varianten) lijst — <code>manual_code</code>,
+<code>incoming_qty</code>, <code>outgoing_qty</code>, <code>free_qty</code>; de interne referentie
+(<code>default_code</code>) is bewerkbaar gemaakt in de lijst.</p>
+<p><span class="tag">[view]</span> <code>product.template</code> zoekweergave — groeperen op <code>product_tag_ids</code> (Tags)</p>
+
+<h2 id="prijslijstregels-product-en-productcategorie">Prijslijstregels: product en productcategorie</h2>
+<p>Op de prijslijstregels zie je het productsjabloon, de variant en de productcategorie van dat
+sjabloon; je kan er ook op zoeken en groeperen. Zo controleer je in één scherm of een categorie
+volledig gedekt is door de prijslijst.</p>
+<p><span class="tag">[field]</span> <code>product.pricelist.item.x_studio_product_tmpl_categ_id</code>
+(gerelateerd aan <code>product_tmpl_id.categ_id</code>, niet opgeslagen)</p>
+<p><span class="tag">[view]</span> lijst — <code>product_tmpl_id</code>, <code>product_id</code>,
+<code>x_studio_product_tmpl_categ_id</code>; zoekweergave — zoeken en groeperen op productcategorie</p>
+
+<h2 id="negatieve-voorraad-blokkeren">Negatieve voorraad blokkeren</h2>
+<p>Per productcategorie kan je toelaten of verbieden dat de voorraad onder nul gaat. De kolom
+<strong>Negatieve voorraad toestaan</strong> staat in de categorielijst.</p>
+<p><span class="tag">[code]</span> <code>stock_no_negative</code> (oca)</p>
+<p><span class="tag">[view]</span> <code>product.category</code> lijst — <code>allow_negative_stock</code></p>
+
+<h2 id="opgeslagen-filters">Opgeslagen filters</h2>
+<p><span class="tag">[filter]</span> <code>product.template</code></p>
+<ul>
+    <li><strong>Producten</strong> — <code>[("type","=","consu"), ("barcode","ilike","")]</code></li>
+    <li><strong>Barcode</strong> — idem, maar inclusief gearchiveerde producten
+        (<code>("active","in",[True,False])</code>)</li>
+</ul>
+<p><span class="tag">[filter]</span> <code>product.product</code> — <strong>Producten zonder wegzetregels</strong>:
+producten zonder <code>putaway_rule_ids</code> of met een wegzetregel naar locatie 8.</p>
 
 <h1 id="verkopen">Verkopen</h1>
 
-<h2>Totale hoeveelheid artikelen verkocht</h2>
+<h2 id="totale-hoeveelheid-artikelen-verkocht">Totale hoeveelheid artikelen verkocht</h2>
 <p><span class="tag">[field]</span> <code>x_qty_total</code> met afhankelijkheden <code>order_line,order_line.product_uom_qty</code> …</p>
 <pre><code>for record in self:
     record['x_qty_total'] = 0
@@ -110,7 +312,7 @@
         for line in record.order_line:
             record['x_qty_total'] += line.product_uom_qty</code></pre>
 
-<h2>Totale hoeveelheid artikelen geleverd</h2>
+<h2 id="totale-hoeveelheid-artikelen-geleverd">Totale hoeveelheid artikelen geleverd</h2>
 <p><span class="tag">[field]</span> <code>x_qty_delivered_total</code> met afhankelijkheden <code>order_line,order_line.qty_delivered</code> …</p>
 <pre><code>for record in self:
     record['x_qty_delivered_total'] = 0
@@ -118,8 +320,11 @@
         for line in record.order_line:
             record['x_qty_delivered_total'] += line.qty_delivered</code></pre>
 
-<h2>Klant + referentie moet uniek zijn</h2>
-<p><span class="tag">[auto]</span></p>
+<h2 id="klant-referentie-moet-uniek-zijn">Klant + referentie moet uniek zijn</h2>
+<p><span class="tag">[auto]</span> op <code>sale.order</code>, trigger <em>bij aanmaken of wijzigen</em> van
+<code>client_order_ref</code> of <code>team_id</code>. De regel geldt <strong>niet</strong> voor
+verkoopteam 2 — domein <code>[("team_id", "not in", [2])]</code> — omdat de webshoporders daar geen
+unieke klantreferentie hebben.</p>
 <p><img src="https://osadmin.odoo.com/web/image/11765-294b622f/image.png?access_token=9ab73ee3-89e9-4be0-a742-1bd51873bc15" alt="Automatische actie klantreferentie uniek"></p>
 <pre><code>for record in records:
     duplicate = env['sale.order'].search([
@@ -132,43 +337,108 @@
             f"De klantreferentie '{record.client_order_ref}' bestaat al voor klant '{record.partner_id.name}'. Deze moet uniek zijn."
         )</code></pre>
 
-<h2>Automatisch aantal voorstellen vd eerste package</h2>
+<h2 id="automatisch-aantal-voorstellen-vd-eerste-package">Automatisch aantal voorstellen vd eerste package</h2>
 <p><span class="tag">[code]</span> <code>sale_packaging_default</code> (oca)</p>
 
-<h2>Reservaties kunnen switchen tussen verschillende klanten</h2>
+<h2 id="reservaties-kunnen-switchen-tussen-verschillende-k">Reservaties kunnen switchen tussen verschillende klanten</h2>
 <p><span class="tag">[code]</span> <code>stock_quant_reservation_info</code> (oca_osa dus met eigen wijzigingen)</p>
+
+<h2 id="afleveradres-rechtstreeks-vanaf-het-order-aanmaken">Afleveradres rechtstreeks vanaf het order aanmaken</h2>
+<p>Op het verkooporder kan je een nieuw afleveradres in één beweging aanmaken: het krijgt meteen
+type <em>Leveradres</em> en hangt automatisch onder de klant van het order.</p>
+<p><span class="tag">[view]</span> <code>sale.order</code> formulier — <code>partner_shipping_id</code>:</p>
+<pre><code>context="{'default_type':'delivery', 'show_address': True, 'show_vat': False, 'default_parent_id': partner_id}"
+options="{&quot;no_quick_create&quot;: false}"</code></pre>
+
+<h2 id="klantreferentie-labels-en-totalen-bovenaan-het-ord">Klantreferentie, labels en totalen bovenaan het order</h2>
+<p>Klantreferentie en orderlabels zijn naar de bovenste kolom verhuisd, met daaronder de twee
+totaalvelden. De labels zijn <strong>verplicht</strong> voor bedrijf 2.</p>
+<p><span class="tag">[view]</span> <code>sale.order</code> formulier — <code>client_order_ref</code> en
+<code>tag_ids</code> verplaatst, <code>x_qty_total</code> + <code>x_qty_delivered_total</code> toegevoegd,
+<code>tag_ids</code> met <code>required="company_id in [2]"</code></p>
+
+<h2 id="verpakking-en-btw-bedrag-op-de-orderlijnen">Verpakking en btw-bedrag op de orderlijnen</h2>
+<p>Verpakking en aantal verpakkingen staan naast de maateenheid; het btw-bedrag per lijn
+(<code>price_tax</code>) is als optionele kolom toegevoegd. Het productsjabloon op de lijn kan niet
+meer geopend of aangemaakt worden vanuit het order (<code>no_open</code> / <code>no_create</code>).</p>
+<p><span class="tag">[view]</span> <code>sale.order</code> formulier, orderlijnen</p>
+
+<h2 id="klantreferentie-en-orderlabels-op-de-orderlijnen">Klantreferentie en orderlabels op de orderlijnen</h2>
+<p>Zo kan je in het scherm <em>Verkooporderregels</em> filteren en groeperen zonder naar het order
+te moeten springen.</p>
+<p><span class="tag">[field]</span> <code>sale.order.line</code> —
+<code>x_order_id_client_order_ref</code> (gerelateerd aan <code>order_id.client_order_ref</code>, opgeslagen),
+<code>x_studio_order_tag_ids</code> (gerelateerd aan <code>order_id.tag_ids</code>, niet opgeslagen)</p>
+<p><span class="tag">[view]</span> lijst — beide kolommen, plus <code>qty_to_deliver</code>,
+<code>price_unit</code>, <code>tax_id</code>; <code>salesman_id</code>, <code>product_uom</code> en
+<code>route_id</code> verborgen; multi-edit aan. Zoekweergave — groeperen op <strong>Labels order</strong>.</p>
+
+<h2 id="extra-kolommen-en-groeperingen-op-de-orderlijst">Extra kolommen en groeperingen op de orderlijst</h2>
+<p><span class="tag">[view]</span> <code>sale.order</code> lijst — <code>fiscal_position_id</code>,
+<code>partner_shipping_id</code>, multi-edit aan. Zoekweergave — zoeken op afleveradres, groeperen op
+<strong>Status</strong> en <strong>Leveradres</strong>.</p>
+
+<h2 id="opgeslagen-filters-2">Opgeslagen filters</h2>
+<ul>
+    <li><span class="tag">[filter]</span> <code>sale.order</code> — <strong>Niet geannuleerd</strong>
+        (standaardfilter): <code>[("state","not in",["cancel"])]</code></li>
+    <li><span class="tag">[filter]</span> <code>sale.order.line</code> — <strong>bol.com</strong>:
+        lijnen van klanten onder "Klanten bol.com" die nog niet gefactureerd zijn.</li>
+</ul>
 
 <h1 id="aankoop">Aankoop</h1>
 
-<h2>Totale hoeveelheid artikelen aangekocht</h2>
+<h2 id="totale-hoeveelheid-artikelen-aangekocht">Totale hoeveelheid artikelen aangekocht</h2>
 <p><span class="tag">[field]</span> <code>x_qty_total</code> met afhankelijkheden <code>order_line,order_line.product_qty</code> …</p>
 <pre><code>for record in self:
     record['x_qty_total'] = 0
     if record.order_line:
         for line in record.order_line:
             record['x_qty_total'] += line.product_qty</code></pre>
+<p><span class="tag">[serv]</span> contextuele actie <code>*Compute computed fields</code> op
+<code>purchase.order</code> om het veld op bestaande orders te herberekenen (dezelfde code).</p>
+
+<h2 id="aankoophistoriek-product-en-factureerstatus">Aankoophistoriek: product en factureerstatus</h2>
+<p>In <em>Aankoop → Rapportages → Aankoophistoriek</em> zie je per lijn het product en hoeveel er
+ontvangen, gefactureerd en nog te factureren is.</p>
+<p><span class="tag">[view]</span> <code>purchase.order.line</code> lijst — <code>product_id</code>,
+<code>qty_received</code>, <code>qty_invoiced</code>, <code>qty_to_invoice</code>;
+<code>date_approve</code> verplaatst, <code>company_id</code> verborgen.</p>
+<p><span class="tag">[filter]</span> <strong>Te factureren per leverancier</strong> —
+<code>[("qty_to_invoice","!=",0)]</code>, gegroepeerd op leverancier.</p>
 
 <h1 id="voorraad">Voorraad</h1>
 
-<h2>Productenmatrix (briefjes)</h2>
-<p>Eigen leveringsbon per variantmatrix (hoofdproduct met maat × kleur). De A4 wordt in drie gelijke stroken van 99&nbsp;mm geknipt, één matrix per strook met een eigen klant- en orderkop; de hoofdproductnaam staat groter, de totale bestelde hoeveelheid gedempt tussen haakjes erachter. Een extra kolom <strong>Totaal</strong> rechts geeft per rij de som van de bestelde aantallen. Een bulk-print over meerdere leveringen groepeert de matrices per hoofdproduct. Bewaking tegen dubbel afprinten: de eerste afdruk print meteen, een herafdruk vraagt eerst bevestiging.</p>
+<h2 id="magazijnstructuur">Magazijnstructuur</h2>
+<p><span class="tag">[conf]</span> Vier magazijnen: <strong>WH</strong> (hoofdmagazijn),
+<strong>BOL</strong> (bol.com), <strong>VAS</strong> (Vasa) en <strong>RET</strong> (retours, zie
+onderaan). Per magazijn zijn enkel Ontvangsten, Leveringen, Picken en Interne overdrachten actief;
+Verpakken, Kwaliteitscontrole, Opslag en Cross-docking staan uit.</p>
+
+<h2 id="productenmatrix-briefjes">Productenmatrix (briefjes)</h2>
+<p>Eigen leveringsbon per variantmatrix (hoofdproduct met maat × kleur). De A4 wordt in drie gelijke stroken van 99&nbsp;mm geknipt, één matrix per strook met een eigen klant- en orderkop; de hoofdproductnaam staat groter, het totaal gedempt tussen haakjes erachter. Een extra kolom <strong>Totaal</strong> rechts geeft per rij de som van de aantallen. Een bulk-print over meerdere leveringen groepeert de matrices per hoofdproduct. Bewaking tegen dubbel afprinten: de eerste afdruk print meteen, een herafdruk vraagt eerst bevestiging.</p>
+<p>De aantallen zijn die van <strong>deze levering</strong>, niet van het verkooporder. Het raster
+(welke hoofdproducten, welke maten en kleuren) komt uit de orders achter de levering, maar de
+cijfers komen uit de verplaatsingen van de levering zelf. Blijft een deel van een order achter —
+bv. een deels bevestigde pickbon met een backorder, of een tweede deellevering — dan staat dat
+deel niet op het briefje: rijen en volledige matrices zonder aantal op deze levering vallen weg.</p>
 <p><span class="tag">[code]</span> <span class="tag">[view]</span> <code>bab_stock_delivery</code> (osa)</p>
 
-<h2>Productenmatrix met reservaties</h2>
+<h2 id="productenmatrix-met-reservaties">Productenmatrix met reservaties</h2>
 <p>Overzichtsrapport (liggend A4): één matrix per hoofdproduct, rijen = kleur, kolommen = maat. Per cel vier getallen, onder elkaar met een r/s/i-gidskolom: <span style="color:#0d6efd">ontvangen</span> in de laatste ontvangst (o, blauw), <strong>gereserveerd</strong> (r, zwart), dan één gecombineerd getal — <span style="color:#dc3545">−tekort</span> (rood) bij ondervoorziening óf <span style="color:#198754">+overschot</span> (groen, de vrije voorraad, +0 als exact gedekt) — en tot slot de <span style="color:#0d6efd">+inkomende</span> voorraad (i, blauw).</p>
 <p>Toont enkel hoofdproducten waar effectief <strong>iets gereserveerd</strong> is. Make-to-order producten die nog niet ontvangen zijn kunnen niet gereserveerd worden (moves blijven "waiting") en vallen dus weg uit de lijst. Een <strong>kleurrij waarvoor niets ontvangen werd</strong> (o = 0 voor elke maat van die kleur) valt eveneens weg. Staat vóór "per kleur en klant" in het Print-menu.</p>
 <p><span class="tag">[code]</span> <code>bab_stock_delivery</code> (osa)</p>
 
-<h2>Productenmatrix met reservaties per kleur en klant</h2>
+<h2 id="productenmatrix-met-reservaties-per-kleur-en-klant">Productenmatrix met reservaties per kleur en klant</h2>
 <p>Overzichtsrapport (liggend A4): per hoofdproduct+kleur een raster van klanten (rijen) × maten (kolommen), met per cel <strong>besteld</strong> (b) boven <strong>gereserveerd</strong> (r), onder elkaar met een b/r-gidskolom. Groen = volledig gereserveerd (besteld == gereserveerd), rood = niet volledig.</p>
 <p>Toont enkel producten die <strong>deels</strong> gereserveerd zijn: producten waar nog niets van gereserveerd is én producten die volledig gereserveerd zijn, vallen weg — zo blijft enkel over wat nog aandacht vraagt.</p>
 <p><span class="tag">[code]</span> <code>bab_stock_delivery</code> (osa)</p>
 
-<h2>Stocklocatie toekennen aan afleveradressen</h2>
-<p>Contextuele serveractie op verkooporders die de unieke afleveradressen nummert in landspecifieke reeksen: Belgische klanten 1-1999, Nederlandse klanten 2000-3999, overige landen vanaf 4000. Bij elke run worden eerst alle bestaande nummers gewist, zodat een klant die vorig jaar wel maar dit jaar niet bestelde geen verouderd nummer behoudt.</p>
+<h2 id="stocklocatie-toekennen-aan-afleveradressen">Stocklocatie toekennen aan afleveradressen</h2>
+<p>Contextuele serveractie op verkooporders die de unieke afleveradressen nummert in landspecifieke reeksen: Belgische klanten 1-1999, Nederlandse klanten 2000-3999, overige landen vanaf 4000. Bij elke run worden eerst alle bestaande nummers gewist, zodat een klant die vorig jaar wel maar dit jaar niet bestelde geen verouderd nummer behoudt. Enkel orders van een bedrijf met <em>Stocklocaties toekennen</em> aangevinkt tellen mee; bevat de selectie er geen enkele, dan doet de actie niets — anders zou ze alle nummers wissen zonder er nieuwe voor in de plaats te geven.</p>
 <p><span class="tag">[code]</span> <code>bab_stock_delivery</code> (osa)</p>
 
-<h2>Verplaatsingen</h2>
+<h2 id="verplaatsingen">Verplaatsingen</h2>
 
 <h3>Leveringsadres op pickbon</h3>
 <p><span class="tag">[view]</span> <code>report_picking_bab</code> &lt; <code>report_picking</code></p>
@@ -208,6 +478,16 @@
         record['x_studio_origin_ref'] = record.sale_id.client_order_ref
     elif record.purchase_id:
         record['x_studio_origin_ref'] = record.purchase_id.partner_ref</code></pre>
+<p><span class="tag">[view]</span> Het veld staat ook op het <strong>formulier</strong> en in de
+<strong>lijst</strong> van de overboekingen, telkens net na <code>origin</code>.</p>
+<p><span class="tag">[stud]</span> Op beide PDF's (pickbon én leverbon) is via de rapporteditor een blok
+<strong>Brondocument referentie</strong> toegevoegd:</p>
+<pre><code>&lt;div class="oe_structure"&gt;
+    &lt;strong&gt;Brondocument referentie&lt;/strong&gt;
+&lt;/div&gt;
+&lt;div class="oe_structure"&gt;
+    &lt;span t-field="o.x_studio_origin_ref"/&gt;
+&lt;/div&gt;</code></pre>
 
 <h3>Overzicht producten in bestelling met subtotaal + klantreferenties</h3>
 
@@ -231,8 +511,10 @@
         record['x_origin_ref'] = record.sale_line_id.order_id.client_order_ref
     elif record.purchase_line_id:
         record['x_origin_ref'] = record.purchase_line_id.order_id.partner_ref</code></pre>
-<p><code>x_sale_order_tag_ids</code></p>
+<p><code>x_sale_order_tag_ids</code> — gerelateerd aan <code>sale_line_id.order_id.tag_ids</code>, opgeslagen.</p>
 <p><img src="https://osadmin.odoo.com/web/image/14047-5c95b396/Verkooporderlabel-Voorraadverplaatsing--06-25-2026_09_38_PM.png?access_token=1235542a-af54-418b-a8dd-2b95bb001051" alt="Verkooporderlabel op voorraadverplaatsing"></p>
+<p><code>x_studio_batch_id</code> (Batch) — gerelateerd aan <code>picking_id.batch_id</code>, niet opgeslagen.<br>
+<code>x_studio_product_brand</code> (Merk) — gerelateerd aan <code>product_id.product_brand_id</code>, niet opgeslagen.</p>
 <p><span class="tag">[serv]</span></p>
 <p><img src="https://osadmin.odoo.com/web/image/10870-1220f31e/image.png?access_token=5b6fc354-42ed-4ff9-b119-6615121b62d2" alt="Server action stock.move totalen"></p>
 <pre><code>for record in records:
@@ -240,12 +522,43 @@
     record['x_studio_sale_line_price_unit'] = x_studio_sale_line_price_unit
     record['x_studio_quantity_total'] = record.quantity*x_studio_sale_line_price_unit
     record['x_studio_uom_qty_total'] = record.product_uom_qty*x_studio_sale_line_price_unit
-   if record.sale_line_id:
+    if record.sale_line_id:
         record['x_origin_ref'] = record.sale_line_id.order_id.client_order_ref
     elif record.purchase_line_id:
         record['x_origin_ref'] = record.purchase_line_id.order_id.partner_ref</code></pre>
 <p><span class="tag">[view]</span></p>
 <p><img src="https://osadmin.odoo.com/web/image/10871-1cbfd21d/image.png?access_token=b51c07dd-3c8e-4ac4-941b-ad1933925a18" alt="Lijstweergave verplaatsingen met totalen"></p>
+<p>De lijst toont naast de totalen ook <code>origin</code>, <code>x_origin_ref</code>,
+<code>x_studio_batch_id</code> (Batch) en <code>x_studio_product_brand</code> (Merk);
+<code>company_id</code> en de standaard <code>date</code>-kolom zijn verborgen (datum staat nu als
+optionele kolom achter de contactkolom).</p>
+<p>In de <strong>zoekweergave</strong> kan je zoeken op contact, batch, brondocumentreferentie en merk,
+en groeperen op <strong>Merk</strong>.</p>
+
+<h4>Backorder bij de leverancier opvolgen</h4>
+<p>Drie gedeelde favorieten op hetzelfde scherm, gespiegeld op het verkooptrio
+<em>Besteld / per contact / per product</em>, maar met de <strong>leverancierslocatie</strong> als bron:
+ze tonen het restant van een gedeeltelijk ontvangen inkomende levering dat nog moet binnenkomen.</p>
+<p><span class="tag">[filter]</span> <code>stock.move</code> — <strong>Backorder leverancier</strong>,
+<strong>… per contact</strong> (groepeer op <code>partner_id</code>),
+<strong>… per product</strong> (groepeer op <code>product_id</code>)</p>
+<pre><code>["&amp;", "&amp;",
+  ("location_id", "in", [4]),
+  ("state", "in", ["waiting", "confirmed", "partially_available", "assigned"]),
+  ("picking_id.backorder_id", "!=", False)]</code></pre>
+
+<h4>Overige opgeslagen filters</h4>
+<ul>
+    <li><span class="tag">[filter]</span> <code>stock.move</code> — <strong>Besteld</strong> (standaardfilter),
+        <strong>Besteld per contact</strong>, <strong>Besteld per product</strong>:
+        <code>location_id in [8, 11]</code> en status waiting/confirmed/partially_available/assigned.</li>
+    <li><span class="tag">[filter]</span> <code>stock.move</code> — <strong>Ontvangen per contact en PO</strong>:
+        afgewerkte ontvangsten (<code>location_id in [4]</code>, <code>state = done</code>), gegroepeerd op
+        contact en brondocument.</li>
+    <li><span class="tag">[filter]</span> <code>stock.picking</code> — <strong>GLS verzendingen</strong>:
+        uitgaande leveringen met een GLS-vervoerder.</li>
+    <li><span class="tag">[filter]</span> <code>stock.location</code> — <strong>Toonzaal en 2e keus</strong>.</li>
+</ul>
 
 <h3>Inventory &gt; Rapportages &gt; Batchpickings</h3>
 <p><span class="tag">[field]</span> <strong>stock.picking.batch</strong></p>
@@ -261,21 +574,17 @@
     for move_id in record.move_ids:
         total += move_id.x_studio_uom_qty_total
     record['x_studio_move_uom_qty_total'] = total</code></pre>
-<p><span class="tag">[serv]</span></p>
+<p><span class="tag">[serv]</span> Contextuele actie <code>* Compute computed fields</code> op
+<code>stock.picking.batch</code> om de totalen op bestaande batches te herberekenen.</p>
 <p><img src="https://osadmin.odoo.com/web/image/10874-71436380/image.png?access_token=77fd6de4-ee38-4211-8986-f9623b0380e7" alt="Server action batch totalen"></p>
 <pre><code>for record in records:
-    quantity_total = 0
-    uom_qty_total = 0
+    record['x_uom_qty_total'] = 0
+    record['x_quantity_total'] = 0
     for move_id in record.move_ids:
-        quantity_total += move_id.x_studio_quantity_total
-        uom_qty_total += move_id.x_studio_uom_qty_total
-    record['x_studio_move_quantity_total'] = quantity_total
-    record['x_studio_move_uom_qty_total'] = uom_qty_total
-        record['x_studio_picking_partner_amount_free_delivery'] = record.picking_ids.partner_id.x_studio_amount_free_delivery
-    if record['x_studio_picking_partner_amount_free_delivery'] == 0.0:
-        record['x_studio_picking_partner_amount_free_delivery'] = record.picking_ids.partner_id.parent_id.x_studio_amount_free_delivery</code></pre>
+        record['x_uom_qty_total'] += move_id.product_uom_qty
+        record['x_quantity_total'] += move_id.quantity</code></pre>
 
-<h2>Batchpikings</h2>
+<h2 id="batchpikings">Batchpikings</h2>
 
 <h3>Bedrag vanaf er geen portkosten zijn</h3>
 <p><span class="tag">[field]</span> <strong>res.partner</strong> — <code>x_studio_amount_free_delivery</code> (Bedrag Gratis Levering)</p>
@@ -286,15 +595,43 @@
     if record['x_studio_picking_partner_amount_free_delivery'] == 0.0:
         record['x_studio_picking_partner_amount_free_delivery'] = record.picking_ids.partner_id.parent_id.x_studio_amount_free_delivery</code></pre>
 
+<h3>Leveradres op de batch</h3>
+<p>Op de batchpicking het volledige leveradres tonen i.p.v. enkel de klantnaam. Vroeger stond op de
+PDF een regel <strong>Klant:</strong> met het standaardveld <code>description</code> (een samenvoegsel
+als een batch meerdere klanten zou bevatten). Bij BAB is een batch altijd per klant, dus tonen we het
+volledige adres van het leveradres van de <strong>eerste picking</strong> in de batch
+(gesorteerd op <code>batch_sequence</code>). Het land wordt enkel getoond wanneer het niet België is.</p>
+<p><span class="tag">[field]</span> <code>stock.picking.batch.x_studio_delivery_address</code> (Leveradres, tekst,
+opgeslagen) met afhankelijkheden <code>picking_ids,picking_ids.batch_sequence,picking_ids.partner_id,picking_ids.partner_id.name,picking_ids.partner_id.street,picking_ids.partner_id.street2,picking_ids.partner_id.zip,picking_ids.partner_id.city,picking_ids.partner_id.country_id</code> …</p>
+<pre><code>for record in self:
+    pickings = record.picking_ids.sorted('batch_sequence')
+    partner = pickings[:1].partner_id
+    lines = []
+    if partner:
+        if partner.name:
+            lines.append(partner.name)
+        if partner.street:
+            lines.append(partner.street)
+        if partner.street2:
+            lines.append(partner.street2)
+        city = ((partner.zip or '') + ' ' + (partner.city or '')).strip()
+        if city:
+            lines.append(city)
+        if partner.country_id and partner.country_id.code != 'BE':
+            lines.append(partner.country_id.name)
+    record['x_studio_delivery_address'] = '\n'.join(lines)</code></pre>
+
 <h3>Interne leverinformatie en sluitingsdagen</h3>
 <p><span class="tag">[field]</span> <strong>res.partner</strong> — <code>x_studio_delivery_info</code> (Leverinformatie), <code>x_studio_closing_days</code> (Sluitingsdagen)</p>
 <p><strong>stock.picking.batch</strong> — <code>x_studio_picking_partner_closing_days</code>, <code>x_studio_picking_partner_delivery_info</code></p>
+<p>Op de batch-PDF staan die drie regels samen in de kop, met <strong>Leveradres</strong> op de plaats
+waar vroeger <strong>Klant</strong> stond:</p>
 <pre><code>&lt;data&gt;
   &lt;data&gt;
     &lt;xpath position="replace" expr="/t[@t-name='stock_picking_batch.report_picking_batch']//t[@t-call='web.html_container']//t[@t-call='web.external_layout']/div/br"/&gt;
     &lt;xpath position="after" expr="/t[@t-name='stock_picking_batch.report_picking_batch']//t[@t-call='web.html_container']//t[@t-call='web.external_layout']/div/div[2]" meta-t-if="o.user_id"&gt;
-      &lt;strong&gt;Klant:&lt;/strong&gt;
-      &lt;span t-field="o.description"/&gt;
+      &lt;strong&gt;Leveradres:&lt;/strong&gt;
+      &lt;span t-field="o.x_studio_delivery_address"/&gt;
       &lt;br/&gt;
       &lt;strong&gt;Sluitingsdagen:&lt;/strong&gt;
       &lt;span t-field="o.x_studio_picking_partner_closing_days"/&gt;
@@ -320,8 +657,8 @@
   &lt;/data&gt;
   &lt;data&gt;
     &lt;xpath position="after" expr="/t[@t-name='stock_picking_batch.report_picking_batch']//t[@t-call='web.html_container']//t[@t-call='web.external_layout']/div/div[5]" meta-t-field="o.user_id"&gt;
-      &lt;strong&gt;Klant:&lt;/strong&gt;
-      &lt;span t-field="o.description"/&gt;
+      &lt;strong&gt;Leveradres:&lt;/strong&gt;
+      &lt;span t-field="o.x_studio_delivery_address"/&gt;
       &lt;br/&gt;
       &lt;strong&gt;Sluitingsdagen:&lt;/strong&gt;
       &lt;span t-field="o.x_studio_picking_partner_closing_days"/&gt;
@@ -380,13 +717,41 @@
     for move_id in record.move_ids:
         record['x_quantity_total'] += move_id.quantity</code></pre>
 
-<h2>GLS</h2>
+<h3>Batchformulier en -lijst</h3>
+<p><span class="tag">[view]</span> Op het <strong>formulier</strong> staan de eigen velden gegroepeerd in de
+rechterkolom: Bedrag Gratis Levering, Gevraagd Totaal, Aantal Totaal, Reservatie geblokkeerd, Goedgekeurd,
+Sluitingsdagen, Leverinformatie en Leveradres; links Totaal gevraagd en Totaal aantal. Op het tabblad met
+de voorraadverplaatsingen is de lijst inline bewerkbaar (verwijderen uitgeschakeld) met
+<code>picking_id</code>, <code>picked</code> en <code>create_date</code> als extra kolommen.</p>
+<p><span class="tag">[view]</span> In de <strong>lijst</strong> staan Bedrag Gratis Levering, Gevraagd Totaal,
+Aantal Totaal, Reservatie geblokkeerd en Goedgekeurd als optionele kolommen; in de
+<strong>zoekweergave</strong> kan je zoeken op <code>description</code>.</p>
+<p><span class="tag">[filter]</span> <strong>Batchpickings</strong> (standaardfilter): concept + bezig,
+gegroepeerd op bewerkingstype.</p>
+
+<h2 id="backorders-per-bewerkingstype">Backorders per bewerkingstype</h2>
+<p><span class="tag">[view]</span> <code>stock.picking.type</code> lijst — <code>create_backorder</code>
+als optionele kolom, zodat je in één scherm ziet welke bewerkingstypes automatisch een backorder maken.</p>
+
+<h2 id="rma-retourmagazijn-voor-defecte-klantretours">RMA — retourmagazijn voor defecte klantretours</h2>
+<p>Defecte producten die van een klant terugkomen en daarna naar de leverancier moeten, worden niet
+gescrapt maar in een <strong>apart magazijn</strong> (<code>RET</code>) gehouden, zodat ze niet
+verkoopbaar of reserveerbaar zijn maar wel in voorraad blijven tot ze effectief terug vertrekken.</p>
+<p><span class="tag">[conf]</span> Magazijn <strong>RET</strong> met een extra uitgaand bewerkingstype
+<strong>Retour naar leverancier</strong> (<code>RTV</code>).</p>
+<p><span class="tag">[code]</span> <code>stock_warehouse_out_pull</code> (oca) — laat een magazijn
+uitleveren vanuit een ander magazijn.</p>
+<p class="status">Status: opgezet en getest in de werkkopie; nog na te bootsen in productie
+(zie <code>$claude/rma_retouren_leverancier.html</code>).</p>
+
+<h2 id="gls">GLS</h2>
 <p><span class="tag">[code]</span></p>
 <ul>
     <li><code>gls_shipping_integration</code> (tpa_osa dus enkele eigen aanpassingen)</li>
     <li><code>stock_picking_group_by_partner_by_carrier</code> (oca) zodat er gegroepeerde outs gemaakt worden om vanaf daar te kunnen verzenden!</li>
 </ul>
-<p><span class="tag">[auto]</span></p>
+<p><span class="tag">[auto]</span> op <code>stock.picking</code>, trigger <em>bij aanmaken of wijzigen</em>
+van <code>carrier_id</code>.</p>
 <p><img src="https://osadmin.odoo.com/web/image/12162-7cde04b5/image.png?access_token=781e8b72-0360-4a4b-b8b0-4b21ac5d737a" alt="Automatische actie GLS leverinformatie"></p>
 <pre><code>for record in records:
     if record.partner_id.x_studio_closing_days:
@@ -396,7 +761,7 @@
 
 <h1 id="ecommerce">eCommerce</h1>
 
-<h2>Op de productpagina moet het aantal van de eerste packaging ingevuld staan</h2>
+<h2 id="op-de-productpagina-moet-het-aantal-van-de-eerste-">Op de productpagina moet het aantal van de eerste packaging ingevuld staan</h2>
 <p>Zakken kan, ophogen gaat per package. Hier zijn nog verder verbeteringen gewenst
 want niet voor elk product mag er gezakt kunnen worden.</p>
 <p><span class="tag">[code]</span> <code>website_sale_product_packaging_quantity</code> (osa)</p>
@@ -405,9 +770,41 @@ want niet voor elk product mag er gezakt kunnen worden.</p>
 overal uit, dan valt het aantal terug op de gewone default. De eerste sales-packaging
 (op sequence) levert het aantal.</p>
 
+<h2 id="verkoper-bestelt-namens-zijn-klant">Verkoper bestelt namens zijn klant</h2>
+<p>Een verkoper kan op de webshop winkelen <strong>in naam van één van zijn klanten</strong>. De link
+<em>Klanten</em> zit in het accountmenu van de webshop, afgeschermd op
+<code>sales_team.group_sale_salesman</code>; de keuzelijst toont enkel contacten waarvan de
+verkoper de verantwoordelijke (<code>user_id</code>) is. Het gekozen contact wordt de klant van het
+verkooporder, de verkoper blijft de <code>user_id</code>.</p>
+<p>Propere v18-herbouw van het oude Probuse <code>shop_agents_sales_order_create</code>: alle eigen
+agent-velden zijn geschrapt en alles is hernoemd naar standaard-Odoo-conventies.</p>
+<p><span class="tag">[code]</span> <code>bab_website_sale_salesperson_order</code> (osa, in de bab-repo)</p>
+
+<h2 id="btw-in-of-exclusief-per-bezoekerstype">Btw in- of exclusief per bezoekerstype</h2>
+<p>Publieke bezoekers en ingelogde klanten kunnen elk hun eigen btw-weergave krijgen: de website
+kiest de instelling op basis van wie kijkt, i.p.v. één vaste instelling voor iedereen.</p>
+<p><span class="tag">[code]</span> <code>babimex_website_sale</code> —
+<code>website.show_line_subtotals_tax_selection_public_user</code>,
+<code>website.show_line_subtotals_tax_selection_log_in_user</code>, met een compute op het
+standaardveld <code>show_line_subtotals_tax_selection</code>.</p>
+
+<h2 id="lange-productomschrijving">Lange productomschrijving</h2>
+<p>Extra HTML-veld op het productsjabloon dat op de productpagina getoond wordt (los van de korte
+webshopomschrijving) en meegaat in de combinatie-info van de variant.</p>
+<p><span class="tag">[code]</span> <code>babimex_website_sale</code> — <code>product.template.long_description</code></p>
+
+<h2 id="afrekenen-en-portaal">Afrekenen en portaal</h2>
+<p><span class="tag">[code]</span> <code>babimex_website_sale</code> — eigen
+<code>_prepare_checkout_page_values</code> en <code>_check_cart_and_addresses</code> op de
+webshopcontroller, een eigen portaal-<code>account</code>-pagina, en een aangepaste
+"betaling geslaagd"-mail via <code>sale.order._send_payment_succeeded_for_order_mail</code>.</p>
+
+<h2 id="odoo-branding-uit-de-website">Odoo-branding uit de website</h2>
+<p><span class="tag">[code]</span> <code>website_odoo_debranding</code></p>
+
 <h1 id="boekhouding">Boekhouding</h1>
 
-<h2>Totale hoeveelheid artikelen</h2>
+<h2 id="totale-hoeveelheid-artikelen">Totale hoeveelheid artikelen</h2>
 <p><span class="tag">[field]</span> <code>x_qty_total</code> met afhankelijkheden <code>invoice_line_ids,invoice_line_ids.quantity</code> …</p>
 <pre><code>for record in self:
     record['x_qty_total'] = 0
@@ -415,13 +812,62 @@ overal uit, dan valt het aantal terug op de gewone default. De eerste sales-pack
         for line in record.invoice_line_ids:
             record['x_qty_total'] += line.quantity</code></pre>
 
-<h2>Lijnen groeperen per verkooporder</h2>
+<h2 id="lijnen-groeperen-per-verkooporder">Lijnen groeperen per verkooporder</h2>
 <p><span class="tag">[code]</span> <code>account_invoice_section_sale_order</code></p>
 
-<h2>Leverdatum niet op factuurpdf</h2>
+<h2 id="leverdatum-niet-op-factuurpdf">Leverdatum niet op factuurpdf</h2>
 <p><span class="tag">[view]</span> <code>report_invoice_document_bab</code> &lt; <code>report_invoice_document</code></p>
 <pre><code>&lt;xpath expr="//div[@t-if='o.delivery_date']" position="replace"&gt;
 &lt;/xpath&gt;</code></pre>
+
+<h2 id="handelsnaam-op-factuur-en-in-de-rapportage">Handelsnaam op factuur en in de rapportage</h2>
+<p>De handelsnaam van het contact (zie Contacten) staat op de factuur en is als dimensie beschikbaar
+in de factuurrapportage (<code>account.invoice.report</code>) en de verkooprapportage
+(<code>sale.report</code>).</p>
+<p><span class="tag">[code]</span> <code>babimex_custom</code></p>
+
+<h2 id="boekingsregels-per-contact-en-productsjabloon">Boekingsregels per contact en productsjabloon</h2>
+<p>Op de journaalposten-lijn is het productsjabloon beschikbaar, zodat je aankoopfacturen in concept
+kan overlopen per leverancier en per artikel.</p>
+<p><span class="tag">[field]</span> <code>account.move.line.x_studio_product_tmpl_id</code>
+(gerelateerd aan <code>product_id.product_tmpl_id</code>, niet opgeslagen)</p>
+<p><span class="tag">[view]</span> lijst — <code>x_studio_product_tmpl_id</code> na het contact,
+<code>quantity</code> na de omschrijving.</p>
+<p><span class="tag">[filter]</span> <strong>Per contact en product template</strong> — concept-boekingen
+op een aankoopdagboek, gegroepeerd op contact en productsjabloon.</p>
+<p><span class="tag">[filter]</span> <strong>Recupel / Bebat</strong> — geboekte lijnen met een
+btw/heffing waarvan de naam "recupel" bevat, gegroepeerd op <code>tax_ids</code>.</p>
+
+<h2 id="omzet-per-merk">Omzet per merk</h2>
+<p><span class="tag">[filter]</span> <code>account.invoice.report</code> — klantfacturen en creditnota's
+buiten concept/geannuleerd, als pivot met <code>price_subtotal</code> en <code>quantity</code>,
+gegroepeerd op merk × kwartaal × klant.</p>
+
+<h2 id="peppol-status-in-de-factuurlijst">Peppol-status in de factuurlijst</h2>
+<p><span class="tag">[view]</span> <code>account.move</code> lijst — <code>peppol_move_state</code>
+als optionele kolom naast de betaalstatus.</p>
+
+<h2 id="totale-hoeveelheid-op-het-factuurformulier">Totale hoeveelheid op het factuurformulier</h2>
+<p><span class="tag">[view]</span> <code>account.move</code> formulier — <code>x_qty_total</code>
+na <code>partner_shipping_id</code>.</p>
+
+
+<!-- ============================================================= -->
+<!-- ↓↓↓  NIET meekopiëren naar Odoo — knop "naar boven"  ↓↓↓        -->
+<!-- ============================================================= -->
+<a href="#" id="naar-boven" title="Naar boven" aria-label="Naar boven">&#8593;</a>
+<script>
+    (function () {
+        var knop = document.getElementById('naar-boven');
+        function toon() { knop.classList.toggle('zichtbaar', window.scrollY > 400); }
+        window.addEventListener('scroll', toon, { passive: true });
+        knop.addEventListener('click', function (ev) {
+            ev.preventDefault();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        toon();
+    })();
+</script>
 
 </body>
 </html>
