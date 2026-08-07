@@ -484,9 +484,12 @@ class StockPicking(models.Model):
         stock_picking_group_by_partner_by_carrier bundles many orders per delivery.
         """
         self.ensure_one()
-        # Only orders that actually print their grids contribute (mirrors the
-        # report_grids guard inside get_report_matrixes).
-        orders = orders.filtered('report_grids')
+        # EVERY order contributes, whatever its "Print Variant Grids" setting says.
+        # Stock get_report_matrixes honours that checkbox, and an earlier version
+        # here did too, but this slip is a warehouse document rather than a
+        # customer-facing one: the box has to be packed either way. A checkbox left
+        # off on the sales order would silently drop the customer from the print
+        # run, and nobody looks at that field for this purpose.
         all_lines = orders.order_line
         # Every configurable product -- i.e. a product WITH variants -- gets a
         # matrix, regardless of its Sales "Variant Selection" (product_add_mode).

@@ -174,18 +174,21 @@
                         <div t-if="picking.partner_id" class="col-6 mw-100" name="div_customer">
                             <span t-out="picking.partner_id.name">Customer 1</span>
                         </div>
-                        <!-- Picking name dropped as a big title; shown in parentheses after the order.
-                             A grouped delivery can carry dozens of source orders; a long list would make
-                             this heading taller than the 99mm block and overlap the next slip, so the
-                             order list is capped and truncated with "..." (the picking name always stays
-                             visible after it). -->
+                        <!-- Picking name dropped as a big title; shown in parentheses after the
+                             orders. ALL source orders are printed, never truncated: the warehouse
+                             needs every order number that is in the box. An earlier version capped
+                             the list to keep the heading inside the 99mm block, but a hidden "..."
+                             on a warehouse document costs more than a tight heading. In practice
+                             the lists stay short: across the whole database the longest carries
+                             13 orders, and only one transfer reaches that. Should a grouped
+                             delivery ever get much longer, the heading grows and the block's
+                             overflow clips the bottom of the matrix, so that is the point to
+                             revisit rather than to truncate silently. -->
                         <div t-if="picking.origin" class="col-6 mw-100" name="div_origin">
                             <!-- picking.origin is the space-joined source order names (merged by
-                                 stock_picking_group_by_partner_by_carrier); show at most origin_cap. -->
-                            <t t-set="origins" t-value="(picking.origin or '').split()"/>
-                            <t t-set="origin_cap" t-value="12"/>
+                                 stock_picking_group_by_partner_by_carrier). -->
                             <div class="m-0">
-                                <span t-out="' '.join(origins[:origin_cap])">S0001</span><t t-if="len(origins) &gt; origin_cap"> ...</t>
+                                <span t-out="picking.origin">S0001</span>
                                 <span> (<span t-out="picking.name">WH/OUT/0001</span>)</span>
                             </div>
                         </div>

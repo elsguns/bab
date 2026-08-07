@@ -425,7 +425,12 @@ deel niet op het briefje: rijen en volledige matrices zonder aantal op deze leve
 <p>Elk hoofdproduct krijgt een briefje, <strong>ook wanneer de klant er maar één maat van
 bestelde</strong>. Odoo zelf slaat zo'n product over omdat een raster van één vakje geen raster is,
 maar het briefje draagt ook de stocklocatie, de klantnaam en het ordernummer — zonder briefje heeft
-het magazijn geen papier dat zegt dat er voor die klant iets klaarligt.</p>
+het magazijn geen papier dat zegt dat er voor die klant iets klaarligt. Om dezelfde reden wordt het
+vinkje <em>Variantrasters afdrukken</em> op het verkooporder genegeerd: het briefje is een
+magazijndocument, en de doos moet hoe dan ook gepakt worden.</p>
+<p>Alle brondocumenten staan in de kop, <strong>zonder afkapping</strong>. Bij een gegroepeerde
+levering met veel orders wordt die regel dus langer; dat is bewust, want een verzwegen
+&ldquo;…&rdquo; op een magazijndocument kost meer dan een brede kop.</p>
 <p>Afdrukken kan enkel op een <strong>afgewerkte pickbon</strong>: de briefjes reizen mee met de
 gepickte goederen, dus vóór dat moment is er niets om af te drukken. Elk ander soort overboeking,
 en een pickbon die nog niet klaar is, geeft een melding met de reden. Het picktype wordt uit het
