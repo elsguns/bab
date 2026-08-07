@@ -11,23 +11,33 @@ class ReportDeliverySlipMatrix(models.AbstractModel):
 
     @api.model
     def _get_report_values(self, docids, data=None):
-        """Build the report values, but only for outgoing deliveries.
+        """Build the report values, but only for completed pick transfers.
 
-        The Productenmatrix is a packing/delivery slip and only makes sense for
-        outgoing transfers. Odoo report bindings carry no per-record visibility,
-        so we can't hide the Print entry on incoming/internal pickings; instead we
-        refuse to render as soon as a non-outgoing picking is in the selection,
-        with a clear message naming the offending transfers.
+        The Productenmatrix is cut into slips that travel with the picked goods,
+        so it only makes sense once the warehouse's pick step is validated. Odoo
+        report bindings carry no per-record visibility, so we can't hide the Print
+        entry on other transfers; instead we refuse to render as soon as the
+        selection holds anything else, naming the offending transfers and why they
+        don't qualify.
+
+        The pick operation type is read from the transfer's own warehouse rather
+        than matched on a code or a fixed id: every warehouse (Babimex, bol.com,
+        Vasa) has its own pick type, and its code is 'internal' like that of any
+        other internal transfer.
         """
         pickings = self.env['stock.picking'].browse(docids)
-        wrong_type = pickings.filtered(lambda p: p.picking_type_id.code != 'outgoing')
-        if wrong_type:
+        refused = []
+        for picking in pickings:
+            if picking.picking_type_id != picking.picking_type_id.warehouse_id.pick_type_id:
+                refused.append(_("%s (not a pick transfer)", picking.name))
+            elif picking.state != 'done':
+                refused.append(_("%s (not done yet)", picking.name))
+        if refused:
             raise UserError(_(
-                "The Productenmatrix can only be printed for outgoing deliveries.\n"
-                "These transfers have a different operation type: %s",
-                ", ".join(wrong_type.mapped('name')),
+                "The Productenmatrix can only be printed for pick transfers that are done.\n%s",
+                "\n".join(refused),
             ))
-        # Mark the deliveries as printed so a later print run can warn before a
+        # Mark the transfers as printed so a later print run can warn before a
         # reprint (see stock.picking.action_print_matrix). Runs on every render
         # path, so the flag stays correct even if the report is reached directly.
         pickings.filtered(lambda p: not p.matrix_printed).matrix_printed = True

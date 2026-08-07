@@ -77,7 +77,7 @@
                 </style>
 
                 <p class="o_res_legend">
-                    <span class="o_res_lbl">o</span> = <span class="o_res_received">ontvangen (laatste ontvangst)</span> &#160;·&#160;
+                    <span class="o_res_lbl">o</span> = <span class="o_res_received">ontvangen (van de aanvoer)</span> &#160;·&#160;
                     <span class="o_res_lbl">r</span> = gereserveerd &#160;·&#160;
                     <span class="o_res_lbl">s</span> = <span class="o_res_surplus">+overschot (vrije voorraad)</span> / <span class="o_res_shortage">−tekort</span> &#160;·&#160;
                     <span class="o_res_lbl">i</span> = <span class="o_res_incoming">inkomend</span>
@@ -113,8 +113,9 @@
                                 </td>
                                 <!-- Each populated cell stacks its four figures, one per
                                      line, digits right-aligned with a fixed sign slot so
-                                     they never shift: received in the last receipt (o,
-                                     black, no sign); reserved (r, black, no sign); then a
+                                     they never shift: received so far of the supply behind
+                                     these transfers (o, black, no sign); reserved (r,
+                                     black, no sign); then a
                                      single shortage/surplus figure (s): a red -tekort when
                                      the demand is not fully reserved, otherwise a green
                                      +overschot (+0 when exactly reserved, no free stock);

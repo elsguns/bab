@@ -26,23 +26,6 @@ class StockPicking(models.Model):
         backorder.matrix_printed = True
         return backorder
 
-    def _action_done(self):
-        """Flag outgoing deliveries that reach "done" without ever being printed.
-
-        If an outgoing transfer is validated while its Productenmatrix was never
-        printed, the slip clearly shipped without one and we don't want it to
-        silently produce a fresh print afterwards. We mark it as printed on
-        completion so any later print attempt goes through the reprint
-        confirmation wizard, exactly like a backorder (see
-        _create_backorder_picking).
-        """
-        res = super()._action_done()
-        to_flag = self.filtered(
-            lambda p: p.picking_type_id.code == 'outgoing' and not p.matrix_printed)
-        if to_flag:
-            to_flag.matrix_printed = True
-        return res
-
     def action_print_matrix(self):
         """Print the Productenmatrix, asking to confirm a reprint.
 
@@ -50,8 +33,9 @@ class StockPicking(models.Model):
         a single delivery and on a multi-selection from the list). For any picking
         already printed once we open a confirmation wizard instead of printing
         straight away; the wizard re-calls this with ``matrix_reprint_confirmed``
-        so the second pass goes through. The outgoing-only guard lives in the
-        report's _get_report_values, which also flips ``matrix_printed``.
+        so the second pass goes through. The guard on which transfers may be
+        printed (the warehouse's pick step, done) lives in the report's
+        _get_report_values, which also flips ``matrix_printed``.
         """
         report = self.env.ref('bab_stock_delivery.action_report_delivery_matrix')
         already_printed = self.filtered('matrix_printed')
@@ -97,14 +81,14 @@ class StockPicking(models.Model):
         Per template+colour+size variant it gathers, from the selected transfers'
         moves and the variant's live stock:
 
-          * received : total qty of the variant on its last completed receipt (picking)
+          * received : Σ qty already received of the supply feeding these transfers
           * reserved : Σ reserved qty on the selected transfers (move.quantity)
           * demand   : Σ demand qty on the selected transfers (move.product_uom_qty)
           * free     : the variant's free-to-use stock (product.product.free_qty)
           * incoming : the variant's forecasted inbound (product.product.incoming_qty)
 
         From these the report shows, per cell, four figures:
-          0. received in the last receipt (o, black);
+          0. received so far of the supply behind these transfers (o, black);
           1. reserved (r, black);
           2. ONE signed figure (s) -- a shortage ``-(demand - reserved)`` (red) when
              the demand is not fully reserved, otherwise a surplus ``+free`` (green).
@@ -115,7 +99,9 @@ class StockPicking(models.Model):
 
         A colour (kleur) row for which nothing was received is dropped: when no
         size of that colour has an "ontvangen" (received) quantity there is no
-        receipt to act on, so the row is left off the slip.
+        receipt to act on, so the row is left off the slip. Note this also drops
+        rows whose goods never went through a receipt at all (nothing chained to
+        the transfer), since for those there is no supply to report on.
 
         Only hoofdproducten with an actual reservation are listed: a block where
         nothing is reserved anywhere (e.g. make-to-order products not yet received,
@@ -164,26 +150,33 @@ class StockPicking(models.Model):
         variants.mapped('free_qty')
         variants.mapped('incoming_qty')
 
-        # Quantity received in the last completed receipt per variant ("ontvangen",
-        # the o-line). Done moves on an incoming-type transfer, newest first: the
-        # first one seen per variant pins its last receipt (that move's picking);
-        # every further line of the SAME picking is added, so o is the TOTAL of
-        # that variant on the last receipt, not just one line. Taken from the moves
-        # rather than r+s so it stays correct when part was already shipped, reserved
-        # to other deliveries, or stock existed before the receipt.
+        # Quantity already received of the supply behind these transfers
+        # ("ontvangen", the o-line): NOT the last receipt in isolation, but
+        # everything that has come in so far for the goods these transfers are
+        # waiting on. So it pairs with the i-line: o is what arrived, i is what is
+        # still to come.
+        #
+        # We walk the supply chain of the selected transfers backwards over
+        # move_orig_ids until we reach the receipts. That hop is more than one step
+        # since the pick/ship route puts a pick between the receipt and the
+        # delivery (receipt -> pick -> out), so this is a breadth-first walk rather
+        # than a single mapped(). Moves are collected in a recordset first because
+        # one receipt can feed several of the selected transfers and must only be
+        # counted once.
+        receipt_moves = self.env['stock.move']
+        visited = set()
+        frontier = self.move_ids
+        while frontier:
+            frontier = frontier.move_orig_ids.filtered(lambda m: m.id not in visited)
+            visited.update(frontier.ids)
+            receipt_moves |= frontier.filtered(
+                lambda m: m.state == 'done'
+                and m.picking_id.picking_type_id.code == 'incoming')
+
         received = {}
-        last_receipt = {}
-        for move in self.env['stock.move'].search([
-                ('product_id', 'in', variants.ids),
-                ('state', '=', 'done'),
-                ('picking_id.picking_type_id.code', '=', 'incoming'),
-        ], order='date desc, id desc'):
+        for move in receipt_moves:
             product_id = move.product_id.id
-            if product_id not in last_receipt:
-                last_receipt[product_id] = move.picking_id.id
-                received[product_id] = move.quantity
-            elif move.picking_id.id == last_receipt[product_id]:
-                received[product_id] += move.quantity
+            received[product_id] = received.get(product_id, 0) + move.quantity
 
         blocks = []
         for bucket in buckets.values():

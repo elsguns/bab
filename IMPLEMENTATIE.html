@@ -422,10 +422,20 @@ Verpakken, Kwaliteitscontrole, Opslag en Cross-docking staan uit.</p>
 cijfers komen uit de verplaatsingen van de levering zelf. Blijft een deel van een order achter —
 bv. een deels bevestigde pickbon met een backorder, of een tweede deellevering — dan staat dat
 deel niet op het briefje: rijen en volledige matrices zonder aantal op deze levering vallen weg.</p>
+<p>Afdrukken kan enkel op een <strong>afgewerkte pickbon</strong>: de briefjes reizen mee met de
+gepickte goederen, dus vóór dat moment is er niets om af te drukken. Elk ander soort overboeking,
+en een pickbon die nog niet klaar is, geeft een melding met de reden. Het picktype wordt uit het
+magazijn van de overboeking zelf gehaald, niet uit een vaste code of id — elk magazijn (Babimex,
+bol.com, Vasa) heeft zijn eigen picktype, en die dragen allemaal de code <em>intern</em>.</p>
 <p><span class="tag">[code]</span> <span class="tag">[view]</span> <code>bab_stock_delivery</code> (osa)</p>
 
 <h2 id="productenmatrix-met-reservaties">Productenmatrix met reservaties</h2>
-<p>Overzichtsrapport (liggend A4): één matrix per hoofdproduct, rijen = kleur, kolommen = maat. Per cel vier getallen, onder elkaar met een r/s/i-gidskolom: <span style="color:#0d6efd">ontvangen</span> in de laatste ontvangst (o, blauw), <strong>gereserveerd</strong> (r, zwart), dan één gecombineerd getal — <span style="color:#dc3545">−tekort</span> (rood) bij ondervoorziening óf <span style="color:#198754">+overschot</span> (groen, de vrije voorraad, +0 als exact gedekt) — en tot slot de <span style="color:#0d6efd">+inkomende</span> voorraad (i, blauw).</p>
+<p>Overzichtsrapport (liggend A4): één matrix per hoofdproduct, rijen = kleur, kolommen = maat. Per cel vier getallen, onder elkaar met een r/s/i-gidskolom: <span style="color:#0d6efd">ontvangen</span> van de aanvoer (o, blauw), <strong>gereserveerd</strong> (r, zwart), dan één gecombineerd getal — <span style="color:#dc3545">−tekort</span> (rood) bij ondervoorziening óf <span style="color:#198754">+overschot</span> (groen, de vrije voorraad, +0 als exact gedekt) — en tot slot de <span style="color:#0d6efd">+inkomende</span> voorraad (i, blauw).</p>
+<p>De <strong>o</strong> is alles wat van de lopende aanvoer al binnen is: de aanvoerketen van de
+geselecteerde leveringen wordt teruggelopen tot bij de ontvangsten — over de pickstap heen — en die
+ontvangsten worden opgeteld. Komen er twee deelleveringen van de leverancier, dan staat de som er;
+niet enkel de laatste bon. Goederen die niet via een aanvoerketen lopen (rechtstreeks uit voorraad
+verkocht) hebben geen o en komen niet op dit overzicht — het is een Vasa-rapport.</p>
 <p>Toont enkel hoofdproducten waar effectief <strong>iets gereserveerd</strong> is. Make-to-order producten die nog niet ontvangen zijn kunnen niet gereserveerd worden (moves blijven "waiting") en vallen dus weg uit de lijst. Een <strong>kleurrij waarvoor niets ontvangen werd</strong> (o = 0 voor elke maat van die kleur) valt eveneens weg. Staat vóór "per kleur en klant" in het Print-menu.</p>
 <p><span class="tag">[code]</span> <code>bab_stock_delivery</code> (osa)</p>
 
