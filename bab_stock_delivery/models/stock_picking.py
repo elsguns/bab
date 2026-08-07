@@ -498,11 +498,14 @@ class StockPicking(models.Model):
 
         matrixes = []
         for template in grid_templates:
-            # A real grid needs more than one configured line for the template;
-            # counted across the whole bundle so two orders contributing one
-            # line each still produce a (summed) matrix.
-            if len(all_lines.filtered(lambda line: line.product_template_id == template)) <= 1:
-                continue
+            # NO minimum number of order lines. Stock Odoo (and an earlier version
+            # of this method) skips a template with a single line, on the grounds
+            # that a one-cell grid is not a grid. That reasoning does not hold
+            # here: the slip is not just a grid, it also carries the stock
+            # location, the customer and the order. Drop it and the warehouse has
+            # no paper saying something is waiting for that customer at all --
+            # worse than a table with one box in it. Seen in the wild on S01829,
+            # where 14 of the 33 hoofdproducten sit on a single line.
             combined = None
             for order in orders:
                 if combined is None:

@@ -422,6 +422,10 @@ Verpakken, Kwaliteitscontrole, Opslag en Cross-docking staan uit.</p>
 cijfers komen uit de verplaatsingen van de levering zelf. Blijft een deel van een order achter —
 bv. een deels bevestigde pickbon met een backorder, of een tweede deellevering — dan staat dat
 deel niet op het briefje: rijen en volledige matrices zonder aantal op deze levering vallen weg.</p>
+<p>Elk hoofdproduct krijgt een briefje, <strong>ook wanneer de klant er maar één maat van
+bestelde</strong>. Odoo zelf slaat zo'n product over omdat een raster van één vakje geen raster is,
+maar het briefje draagt ook de stocklocatie, de klantnaam en het ordernummer — zonder briefje heeft
+het magazijn geen papier dat zegt dat er voor die klant iets klaarligt.</p>
 <p>Afdrukken kan enkel op een <strong>afgewerkte pickbon</strong>: de briefjes reizen mee met de
 gepickte goederen, dus vóór dat moment is er niets om af te drukken. Elk ander soort overboeking,
 en een pickbon die nog niet klaar is, geeft een melding met de reden. Het picktype wordt uit het
