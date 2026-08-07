@@ -21,7 +21,9 @@ the new report.
     # sale_stock -> stock.picking.sale_id (link picking to its sales order)
     # sale_product_matrix -> product_matrix.matrix template + sale.order.get_report_matrixes()
     # delivery -> res.partner.property_delivery_carrier_id (anchor for stock_location field)
-    'depends': ['stock', 'sale_stock', 'sale_product_matrix', 'delivery'],
+    # purchase -> purchase.order.line.qty_received (the o-line of the reservation
+    #             matrix reads what has already come in per purchase order)
+    'depends': ['stock', 'sale_stock', 'sale_product_matrix', 'delivery', 'purchase'],
     'data': [
         'security/ir.model.access.csv',
         'data/sale_order_stock_location_action.xml',

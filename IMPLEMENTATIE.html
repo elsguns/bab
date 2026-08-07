@@ -431,11 +431,19 @@ bol.com, Vasa) heeft zijn eigen picktype, en die dragen allemaal de code <em>int
 
 <h2 id="productenmatrix-met-reservaties">Productenmatrix met reservaties</h2>
 <p>Overzichtsrapport (liggend A4): één matrix per hoofdproduct, rijen = kleur, kolommen = maat. Per cel vier getallen, onder elkaar met een r/s/i-gidskolom: <span style="color:#0d6efd">ontvangen</span> van de aanvoer (o, blauw), <strong>gereserveerd</strong> (r, zwart), dan één gecombineerd getal — <span style="color:#dc3545">−tekort</span> (rood) bij ondervoorziening óf <span style="color:#198754">+overschot</span> (groen, de vrije voorraad, +0 als exact gedekt) — en tot slot de <span style="color:#0d6efd">+inkomende</span> voorraad (i, blauw).</p>
-<p>De <strong>o</strong> is alles wat van de lopende aanvoer al binnen is: de aanvoerketen van de
-geselecteerde leveringen wordt teruggelopen tot bij de ontvangsten — over de pickstap heen — en die
-ontvangsten worden opgeteld. Komen er twee deelleveringen van de leverancier, dan staat de som er;
-niet enkel de laatste bon. Goederen die niet via een aanvoerketen lopen (rechtstreeks uit voorraad
-verkocht) hebben geen o en komen niet op dit overzicht — het is een Vasa-rapport.</p>
+<p>De <strong>o</strong> is alles wat van de lopende aanvoer al binnen is, geteld per
+<strong>aankooporder</strong>: van elke bestelling die nog niet volledig ontvangen is, telt de reeds
+ontvangen hoeveelheid mee. Komen er twee deelleveringen van de leverancier, dan staat de som er en
+niet enkel de laatste bon. Staat een variant op twee lopende bestellingen, dan tellen die samen.
+Loopt er geen enkele bestelling meer, dan valt de o terug op de <strong>laatste</strong> bestelling
+van die variant: volledig ontvangen betekent dat de leverancier klaar is, niet dat de goederen weg
+zijn — die moeten nog verdeeld worden, en dat is net waar dit overzicht voor dient.</p>
+<p>Bewust niet via de verplaatsingsketen. Odoo legt wel een verband tussen een ontvangst en de
+levering die erop wacht, maar dat overleeft niet: bij een deelvalidatie neemt de backorder enkel de
+bestemmingen mee die nog niet klaar zijn (<code>stock_move._prepare_move_split_vals</code>). Een
+bestelling die over maanden in stukken binnenkomt, verliest die links dus net voor de goederen die
+al vertrokken zijn — precies de geschiedenis die de o moet tonen. De aankooporder houdt al haar
+ontvangsten wel bij elkaar.</p>
 <p>Toont enkel hoofdproducten waar effectief <strong>iets gereserveerd</strong> is. Make-to-order producten die nog niet ontvangen zijn kunnen niet gereserveerd worden (moves blijven "waiting") en vallen dus weg uit de lijst. Een <strong>kleurrij waarvoor niets ontvangen werd</strong> (o = 0 voor elke maat van die kleur) valt eveneens weg. Staat vóór "per kleur en klant" in het Print-menu.</p>
 <p><span class="tag">[code]</span> <code>bab_stock_delivery</code> (osa)</p>
 

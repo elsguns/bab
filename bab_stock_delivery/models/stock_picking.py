@@ -1,5 +1,6 @@
 # Part of the o.s.admin add-ons.
 from odoo import _, fields, models
+from odoo.tools import float_compare
 
 
 class StockPicking(models.Model):
@@ -81,14 +82,14 @@ class StockPicking(models.Model):
         Per template+colour+size variant it gathers, from the selected transfers'
         moves and the variant's live stock:
 
-          * received : Σ qty already received of the supply feeding these transfers
+          * received : Σ qty already received on the purchase orders still running
           * reserved : Σ reserved qty on the selected transfers (move.quantity)
           * demand   : Σ demand qty on the selected transfers (move.product_uom_qty)
           * free     : the variant's free-to-use stock (product.product.free_qty)
           * incoming : the variant's forecasted inbound (product.product.incoming_qty)
 
         From these the report shows, per cell, four figures:
-          0. received so far of the supply behind these transfers (o, black);
+          0. received so far on the purchase orders still running (o, black);
           1. reserved (r, black);
           2. ONE signed figure (s) -- a shortage ``-(demand - reserved)`` (red) when
              the demand is not fully reserved, otherwise a surplus ``+free`` (green).
@@ -100,8 +101,8 @@ class StockPicking(models.Model):
         A colour (kleur) row for which nothing was received is dropped: when no
         size of that colour has an "ontvangen" (received) quantity there is no
         receipt to act on, so the row is left off the slip. Note this also drops
-        rows whose goods never went through a receipt at all (nothing chained to
-        the transfer), since for those there is no supply to report on.
+        rows whose purchase orders are all fully received: nothing is coming in for
+        them any more, so they no longer figure on a slip about the running supply.
 
         Only hoofdproducten with an actual reservation are listed: a block where
         nothing is reserved anywhere (e.g. make-to-order products not yet received,
@@ -150,33 +151,57 @@ class StockPicking(models.Model):
         variants.mapped('free_qty')
         variants.mapped('incoming_qty')
 
-        # Quantity already received of the supply behind these transfers
-        # ("ontvangen", the o-line): NOT the last receipt in isolation, but
-        # everything that has come in so far for the goods these transfers are
-        # waiting on. So it pairs with the i-line: o is what arrived, i is what is
-        # still to come.
+        # Quantity already received of the supply that is still running ("ontvangen",
+        # the o-line): NOT the last receipt in isolation, but everything that has
+        # come in so far. So it pairs with the i-line: o is what arrived, i is what
+        # is still to come.
         #
-        # We walk the supply chain of the selected transfers backwards over
-        # move_orig_ids until we reach the receipts. That hop is more than one step
-        # since the pick/ship route puts a pick between the receipt and the
-        # delivery (receipt -> pick -> out), so this is a breadth-first walk rather
-        # than a single mapped(). Moves are collected in a recordset first because
-        # one receipt can feed several of the selected transfers and must only be
-        # counted once.
-        receipt_moves = self.env['stock.move']
-        visited = set()
-        frontier = self.move_ids
-        while frontier:
-            frontier = frontier.move_orig_ids.filtered(lambda m: m.id not in visited)
-            visited.update(frontier.ids)
-            receipt_moves |= frontier.filtered(
-                lambda m: m.state == 'done'
-                and m.picking_id.picking_type_id.code == 'incoming')
-
+        # The supply is anchored on the PURCHASE ORDER, not on the move chain. A
+        # chain does exist (receipt -> ... -> delivery) but it does not survive:
+        # when a receipt is partially validated, stock.move._prepare_move_split_vals
+        # copies only the destinations that are not done or cancelled onto the
+        # backorder. A big order delivered in batches over months therefore loses
+        # its links exactly for the goods that already went out -- which is the
+        # history the o-line has to show. The purchase order keeps every one of its
+        # receipts together regardless of what happened downstream.
+        #
+        # Orders that are NOT fully received count first: those are the ones still
+        # being delivered. A variant can sit on several of them at once (a re-order
+        # while the first is still coming in) and then they add up, so a partly
+        # delivered order does not drop out of sight.
+        #
+        # Has a variant no such order, then its LAST purchase order is used instead.
+        # "Fully received" means the supplier is done, not that the goods are gone:
+        # they are sitting in the warehouse waiting to be handed out, which is
+        # exactly what this slip is for. Without this fallback such a batch would
+        # show o = 0 and its colour row would drop off.
+        #
+        # qty_received is the line's own "already received" figure, converted to the
+        # product's UoM since the report counts in product units.
+        purchase_lines = self.env['purchase.order.line'].search([
+            ('product_id', 'in', variants.ids),
+            ('state', 'in', ('purchase', 'done')),
+        ])
         received = {}
-        for move in receipt_moves:
-            product_id = move.product_id.id
-            received[product_id] = received.get(product_id, 0) + move.quantity
+        completed = {}
+        for line in purchase_lines:
+            quantity = line.product_uom._compute_quantity(
+                line.qty_received, line.product_id.uom_id)
+            product_id = line.product_id.id
+            if float_compare(line.qty_received, line.product_qty,
+                             precision_rounding=line.product_uom.rounding) < 0:
+                received[product_id] = received.get(product_id, 0) + quantity
+            else:
+                per_order = completed.setdefault(product_id, {})
+                per_order[line.order_id] = per_order.get(line.order_id, 0) + quantity
+
+        for product_id, per_order in completed.items():
+            # A running order wins, even when nothing has come in on it yet: that
+            # IS the current supply. Only without one do we fall back.
+            if product_id in received:
+                continue
+            last_order = max(per_order, key=lambda order: (order.date_order, order.id))
+            received[product_id] = per_order[last_order]
 
         blocks = []
         for bucket in buckets.values():
