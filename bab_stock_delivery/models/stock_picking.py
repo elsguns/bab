@@ -9,23 +9,11 @@ class StockPicking(models.Model):
     # Set the first time the Productenmatrix is rendered for this picking (see
     # report.bab_stock_delivery.report_deliveryslip_matrix._get_report_values).
     # Used to warn before a reprint. copy=False so a duplicated transfer starts
-    # "not yet printed".
+    # "not yet printed" -- and so does a backorder: BAB receives and confirms per
+    # product, so nearly every transfer spawns backorders, and each of those
+    # carries its own goods that need their own slip.
     matrix_printed = fields.Boolean(
         string="Productenmatrix printed", default=False, copy=False, readonly=True)
-
-    def _create_backorder_picking(self):
-        """A backorder starts out as "already printed".
-
-        A backorder only carries the quantities that could not be delivered yet;
-        it is a continuation of a transfer whose Productenmatrix has already been
-        handled, so it must NOT generate a fresh print on its own. We therefore
-        force ``matrix_printed`` on the new backorder (``matrix_printed`` is
-        ``copy=False``, so without this it would start out False). Any later print
-        of the backorder then still goes through the reprint confirmation wizard.
-        """
-        backorder = super()._create_backorder_picking()
-        backorder.matrix_printed = True
-        return backorder
 
     def action_print_matrix(self):
         """Print the Productenmatrix, asking to confirm a reprint.
