@@ -58,7 +58,10 @@
                     table.o_reservation_grid td.o_res_guide { width: 6mm !important; text-align: right; border-left: none !important; }
                     table.o_reservation_grid th:first-child,
                     table.o_reservation_grid td:first-child { border-right: none !important; }
-                    .o_reservation_block { page-break-inside: avoid; margin-bottom: 6mm; }
+                    /* Eén hoofdproduct per blad: elk blok forceert een paginaeinde,
+                       behalve het laatste (anders volgt er een lege slotpagina). */
+                    .o_reservation_block { page-break-inside: avoid; page-break-after: always; margin-bottom: 6mm; }
+                    .o_reservation_block:last-child { page-break-after: auto; }
                     /* The three stacked cell figures, one per line. Reserved stays
                        the default black; shortage red, surplus green, incoming blue.
                        Each line reserves a fixed sign slot and a right-aligned number
@@ -72,16 +75,13 @@
                     .o_res_incoming { color: #0d6efd; }
                     /* r/s/i guide letters + legend markers, black. */
                     .o_res_lbl { color: #000; font-weight: bold; }
-                    /* Legend explaining the r/s/i labels, once at the top. */
+                    /* Legend explaining the r/s/i labels, at the top of every block:
+                       één hoofdproduct per blad, dus de legende staat op elk blad. */
                     .o_res_legend { font-size: 9pt; margin-bottom: 4mm; }
+                    /* Afdrukdatum bovenaan elk blad: de reservaties zijn een
+                       momentopname, dus het blad moet zeggen hoe vers het is. */
+                    .o_res_date { font-size: 9pt; margin-bottom: 1mm; }
                 </style>
-
-                <p class="o_res_legend">
-                    <span class="o_res_lbl">o</span> = <span class="o_res_received">ontvangen (van de aanvoer)</span> &#160;·&#160;
-                    <span class="o_res_lbl">r</span> = gereserveerd &#160;·&#160;
-                    <span class="o_res_lbl">s</span> = <span class="o_res_surplus">+overschot (vrije voorraad)</span> / <span class="o_res_shortage">−tekort</span> &#160;·&#160;
-                    <span class="o_res_lbl">i</span> = <span class="o_res_incoming">inkomend</span>
-                </p>
 
                 <t t-if="not blocks">
                     <p>Geen gereserveerde productvarianten in de selectie.</p>
@@ -89,6 +89,15 @@
 
                 <!-- One grid per hoofdproduct, already sorted by product. -->
                 <div t-foreach="blocks" t-as="block" class="o_reservation_block">
+                    <p class="o_res_date">
+                        Afdrukdatum: <span t-out="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')">10/08/2026</span>
+                    </p>
+                    <p class="o_res_legend">
+                        <span class="o_res_lbl">o</span> = <span class="o_res_received">ontvangen (van de aanvoer)</span> &#160;·&#160;
+                        <span class="o_res_lbl">r</span> = gereserveerd &#160;·&#160;
+                        <span class="o_res_lbl">s</span> = <span class="o_res_surplus">+overschot (vrije voorraad)</span> / <span class="o_res_shortage">−tekort</span> &#160;·&#160;
+                        <span class="o_res_lbl">i</span> = <span class="o_res_incoming">inkomend</span>
+                    </p>
                     <h4 class="mb-2"><span t-out="block['template'].display_name">Hoofdproduct</span></h4>
                     <table class="o_reservation_grid table table-sm">
                         <thead>
