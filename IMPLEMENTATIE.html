@@ -456,6 +456,7 @@ al vertrokken zijn — precies de geschiedenis die de o moet tonen. De aankoopor
 ontvangsten wel bij elkaar.</p>
 <p>Toont enkel hoofdproducten waar effectief <strong>iets gereserveerd</strong> is. Make-to-order producten die nog niet ontvangen zijn kunnen niet gereserveerd worden (moves blijven "waiting") en vallen dus weg uit de lijst. Een <strong>kleurrij waarvoor niets ontvangen werd</strong> (o = 0 voor elke maat van die kleur) valt eveneens weg. Staat vóór "per kleur en klant" in het Print-menu.</p>
 <p><strong>Eén hoofdproduct per blad.</strong> Elk blok begint op een nieuwe pagina. Bovenaan elk blad staat de <strong>afdrukdatum</strong>, daaronder de legende (o/r/s/i) — beide worden per blad herhaald, want de cijfers zijn een momentopname en elk blad moet los van de rest leesbaar zijn.</p>
+<p>Als laatste kolom staat een <strong>totaal per kleur</strong> over alle maten. De o-, r- en i-lijn tellen gewoon op; de s-lijn toont het <strong>saldo</strong> (som van de overschotten min som van de tekorten), zodat één getal zegt of die kleur globaal <span style="color:#dc3545">tekort komt</span> of <span style="color:#198754">overhoudt</span>. De totalen worden in het rapportsjabloon zelf berekend uit de cijfers die al in de matrix staan — geen extra veld, dus de weergave kan los bijgewerkt worden.</p>
 <p><span class="tag">[code]</span> <code>bab_stock_delivery</code> (osa)</p>
 
 <h2 id="productenmatrix-met-reservaties-per-kleur-en-klant">Productenmatrix met reservaties per kleur en klant</h2>

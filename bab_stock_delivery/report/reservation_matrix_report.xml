@@ -30,6 +30,13 @@
              (the two never appear together);
           3. incoming (forecasted inbound) quantity +N in blue.
         Separated by a pipe. Printable as often as needed (no reprint guard).
+
+        As LAST column every kleur row carries a "Totaal" over all sizes: the o,
+        r and i figures simply add up, the s figure is the SALDO (Σ surplus −
+        Σ shortage) so one figure says whether the colour is globally short (red)
+        or has stock left over (green). Computed in the template itself, out of
+        the cells already on the block, so no extra field is needed and the view
+        alone can be updated on a running database.
     -->
     <template id="report_reservation_matrix">
         <!-- web.basic_layout drops the company external header/footer; it already
@@ -58,6 +65,11 @@
                     table.o_reservation_grid td.o_res_guide { width: 6mm !important; text-align: right; border-left: none !important; }
                     table.o_reservation_grid th:first-child,
                     table.o_reservation_grid td:first-child { border-right: none !important; }
+                    /* Totaalkolom per kleur, helemaal rechts: een dikkere
+                       scheidingslijn en vette cijfers, zodat ze niet als nóg een
+                       maat leest. */
+                    table.o_reservation_grid th.o_res_total,
+                    table.o_reservation_grid td.o_res_total { border-left: 0.6mm solid #000 !important; font-weight: bold; }
                     /* Eén hoofdproduct per blad: elk blok forceert een paginaeinde,
                        behalve het laatste (anders volgt er een lege slotpagina). */
                     .o_reservation_block { page-break-inside: avoid; page-break-after: always; margin-bottom: 6mm; }
@@ -107,6 +119,7 @@
                                      before the first size column. -->
                                 <th class="o_res_guide"/>
                                 <th t-foreach="block['sizes']" t-as="size" t-out="size['name']">Maat</th>
+                                <th class="o_res_total">Totaal</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -152,6 +165,40 @@
                                             <span class="o_res_sign"/><span class="o_res_val o_res_incoming" t-if="cell['incoming']" t-out="cell['incoming']" t-options='{"widget": "integer"}'/>
                                         </div>
                                     </t>
+                                </td>
+                                <!-- Totaal van de kleur over alle maten. o, r en i
+                                     tellen gewoon op; de s-lijn is het SALDO
+                                     (Σ overschot − Σ tekort), zodat één cijfer zegt
+                                     of deze kleur globaal tekort komt (rood) of
+                                     overhoudt (groen). Lege maten (None) tellen niet
+                                     mee. De sommen staan in aparte t-set'en: een
+                                     comprehension binnen een comprehension breekt in
+                                     QWeb (LOAD_DEREF). -->
+                                <t t-set="filled" t-value="[c for c in row['cells'] if c]"/>
+                                <t t-set="total_received" t-value="sum([c['received'] for c in filled])"/>
+                                <t t-set="total_reserved" t-value="sum([c['reserved'] for c in filled])"/>
+                                <t t-set="total_shortage" t-value="sum([c['shortage'] for c in filled])"/>
+                                <t t-set="total_surplus" t-value="sum([c['surplus'] for c in filled])"/>
+                                <t t-set="total_incoming" t-value="sum([c['incoming'] for c in filled])"/>
+                                <t t-set="total_balance" t-value="total_surplus - total_shortage"/>
+                                <td class="o_res_total">
+                                    <div class="o_res_line">
+                                        <span class="o_res_sign"/><span class="o_res_val o_res_received" t-if="total_received" t-out="total_received" t-options='{"widget": "integer"}'/>
+                                    </div>
+                                    <div class="o_res_line">
+                                        <span class="o_res_sign"/><span class="o_res_val" t-if="total_reserved" t-out="total_reserved" t-options='{"widget": "integer"}'/>
+                                    </div>
+                                    <div class="o_res_line">
+                                        <t t-if="total_balance &lt; 0">
+                                            <span class="o_res_sign o_res_shortage">−</span><span class="o_res_val o_res_shortage" t-out="-total_balance" t-options='{"widget": "integer"}'/>
+                                        </t>
+                                        <t t-elif="total_balance &gt; 0">
+                                            <span class="o_res_sign o_res_surplus">+</span><span class="o_res_val o_res_surplus" t-out="total_balance" t-options='{"widget": "integer"}'/>
+                                        </t>
+                                    </div>
+                                    <div class="o_res_line">
+                                        <span class="o_res_sign"/><span class="o_res_val o_res_incoming" t-if="total_incoming" t-out="total_incoming" t-options='{"widget": "integer"}'/>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
