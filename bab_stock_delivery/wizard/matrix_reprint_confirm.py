@@ -23,8 +23,11 @@ class MatrixReprintConfirm(models.TransientModel):
     def action_confirm(self):
         """Print everything that was selected, reprints included."""
         self.ensure_one()
-        return self.picking_ids.with_context(
+        action = self.picking_ids.with_context(
             matrix_reprint_confirmed=True).action_print_matrix()
+        # Without this flag the report downloads but this dialog stays open.
+        action['close_on_report_download'] = True
+        return action
 
     def action_skip_reprints(self):
         """Print only the not-yet-printed deliveries, skipping the reprints.
@@ -38,4 +41,6 @@ class MatrixReprintConfirm(models.TransientModel):
             return {'type': 'ir.actions.act_window_close'}
         # to_print has no already-printed picking, so action_print_matrix prints
         # straight away without re-opening this wizard.
-        return to_print.action_print_matrix()
+        action = to_print.action_print_matrix()
+        action['close_on_report_download'] = True
+        return action
