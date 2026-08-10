@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="bab_stock_barcode.MainComponent" t-inherit="stock_barcode.MainComponent" t-inherit-mode="extension">
+        <xpath expr="//button[hasclass('o_barcode_actions')]" position="before">
+            <button t-if="env.model.hasUntouchedLinesFilter"
+                    class="o_bab_hide_untouched btn"
+                    t-att-class="env.model.hideUntouchedLines ? 'text-primary' : ''"
+                    t-att-title="env.model.hideUntouchedLines ? 'Show all lines' : 'Hide the lines nothing was scanned on yet'"
+                    t-on-click="() => env.model.toggleUntouchedLines()">
+                <i class="fa fa-filter oi-large"/>
+            </button>
+        </xpath>
+    </t>
+
+</templates>

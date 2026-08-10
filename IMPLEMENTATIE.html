@@ -111,6 +111,7 @@
                 <li><a href="#verplaatsingen">Verplaatsingen</a></li>
                 <li><a href="#batchpikings">Batchpikings</a></li>
                 <li><a href="#backorders-per-bewerkingstype">Backorders per bewerkingstype</a></li>
+                <li><a href="#barcode-app-nog-niet-gescande-lijnen-verbergen">Barcode-app: nog niet gescande lijnen verbergen</a></li>
                 <li><a href="#rma-retourmagazijn-voor-defecte-klantretours">RMA — retourmagazijn voor defecte klantretours</a></li>
                 <li><a href="#gls">GLS</a></li>
             </ul>
@@ -760,6 +761,18 @@ gegroepeerd op bewerkingstype.</p>
 <h2 id="backorders-per-bewerkingstype">Backorders per bewerkingstype</h2>
 <p><span class="tag">[view]</span> <code>stock.picking.type</code> lijst — <code>create_backorder</code>
 als optionele kolom, zodat je in één scherm ziet welke bewerkingstypes automatisch een backorder maken.</p>
+
+<h2 id="barcode-app-nog-niet-gescande-lijnen-verbergen">Barcode-app: nog niet gescande lijnen verbergen</h2>
+<p>De barcode-app sorteert haar lijnen één keer, bij het openen van de bewerking, en legt die
+volgorde daarna vast: een lijn die je volledig scant kleurt groen maar blijft staan waar ze stond.
+Op een ontvangst van enkele duizenden lijnen wordt het zo moeilijk na te kijken wat nog niet af is.</p>
+<p>Een <strong>trechterknop</strong> in de barcodekop (links van het tandwiel) verbergt elke lijn
+waarop nog niets gescand is. Wat overblijft is precies wat je al hebt aangeraakt: de deels gescande
+lijnen naast de volledig gescande. De knop kleurt blauw zolang het filter aanstaat.</p>
+<p>Het is enkel een schermfilter — scannen, groeperen en valideren blijven op alle lijnen werken. Een
+verborgen lijn wordt dus nog steeds gevonden als je haar barcode scant, en verschijnt op dat moment
+weer met haar aantal. Bij een voorraadtelling komt de knop niet: die kent geen "nog niets gescand".</p>
+<p><span class="tag">[code]</span> <code>bab_stock_barcode</code> (osa)</p>
 
 <h2 id="rma-retourmagazijn-voor-defecte-klantretours">RMA — retourmagazijn voor defecte klantretours</h2>
 <p>Defecte producten die van een klant terugkomen en daarna naar de leverancier moeten, worden niet
