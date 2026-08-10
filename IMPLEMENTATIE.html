@@ -112,6 +112,7 @@
                 <li><a href="#batchpikings">Batchpikings</a></li>
                 <li><a href="#backorders-per-bewerkingstype">Backorders per bewerkingstype</a></li>
                 <li><a href="#barcode-app-nog-niet-gescande-lijnen-verbergen">Barcode-app: nog niet gescande lijnen verbergen</a></li>
+                <li><a href="#prognose-uit-het-overdrachtsformulier">Prognose uit het overdrachtsformulier</a></li>
                 <li><a href="#rma-retourmagazijn-voor-defecte-klantretours">RMA — retourmagazijn voor defecte klantretours</a></li>
                 <li><a href="#gls">GLS</a></li>
             </ul>
@@ -327,15 +328,32 @@ producten zonder <code>putaway_rule_ids</code> of met een wegzetregel naar locat
 verkoopteam 2 — domein <code>[("team_id", "not in", [2])]</code> — omdat de webshoporders daar geen
 unieke klantreferentie hebben.</p>
 <p><img src="https://osadmin.odoo.com/web/image/11765-294b622f/image.png?access_token=9ab73ee3-89e9-4be0-a742-1bd51873bc15" alt="Automatische actie klantreferentie uniek"></p>
-<pre><code>for record in records:
+<p>Vier uitzonderingen zitten in de code zelf:</p>
+<ul>
+    <li><strong>Lege referentie wordt overgeslagen.</strong> <code>client_order_ref</code> staat op
+        <code>copy=False</code>, dus een gedupliceerd order komt er zonder referentie uit. Zonder
+        <code>.filtered('client_order_ref')</code> matcht <code>('client_order_ref', '=', False)</code>
+        elk ander refloos order van dezelfde klant en kan je geen enkel order meer kopiëren.</li>
+    <li><strong>Geannuleerde orders geven hun referentie vrij</strong> — de klant kan dezelfde bestelling
+        opnieuw doorsturen.</li>
+    <li><strong>Hoofdletterongevoelig</strong>, en spaties vooraan/achteraan tellen niet mee. De
+        <code>=ilike</code>-treffer wordt exact nagerekend omdat <code>%</code> en <code>_</code> anders
+        als jokerteken werken.</li>
+    <li><strong>Per bedrijf</strong> — een botsing over twee bedrijven heen blokkeert niet.</li>
+</ul>
+<pre><code>for record in records.filtered('client_order_ref'):
+    ref = record.client_order_ref.strip()
     duplicate = env['sale.order'].search([
         ('partner_id', '=', record.partner_id.id),
-        ('client_order_ref', '=', record.client_order_ref),
-        ('id', '!=', record.id)
-    ], limit=1)
+        ('company_id', '=', record.company_id.id),
+        ('client_order_ref', '=ilike', ref),
+        ('state', '!=', 'cancel'),
+        ('id', '!=', record.id),
+    ]).filtered(lambda o: (o.client_order_ref or '').strip().lower() == ref.lower())[:1]
     if duplicate:
         raise UserError(
-            f"De klantreferentie '{record.client_order_ref}' bestaat al voor klant '{record.partner_id.name}'. Deze moet uniek zijn."
+            f"De klantreferentie '{ref}' bestaat al voor klant "
+            f"'{record.partner_id.name}' (order {duplicate.name}). Deze moet uniek zijn."
         )</code></pre>
 
 <h2 id="automatisch-aantal-voorstellen-vd-eerste-package">Automatisch aantal voorstellen vd eerste package</h2>
@@ -774,6 +792,41 @@ lijnen naast de volledig gescande. De knop kleurt blauw zolang het filter aansta
 verborgen lijn wordt dus nog steeds gevonden als je haar barcode scant, en verschijnt op dat moment
 weer met haar aantal. Bij een voorraadtelling komt de knop niet: die kent geen "nog niets gescand".</p>
 <p><span class="tag">[code]</span> <code>bab_stock_barcode</code> (osa)</p>
+
+<h2 id="prognose-uit-het-overdrachtsformulier">Prognose uit het overdrachtsformulier</h2>
+<p>Bij elk aantal dat iemand invult op een overdracht stuurt de webclient een <code>onchange</code>
+naar de server, en die herrekent élk berekend veld van de lijst voor <strong>alle</strong> regels van
+de overdracht — niet enkel de veertig op het scherm. Eén veld weegt daarin zwaar:
+<code>forecast_availability</code>. Op VAS/IN/00084 (2484 regels) duurde die <code>onchange</code>
+2405 ms in 28 queries; zonder dat veld <strong>1848 ms in 15 queries</strong>, dus ongeveer
+560 ms (23%) minder per ingevuld getal. Geen ander veld in die lijst weegt meetbaar mee.</p>
+<p>De kolom verbergen volstond niet: ze staat al op <code>optional="hide"</code> en is
+<code>column_invisible</code> buiten uitgaande overdrachten, maar de zichtbaarheid van het
+grafiek-icoontje verwijst ernaar, dus voegt Odoo het veld zelf terug toe aan de weergave. Pas als
+niets er nog naar verwijst, valt de berekening weg. Vandaar dat de override ook de twee knoppen
+vervangt door één knop zonder prognoseverwijzing: het icoontje blijft en opent nog steeds het
+prognoserapport, maar <strong>verliest zijn rode waarschuwingskleur bij een tekort</strong>. Dat
+geldt op alle overdrachten, ook op leveringen, waar bovendien de prognosekolom niet meer aanzetbaar
+is via het kolommenmenu.</p>
+<p>De rest van de kost is lineair in het aantal regels — na deze aanpassing ongeveer 0,75 ms per
+regel. De melding <em>Laden</em> verschijnt vanaf een kwart seconde, dus rond <strong>330
+regels</strong>. Voor ontvangsten van duizenden regels blijven enkel opsplitsen of de barcode-app
+over; die <code>onchange</code> zelf is niet weg te krijgen, want de status van de overdracht wordt
+uit haar regels berekend.</p>
+<p><span class="tag">[view]</span> <code>stock.picking.form.geen.forecast.bab</code> &lt;
+<code>stock.view_picking_form</code>, prioriteit 99 — terugdraaien = de weergave op inactief zetten.
+De volgorde van de xpaths doet ertoe: de eerste vervangt de blauwe knop, waardoor de rode op dat
+moment de tweede knop met die naam is.</p>
+<pre><code>&lt;data&gt;
+    &lt;xpath expr="//button[@name='action_product_forecast_report']" position="replace"&gt;
+        &lt;button type="object" name="action_product_forecast_report" title="Forecast Report"
+                icon="fa-area-chart"
+                invisible="not product_id or product_uom_qty == 0 or parent.state in ('draft', 'done')"/&gt;
+    &lt;/xpath&gt;
+    &lt;xpath expr="//button[@name='action_product_forecast_report'][2]" position="replace"/&gt;
+    &lt;xpath expr="//field[@name='forecast_availability']" position="replace"/&gt;
+    &lt;xpath expr="//field[@name='forecast_expected_date']" position="replace"/&gt;
+&lt;/data&gt;</code></pre>
 
 <h2 id="rma-retourmagazijn-voor-defecte-klantretours">RMA — retourmagazijn voor defecte klantretours</h2>
 <p>Defecte producten die van een klant terugkomen en daarna naar de leverancier moeten, worden niet
