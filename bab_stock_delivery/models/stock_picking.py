@@ -88,9 +88,9 @@ class StockPicking(models.Model):
 
         A colour (kleur) row for which nothing was received is dropped: when no
         size of that colour has an "ontvangen" (received) quantity there is no
-        receipt to act on, so the row is left off the slip. Note this also drops
-        rows whose purchase orders are all fully received: nothing is coming in for
-        them any more, so they no longer figure on a slip about the running supply.
+        receipt to act on, so the row is left off the slip. This rests on the o
+        figure counting every batch that came in (see below): miss one and a
+        colour that IS in the warehouse silently drops off the slip.
 
         Only hoofdproducten with an actual reservation are listed: a block where
         nothing is reserved anywhere (e.g. make-to-order products not yet received,
@@ -153,16 +153,19 @@ class StockPicking(models.Model):
         # history the o-line has to show. The purchase order keeps every one of its
         # receipts together regardless of what happened downstream.
         #
-        # Orders that are NOT fully received count first: those are the ones still
-        # being delivered. A variant can sit on several of them at once (a re-order
-        # while the first is still coming in) and then they add up, so a partly
-        # delivered order does not drop out of sight.
+        # Orders that are NOT fully received count: those are the ones still being
+        # delivered. A variant can sit on several of them at once (a re-order while
+        # the first is still coming in) and then they add up, so a partly delivered
+        # order does not drop out of sight.
         #
-        # Has a variant no such order, then its LAST purchase order is used instead.
-        # "Fully received" means the supplier is done, not that the goods are gone:
-        # they are sitting in the warehouse waiting to be handed out, which is
-        # exactly what this slip is for. Without this fallback such a batch would
-        # show o = 0 and its colour row would drop off.
+        # ON TOP of those comes the LAST fully received order. "Fully received"
+        # means the supplier is done, not that the goods are gone: they are sitting
+        # in the warehouse waiting to be handed out, which is exactly what this slip
+        # is for. It is added, not used as a fallback for variants without a running
+        # order -- a re-order placed while an earlier batch was still coming in
+        # leaves the variant with BOTH, and then the goods that actually arrived sit
+        # on the completed one while the open re-order stands at 0 received.
+        # Older completed orders stay out: their goods have long been handed out.
         #
         # qty_received is the line's own "already received" figure, converted to the
         # product's UoM since the report counts in product units.
@@ -184,12 +187,16 @@ class StockPicking(models.Model):
                 per_order[line.order_id] = per_order.get(line.order_id, 0) + quantity
 
         for product_id, per_order in completed.items():
-            # A running order wins, even when nothing has come in on it yet: that
-            # IS the current supply. Only without one do we fall back.
-            if product_id in received:
-                continue
+            # The last fully received order is ADDED to whatever the running orders
+            # brought in, never used as a mere fallback. A variant sits on both at
+            # once as soon as it is re-ordered while an earlier batch is being
+            # delivered: the earlier order completes (its goods are in the
+            # warehouse) while the re-order is still open at 0 received. Counting
+            # only the running one then reports o = 0 for goods that are physically
+            # there, reserved on the transfer and already on the briefjes -- and the
+            # row rule above then drops the colour off this slip entirely.
             last_order = max(per_order, key=lambda order: (order.date_order, order.id))
-            received[product_id] = per_order[last_order]
+            received[product_id] = received.get(product_id, 0) + per_order[last_order]
 
         blocks = []
         for bucket in buckets.values():

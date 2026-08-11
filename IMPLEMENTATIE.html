@@ -559,10 +559,14 @@ gereserveerd · <strong>s</strong> = <span style="color:#198754">+overschot</spa
 +0 als exact gedekt) of <span style="color:#dc3545">−tekort</span> · <strong>i</strong> = inkomend
 (blauw). Afdrukdatum en legende staan op elk blad, want de cijfers zijn een momentopname.</p>
 <p>De <strong>o</strong> telt per <strong>aankooporder</strong> wat er van de lopende aanvoer al
-binnen is: twee deelleveringen of twee lopende bestellingen tellen dus samen. Loopt er geen enkele
-bestelling meer, dan valt de o terug op de <strong>laatste</strong> bestelling van die variant —
-volledig ontvangen betekent dat de leverancier klaar is, niet dat de goederen al verdeeld zijn, en
-dat verdelen is net waar dit overzicht voor dient.</p>
+binnen is: twee deelleveringen of twee lopende bestellingen tellen dus samen. Daar bovenop komt de
+<strong>laatste volledig ontvangen</strong> bestelling van die variant — volledig ontvangen betekent
+dat de leverancier klaar is, niet dat de goederen al verdeeld zijn, en dat verdelen is net waar dit
+overzicht voor dient. Die telt <em>mee</em>, niet enkel als terugval: wordt een artikel heropbesteld
+terwijl een eerdere levering nog onderweg is, dan staat het op twee bestellingen tegelijk. De
+goederen die effectief binnenkwamen zitten dan op de afgesloten bestelling, terwijl de
+heropbestelling nog op 0 ontvangen staat. Telde enkel die laatste mee, dan las de o 0 voor goederen
+die in het magazijn liggen, en viel die kleur van de lijst.</p>
 <p>Bewust niet via de verplaatsingsketen: bij een deelvalidatie neemt de backorder enkel de
 bestemmingen mee die nog niet klaar zijn (<code>stock_move._prepare_move_split_vals</code>), zodat
 een bestelling die over maanden binnenkomt precies de geschiedenis verliest die de o moet tonen.
