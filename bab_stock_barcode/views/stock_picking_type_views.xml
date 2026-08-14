@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="stock_picking_type_form_bab" model="ir.ui.view">
+        <field name="name">stock.picking.type.form.bab</field>
+        <field name="model">stock.picking.type</field>
+        <field name="inherit_id" ref="stock_barcode.stock_barcode_view_picking_type_form"/>
+        <field name="arch" type="xml">
+            <!-- Next to "Allow extra products": both settings decide what the
+                 picker may add on top of what the transfer asked for. -->
+            <field name="barcode_allow_extra_product" position="after">
+                <field name="barcode_block_extra_quantity"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

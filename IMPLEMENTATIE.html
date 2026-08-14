@@ -130,6 +130,7 @@
                 <li><a href="#batchpikings">Batchpikings</a></li>
                 <li><a href="#backorders-per-bewerkingstype">Backorders per bewerkingstype (idem Lucati)</a></li>
                 <li><a href="#barcode-app-nog-niet-gescande-lijnen-verbergen">Barcode-app: nog niet gescande lijnen verbergen</a></li>
+                <li><a href="#barcode-app-te-veel-scannen-blokkeren">Barcode-app: te veel scannen blokkeren</a></li>
                 <li><a href="#prognose-uit-het-overdrachtsformulier">Prognose uit het overdrachtsformulier (idem Lucati)</a></li>
                 <li><a href="#rma-retourmagazijn-voor-defecte-klantretours">RMA — retourmagazijn voor defecte klantretours</a></li>
                 <li><a class="vervallen" href="#gls">GLS</a></li>
@@ -776,6 +777,47 @@ blijft hangen.</p>
 niet gegroepeerd op bestemming, vervoerder of locatie — enkel op contact. Interne overdrachten
 batchen nooit.</p>
 
+<h3>Wachtende bon alsnog batchen</h3>
+<p>Odoo zoekt maar op <strong>twee momenten</strong> een batch voor een overdracht: bij het
+bevestigen ervan (<code>action_confirm</code>) en, voor een backorder, meteen na het valideren van
+zijn voorganger. Op zo'n moment neemt hij de bon enkel mee als die dan al op <em>Klaar</em> staat —
+<code>_is_auto_batchable()</code> begint met <code>if self.state != 'assigned': return False</code>.
+Een bon die op dat ogenblik niets kon reserveren valt dus buiten de batch, en Odoo komt daar nadien
+nooit op terug: hij blijft batchloos, staat op geen enkel briefje en wordt dus nooit gescand.
+Aanleiding was BATCH/02473, waar één stuk in VAS/OUT/00300 bleef hangen — ongeleverd en
+onfactureerbaar, terwijl het fysiek wél mee de deur uit was.</p>
+<p>De regel geeft die tweede kans op het enige moment waarop Odoo ze niet geeft: zodra de bon
+alsnog Klaar wordt. Ze roept daarvoor exact dezelfde standaardmethode aan die Odoo bij het
+bevestigen gebruikt (<code>_find_auto_batch</code>), met dezelfde regels — enkel bewerkingstypes
+met <em>Automatische batches</em>, dezelfde groepering per contact, dezelfde maxima. Er komt geen
+eigen logica bij. De bon sluit aan bij een onafgewerkte batch van dezelfde soort voor dezelfde
+klant (concept of in uitvoering, want <em>batch automatisch bevestigen</em> staat aan), en opent er
+anders een nieuwe — desnoods met die ene bon alleen.</p>
+<p><span class="tag">[auto]</span> op <code>stock.picking</code>, naam <strong>* Wachtende bon
+alsnog batchen</strong>, trigger <em>Bij het opslaan</em> op het veld <em>Status</em>, domein
+<code>[("state", "=", "assigned"), ("batch_id", "=", False)]</code>, met één actie van het soort
+<em>Code uitvoeren</em>. Zet <em>Batchepicking</em> <strong>niet</strong> bij de getriggerde velden:
+dan vuurt de regel ook wanneer iemand een bon bewust uit een batch haalt, en zet ze hem meteen
+weer terug.</p>
+<pre><code>bonnen = records if records else record
+
+for bon in bonnen:
+    # Dubbele controle naast het domein: batch.action_confirm() bevestigt de bonnen
+    # van de nieuwe batch opnieuw, en dan komen we hier een tweede keer langs.
+    if bon.state != 'assigned' or bon.batch_id:
+        continue
+
+    # sudo(): batches zijn zichtbaar per bedrijf, en de standaardmethode zoekt zelf
+    # ook met sudo. Zonder dit vindt een gebruiker met één actief bedrijf de open
+    # batch van het andere bedrijf niet.
+    batch = bon.sudo()._find_auto_batch()
+
+    if batch:
+        bon.message_post(body=(
+            'Automatisch toegevoegd aan %s. Deze bon stond nog niet op Klaar '
+            'toen hij bevestigd werd en viel daardoor buiten de batches.'
+            % batch.name))</code></pre>
+
 <h3>Bedrag vanaf er geen portkosten zijn (idem Lucati)</h3>
 <p><span class="tag">[fiel]</span> <strong>res.partner</strong> — <code>x_studio_amount_free_delivery</code> (Bedrag Gratis Levering)</p>
 <p><strong>stock.picking.batch</strong> — <code>x_studio_picking_partner_amount_free_delivery</code> (Bedrag Gratis Levering) met afhankelijkheden <code>picking_ids.partner_id</code> …</p>
@@ -936,6 +978,33 @@ waarop nog niets gescand is; hij kleurt blauw zolang het filter aanstaat. Het is
 schermfilter: scannen, groeperen en valideren blijven op alle lijnen werken, en een verborgen lijn
 verschijnt weer zodra je haar barcode scant. Bij een voorraadtelling komt de knop niet — die kent
 geen "nog niets gescand".</p>
+<p><span class="tag">[code]</span> <code>bab_stock_barcode</code> (osa)</p>
+
+<h2 id="barcode-app-te-veel-scannen-blokkeren">Barcode-app: te veel scannen blokkeren</h2>
+<p class="status">Nog niet geïnstalleerd in productie; klaar en getest in de werkkopie. Na de
+installatie moet het vinkje nog per bewerkingstype aangezet worden.</p>
+<p>Standaard houdt niets een magazijnier tegen die méér scant dan gevraagd. De instelling
+<em>Extra producten toestaan</em> weigert enkel producten die <strong>helemaal niet</strong> op de
+bon staan; staat het product er wél op, dan vult Odoo de lijn tot het gevraagde aantal en zet het
+teveel stilzwijgend op een extra lijn. Tot en met versie 13 gaf Odoo daar bij het valideren nog een
+waarschuwing voor, maar die is sinds versie 14 verdwenen en niet vervangen. Zo vertrok bij
+BATCH/02473 één stuk te veel op de levering van een andere klant, en bleef de bon van die ene klant
+achter zonder goederen — ongeleverd en onfactureerbaar, terwijl het stuk fysiek wél in zijn doos
+zat.</p>
+<p>Het bewerkingstype krijgt een vinkje <strong>Meer scannen dan gevraagd blokkeren</strong>
+(<code>barcode_block_extra_quantity</code>, tabblad <em>Barcode App</em>, naast <em>Extra producten
+toestaan</em>). Staat het aan, dan wordt een scan nog altijd geboekt tot het gevraagde aantal, maar
+het overschot geweigerd met een foutgeluid en de melding <em>"[code] product is al volledig gescand
+(aantal). De extra scan is geweigerd."</em> Op
+<strong>ontvangsten laten we het uit</strong>: een leverancier die meer stuurt dan besteld moet
+inboekbaar blijven.</p>
+<p>Aan te zetten op: <strong>Babimex</strong> Leveringen en Picken, <strong>Vasa
+International</strong> Leveringen en Picken.</p>
+<p>Technisch: de app boekt het overschot niet op de lijn zelf, maar op een kopie ervan
+(<code>_processBarcode</code> → <code>_createNewLine</code> met <code>copyOf</code>). Die kopie
+weigeren is het enige punt waar een overscan te stoppen valt zonder de volledige
+<code>_processBarcode</code> over te schrijven. Een kopie uit <code>splitLine()</code> blijft
+ongemoeid: die volgt altijd op een lijn die nog <em>niet</em> volledig is.</p>
 <p><span class="tag">[code]</span> <code>bab_stock_barcode</code> (osa)</p>
 
 <h2 id="prognose-uit-het-overdrachtsformulier">Prognose uit het overdrachtsformulier (idem Lucati)</h2>

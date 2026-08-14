@@ -1,2 +1,2 @@
 # Part of the o.s.admin add-ons.
-from . import models
+from . import stock_picking_type

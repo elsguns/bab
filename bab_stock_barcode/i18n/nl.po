@@ -1,0 +1,49 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* bab_stock_barcode
+#
+# De marker "#. odoo-javascript" is verplicht: zonder die regel laadt Odoo de
+# vertaling van een _t()-string uit een handgeschreven .po niet, en dat gebeurt
+# stilzwijgend (CodeTranslations._load_web_translations). Voor Python-strings is
+# dat "#. odoo-python".
+#
+# nl.po en niet nl_BE.po: get_po_paths laadt de basistaal mee, dus dit bestand
+# dekt zowel nl als nl_BE.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 18.0\n"
+"Report-Msgid-Bugs-To: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: \n"
+
+#. module: bab_stock_barcode
+#. odoo-javascript
+#: code:addons/bab_stock_barcode/static/src/block_extra_quantity.js:0
+msgid "%(product)s is already fully scanned (%(qty)s). The extra scan was refused."
+msgstr "%(product)s is al volledig gescand (%(qty)s). De extra scan is geweigerd."
+
+#. module: bab_stock_barcode
+#: model:ir.model.fields,field_description:bab_stock_barcode.field_stock_picking_type__barcode_block_extra_quantity
+msgid "Block scanning more than demanded"
+msgstr "Meer scannen dan gevraagd blokkeren"
+
+#. module: bab_stock_barcode
+#: model:ir.model.fields,help:bab_stock_barcode.field_stock_picking_type__barcode_block_extra_quantity
+msgid ""
+"In the barcode app, refuse the part of a scan that would push a line above "
+"its demand. Without this, the excess silently ends up on an extra line and "
+"the transfer ships more than it asked for.\n"
+"Leave this off on receipts: a supplier delivering more than ordered is "
+"normal and has to be bookable."
+msgstr ""
+"Weiger in de barcode-app het deel van een scan dat een lijn boven het "
+"gevraagde aantal zou tillen. Zonder dit belandt het teveel stilzwijgend op "
+"een extra lijn en vertrekt er meer dan gevraagd.\n"
+"Laat dit uit op ontvangsten: een leverancier die meer stuurt dan besteld is "
+"normaal en moet inboekbaar blijven."
