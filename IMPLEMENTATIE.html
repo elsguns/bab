@@ -116,6 +116,7 @@
             <ul>
                 <li><a href="#totale-hoeveelheid-artikelen-aangekocht">Totale hoeveelheid artikelen aangekocht (idem Lucati)</a></li>
                 <li><a href="#aankoophistoriek-product-en-factureerstatus">Aankoophistoriek: product en factureerstatus (idem Lucati)</a></li>
+                <li><a href="#factuurstatus-forceren">Factuurstatus van een bestelling forceren</a></li>
             </ul>
         </li>
         <li><a href="#voorraad">Voorraad</a>
@@ -157,6 +158,7 @@
                 <li><a href="#omzet-per-merk">Omzet per merk</a></li>
                 <li><a href="#peppol-status-in-de-factuurlijst">Peppol-status in de factuurlijst (idem Lucati)</a></li>
                 <li><a href="#totale-hoeveelheid-op-het-factuurformulier">Totale hoeveelheid op het factuurformulier (idem Lucati)</a></li>
+                <li><a href="#nullijnen-op-een-inkoopfactuur-verwijderen">Nullijnen op een inkoopfactuur verwijderen</a></li>
             </ul>
         </li>
     </ul>
@@ -471,6 +473,25 @@ ontvangen, gefactureerd en nog te factureren is.</p>
 <code>purchase.order.line</code>, scherm <em>Inkooporderregels (EXTRA)</em>. Domein
 <code>[("qty_to_invoice", "!=", 0)]</code>, groepeer op <code>partner_id</code>, sorteer op
 <code>order_id</code>.</p>
+
+<h2 id="factuurstatus-forceren">Factuurstatus van een bestelling forceren</h2>
+<p>Een bestelling waarvan de leverancier het laatste restje nooit meer factureert, blijft op
+<em>Wacht op facturen</em> staan en vervuilt zo de filter <strong>Te factureren per leverancier</strong>
+hierboven. Met deze actie beslist BAB zelf dat een bestelling afgerond is.</p>
+<p><code>invoice_status</code> is een bewaard berekend veld (<code>_get_invoiced</code>): Odoo kijkt per lijn
+naar <code>qty_to_invoice</code>. Omdat vrijwel alle producten op <em>factureren op ontvangen hoeveelheid</em>
+staan, is dat restant <code>qty_received - qty_invoiced</code> &mdash; wegwerken zou de ontvangst moeten
+corrigeren. Daarom raakt de actie de aantallen niet aan en overschrijft ze enkel de statuskolom.</p>
+<p><span class="tag">[serv]</span> contextuele actie <code>* Factuurstatus forceren op volledig gefactureerd</code>
+op <code>purchase.order</code>.</p>
+<pre><code>for record in records:
+    record['invoice_status'] = 'invoiced'</code></pre>
+<p><span class="tag">[serv]</span> contextuele actie <code>* Factuurstatus opnieuw berekenen</code> op
+<code>purchase.order</code> als tegenhanger: gooit de geforceerde waarde weg en laat Odoo opnieuw rekenen.</p>
+<pre><code>records._compute_field_value(records._fields['invoice_status'])</code></pre>
+<p>De geforceerde waarde blijft staan tot er op die bestelling nog een factuur wordt geboekt of geannuleerd,
+een ontvangst wijzigt of een lijn wordt aangepast &mdash; dan herrekent Odoo en draai je de actie opnieuw.
+Wil je dat volledig uitsluiten, dan is er een eigen veld <em>handmatig afgesloten</em> nodig in een module.</p>
 
 <h1 id="voorraad">Voorraad</h1>
 
@@ -833,6 +854,11 @@ PDF een regel <strong>Klant:</strong> met het standaardveld <code>description</c
 als een batch meerdere klanten zou bevatten). Bij BAB is een batch altijd per klant, dus tonen we het
 volledige adres van het leveradres van de <strong>eerste picking</strong> in de batch
 (gesorteerd op <code>batch_sequence</code>). Het land wordt enkel getoond wanneer het niet België is.</p>
+<p><strong>Let op:</strong> op de PDF is dit nog niet doorgevoerd — de arch verderop toont in de kop nog
+altijd <code>o.description</code> onder het label <strong>Klant</strong>. Om het leveradres wél te
+drukken, vervang je in beide kopblokken <code>&lt;strong&gt;Klant:&lt;/strong&gt;</code> door
+<code>&lt;strong&gt;Leveradres:&lt;/strong&gt;</code> en <code>o.description</code> door
+<code>o.x_studio_delivery_address</code>.</p>
 <p><span class="tag">[fiel]</span> <code>stock.picking.batch.x_studio_delivery_address</code> (Leveradres, tekst,
 opgeslagen) met afhankelijkheden <code>picking_ids,picking_ids.batch_sequence,picking_ids.partner_id,picking_ids.partner_id.name,picking_ids.partner_id.street,picking_ids.partner_id.street2,picking_ids.partner_id.zip,picking_ids.partner_id.city,picking_ids.partner_id.country_id</code> …</p>
 <pre><code>for record in self:
@@ -856,20 +882,36 @@ opgeslagen) met afhankelijkheden <code>picking_ids,picking_ids.batch_sequence,pi
 <h3>Interne leverinformatie en sluitingsdagen (idem Lucati)</h3>
 <p><span class="tag">[fiel]</span> <strong>res.partner</strong> — <code>x_studio_delivery_info</code> (Leverinformatie), <code>x_studio_closing_days</code> (Sluitingsdagen)</p>
 <p><strong>stock.picking.batch</strong> — <code>x_studio_picking_partner_closing_days</code>, <code>x_studio_picking_partner_delivery_info</code></p>
-<p>Op de batch-PDF staan die drie regels samen in de kop, met <strong>Leveradres</strong> op de plaats
-waar vroeger <strong>Klant</strong> stond:</p>
+<p>Op de batch-PDF staan die regels samen in de kop, en de kop staat er twee keer: op pagina 1 (de
+transferlijst) en op pagina 2 (de artikellijst). Hieronder de <strong>volledige</strong>
+Studio-aanpassing van het rapport <code>stock_picking_batch.report_picking_batch</code> — de erfview
+<code>web_studio.report_editor_customization_diff.view._stock_picking_batch.report_picking_batch</code>.
+De laatste elf regels van elk kopblok zijn de stocklocatie, het totaal gereserveerd en de printdatum,
+zie <em>Stocklocatie, totaal gereserveerd en printdatum op het batchbriefje</em> hieronder.</p>
 <pre><code>&lt;data&gt;
   &lt;data&gt;
     &lt;xpath position="replace" expr="/t[@t-name='stock_picking_batch.report_picking_batch']//t[@t-call='web.html_container']//t[@t-call='web.external_layout']/div/br"/&gt;
     &lt;xpath position="after" expr="/t[@t-name='stock_picking_batch.report_picking_batch']//t[@t-call='web.html_container']//t[@t-call='web.external_layout']/div/div[2]" meta-t-if="o.user_id"&gt;
-      &lt;strong&gt;Leveradres:&lt;/strong&gt;
-      &lt;span t-field="o.x_studio_delivery_address"/&gt;
+      &lt;strong&gt;Klant:&lt;/strong&gt;
+      &lt;span t-field="o.description"/&gt;
       &lt;br/&gt;
       &lt;strong&gt;Sluitingsdagen:&lt;/strong&gt;
       &lt;span t-field="o.x_studio_picking_partner_closing_days"/&gt;
       &lt;br/&gt;
       &lt;strong&gt;Leverinformatie:&lt;/strong&gt;
       &lt;span t-field="o.x_studio_picking_partner_delivery_info"/&gt;
+      &lt;br/&gt;
+      &lt;t t-set="delivery_partner" t-value="o.picking_ids.sorted(lambda p: p.batch_sequence)[:1].partner_id"/&gt;
+      &lt;t t-if="delivery_partner.stock_location"&gt;
+        &lt;strong&gt;Stocklocatie:&lt;/strong&gt;
+        &lt;span t-out="delivery_partner.stock_location"/&gt;
+        &lt;br/&gt;
+      &lt;/t&gt;
+      &lt;strong&gt;Totaal gereserveerd:&lt;/strong&gt;
+      &lt;span t-out="sum(move_line_ids.mapped('quantity'))" t-options="{'widget': 'float', 'precision': 2}"/&gt;
+      &lt;br/&gt;
+      &lt;strong&gt;Afgedrukt op:&lt;/strong&gt;
+      &lt;span t-out="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/&gt;
     &lt;/xpath&gt;
   &lt;/data&gt;
   &lt;data&gt;
@@ -889,14 +931,26 @@ waar vroeger <strong>Klant</strong> stond:</p>
   &lt;/data&gt;
   &lt;data&gt;
     &lt;xpath position="after" expr="/t[@t-name='stock_picking_batch.report_picking_batch']//t[@t-call='web.html_container']//t[@t-call='web.external_layout']/div/div[5]" meta-t-field="o.user_id"&gt;
-      &lt;strong&gt;Leveradres:&lt;/strong&gt;
-      &lt;span t-field="o.x_studio_delivery_address"/&gt;
+      &lt;strong&gt;Klant:&lt;/strong&gt;
+      &lt;span t-field="o.description"/&gt;
       &lt;br/&gt;
       &lt;strong&gt;Sluitingsdagen:&lt;/strong&gt;
       &lt;span t-field="o.x_studio_picking_partner_closing_days"/&gt;
       &lt;br/&gt;
       &lt;strong&gt;Leverinformatie:&lt;/strong&gt;
       &lt;span t-field="o.x_studio_picking_partner_delivery_info"/&gt;
+      &lt;br/&gt;
+      &lt;t t-set="delivery_partner" t-value="o.picking_ids.sorted(lambda p: p.batch_sequence)[:1].partner_id"/&gt;
+      &lt;t t-if="delivery_partner.stock_location"&gt;
+        &lt;strong&gt;Stocklocatie:&lt;/strong&gt;
+        &lt;span t-out="delivery_partner.stock_location"/&gt;
+        &lt;br/&gt;
+      &lt;/t&gt;
+      &lt;strong&gt;Totaal gereserveerd:&lt;/strong&gt;
+      &lt;span t-out="sum(move_line_ids.mapped('quantity'))" t-options="{'widget': 'float', 'precision': 2}"/&gt;
+      &lt;br/&gt;
+      &lt;strong&gt;Afgedrukt op:&lt;/strong&gt;
+      &lt;span t-out="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/&gt;
     &lt;/xpath&gt;
   &lt;/data&gt;
   &lt;data&gt;
@@ -910,6 +964,38 @@ waar vroeger <strong>Klant</strong> stond:</p>
     &lt;/xpath&gt;
   &lt;/data&gt;
 &lt;/data&gt;</code></pre>
+
+<h3>Stocklocatie, totaal gereserveerd en printdatum op het batchbriefje</h3>
+<p><span class="tag">[view]</span> Drie regels bij in de kop van het batchbriefje, in beide kopblokken
+van de arch hierboven. Er komt <strong>geen enkel nieuw veld</strong> bij: alles wordt in het rapport
+zelf gerekend.</p>
+<ul>
+    <li><strong>Stocklocatie</strong> — het nummer <code>stock_location</code> van het afleveradres van
+    de eerste picking in de batch (gesorteerd op <code>batch_sequence</code>, dezelfde volgorde als de
+    transferlijst op pagina 1). De regel wordt <strong>weggelaten</strong> wanneer er geen nummer staat,
+    want stocklocatie-nummering geldt enkel bij Vasa International — zie <em>Stocklocatie toekennen aan
+    afleveradressen</em>.</li>
+    <li><strong>Totaal gereserveerd</strong> — de som van <code>move_line_ids.quantity</code>, dus exact
+    het totaal van de kolom <em>Aantal</em> op pagina 2. <code>move_line_ids</code> is een variabele die
+    het standaardrapport zelf al bovenaan zet, er wordt niets bijgeteld dat niet op het briefje staat.</li>
+    <li><strong>Afgedrukt op</strong> — het moment van afdrukken in de tijdzone van de gebruiker,
+    formaat <code>dd/mm/jjjj uu:mm</code>. Staat op beide pagina's.</li>
+</ul>
+<pre><code>&lt;t t-set="delivery_partner" t-value="o.picking_ids.sorted(lambda p: p.batch_sequence)[:1].partner_id"/&gt;
+&lt;t t-if="delivery_partner.stock_location"&gt;
+  &lt;strong&gt;Stocklocatie:&lt;/strong&gt;
+  &lt;span t-out="delivery_partner.stock_location"/&gt;
+  &lt;br/&gt;
+&lt;/t&gt;
+&lt;strong&gt;Totaal gereserveerd:&lt;/strong&gt;
+&lt;span t-out="sum(move_line_ids.mapped('quantity'))" t-options="{'widget': 'float', 'precision': 2}"/&gt;
+&lt;br/&gt;
+&lt;strong&gt;Afgedrukt op:&lt;/strong&gt;
+&lt;span t-out="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/&gt;</code></pre>
+<p>Wil je de stocklocatie strikt aan het bedrijf ophangen in plaats van aan "nummer ingevuld of niet",
+vervang de test dan door <code>o.company_id.stock_location_numbering and delivery_partner.stock_location</code>.
+Dat leest de bedrijfsvlag uit <code>bab_stock_delivery</code> en houdt ook de Babimex-contacten weg die
+vóór die ingreep nog een nummer kregen.</p>
 
 <h3>Batchpickings kunnen goedkeuren (idem Lucati)</h3>
 <p><span class="tag">[fiel]</span> <code>stock.picking.batch</code> &gt; <code>x_studio_approved</code></p>
@@ -1177,6 +1263,23 @@ als optionele kolom naast de betaalstatus.</p>
 <h2 id="totale-hoeveelheid-op-het-factuurformulier">Totale hoeveelheid op het factuurformulier (idem Lucati)</h2>
 <p><span class="tag">[view]</span> <code>account.move</code> formulier — <code>x_qty_total</code>
 na <code>partner_shipping_id</code>.</p>
+
+<h2 id="nullijnen-op-een-inkoopfactuur-verwijderen">Nullijnen op een inkoopfactuur verwijderen</h2>
+<p>Vul je een lege inkoopfactuur aan via het veld <strong>Automatisch aanvullen</strong>, dan neemt Odoo
+<em>alle</em> bestellijnen over die nog niet aan een factuurlijn hangen &mdash; ook de al volledig
+gefactureerde en de nog niet ontvangen. Die komen als lijn met hoeveelheid&nbsp;0 op de factuur. De knop
+<em>Factuur aanmaken</em> op de bestelling zelf slaat ze wél over; het verschil zit dus in de werkwijze,
+niet in het maatwerk. Deze actie ruimt ze in één klik op.</p>
+<p>Enkel productlijnen met hoeveelheid&nbsp;0 verdwijnen: secties en notities blijven staan, en een gratis
+lijn (hoeveelheid&nbsp;1, prijs&nbsp;0) ook. Geboekte facturen worden overgeslagen.</p>
+<p><span class="tag">[serv]</span> contextuele actie <code>* Nullijnen verwijderen</code> op
+<code>account.move</code>.</p>
+<pre><code>for record in records.filtered(lambda move: move.state == 'draft'):
+    record.invoice_line_ids.filtered(
+        lambda line: line.display_type == 'product' and not line.quantity
+    ).unlink()</code></pre>
+<p>Een lijn die je zo wegneemt is niet verloren: de koppeling met de bestellijn verdwijnt mee, dus zodra er
+weer iets te factureren valt komt ze bij een volgende <em>Automatisch aanvullen</em> gewoon terug.</p>
 
 
 <!-- ============================================================= -->
