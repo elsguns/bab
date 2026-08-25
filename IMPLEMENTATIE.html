@@ -1283,10 +1283,16 @@ lijn (hoeveelheid&nbsp;1, prijs&nbsp;0) ook. Geboekte facturen worden overgeslag
 weer iets te factureren valt komt ze bij een volgende <em>Automatisch aanvullen</em> gewoon terug.</p>
 
 <h2 id="btw-inclusief-voor-eu-consumenten">Btw inclusief voor EU-consumenten</h2>
-<p>Een particulier denkt in brutoprijzen: hij wil dat het bedrag dat hij ziet ook het bedrag is dat hij
-betaalt. Een bedrijf denkt in nettoprijzen. Beide klantengroepen krijgen dezelfde prijs te zien, dus
-mag het verschil niet in de prijslijst zitten maar in de <strong>belasting</strong>: dezelfde 21&nbsp;%,
-één keer als bedrag <em>boven op</em> de prijs en één keer als bedrag <em>in</em> de prijs.</p>
+<p>Een particulier krijgt een prijs incl. btw te zien, een handelaar een prijs excl. btw. Dat zijn twee
+prijsniveaus in twee prijslijsten &mdash; <em>Adviesprijzen (incl btw.)</em> tegenover
+<em>Verkoopsprijzen B2B (excl.btw)</em> &mdash; en geen twee lezingen van hetzelfde bedrag: de adviesprijs
+ligt ruwweg op het dubbele, dat verschil is de marge van de handelaar. Maar een prijslijst houdt zelf
+nergens bij of de btw in haar bedragen zit: er staat enkel een getal in. Wat dat getal betekent, beslist de
+<strong>belasting op de orderlijn</strong> &mdash; <em>Prijs inclusief btw</em> aan of uit. De
+adviesprijzenlijst heeft dus een eigen belasting nodig; daar gaat deze opzet over.</p>
+<p>Die lijst is meteen de terugval voor wie geen prijslijst op zijn contact heeft staan (laagste
+<code>sequence</code>, geen landengroep), dus ook voor een webshopbezoeker of een losse particuliere
+klant.</p>
 <p>De schakelaar is de fiscale positie. Odoo levert bij het Belgische rekeningstelsel vijf posities;
 twee ervan doen hier het werk:</p>
 <table class="voorbeeld">
@@ -1303,13 +1309,19 @@ een particulier heeft er geen.</p>
 btw</em> staat aan. Roosters (+03/+54 en +49/+64) en btw-rekening zijn identiek, dus in de aangifte is er
 geen onderscheid tussen een B2B- en een B2C-verkoop.</p>
 <table class="voorbeeld">
-    <tr><th>Prijs op het product</th><th>Klant</th><th>Belasting</th><th>Excl.</th><th>Btw</th><th>Totaal</th></tr>
-    <tr><td>100,00</td><td>bedrijf met btw-nummer</td><td>21&nbsp;%</td><td>100,00</td><td>21,00</td><td>121,00</td></tr>
-    <tr><td>100,00</td><td>particulier</td><td>21&nbsp;% B2C</td><td>82,64</td><td>17,36</td><td>100,00</td></tr>
+    <tr><th>Prijslijst</th><th>Bedrag</th><th>Belasting</th><th>Excl.</th><th>Btw</th><th>Totaal</th></tr>
+    <tr><td>Verkoopsprijzen B2B (excl.btw)</td><td>18,16</td><td>21&nbsp;% B2B</td><td>18,16</td><td>3,81</td><td>21,97</td></tr>
+    <tr><td>Adviesprijzen (incl btw.)</td><td>39,95</td><td>21&nbsp;% B2C</td><td>33,02</td><td>6,93</td><td>39,95</td></tr>
+    <tr><td>Adviesprijzen (incl btw.)</td><td>39,95</td><td>21&nbsp;% B2B &mdash; fout</td><td>39,95</td><td>8,39</td><td>48,34</td></tr>
 </table>
-<p class="bijschrift">Dezelfde catalogusprijs, twee lezingen. De particulier betaalt een rond bedrag; de
-omzet die overblijft is navenant lager. Wie voor beide groepen dezelfde marge wil, moet dus met een
-aparte prijslijst werken.</p>
+<p class="bijschrift">Eén artikel, de twee prijsniveaus zoals ze in de databank staan. De onderste regel
+is wat er zonder de inclusieve belasting gebeurt: de adviesprijs wordt als bedrag excl. btw gelezen en de
+particulier krijgt 8,39 te veel aangerekend. De belasting verandert dus geen bedrag; ze bepaalt alleen
+hoe het bedrag uit de prijslijst gelezen wordt.</p>
+<p class="bijschrift">Prijslijst en fiscale positie zijn twee losse velden op het contact en moeten bij
+elkaar passen: een adviesprijs hoort bij <code>21% B2C</code>, een B2B-prijs bij <code>21% B2B</code>. Wie
+er één met de hand overschrijft en de andere laat staan, krijgt een verkoopprijs die niet klopt, zonder
+melding.</p>
 <p>Beide bedrijven hebben hun eigen exemplaar: <code>21% B2C</code> bij Babimex en bij Vasa International,
 elk gekoppeld aan de eigen 21&nbsp;%. De webshop toont de prijs in dezelfde logica: publieke bezoekers
 inclusief, ingelogde klanten volgens hun eigen instelling (zie eCommerce &rarr;
@@ -1324,11 +1336,12 @@ rekeningstelsel.</p>
 afstandsverkopen binnen de EU onder de drempel van &euro;&nbsp;10.000 per jaar blijven. Daarboven is de
 btw van het land van de klant verschuldigd en moet dat via de OSS-aangifte
 (module <code>l10n_eu_oss</code>, vandaag niet geïnstalleerd).</p>
-<p class="lucati">Bij Lucati moet hetzelfde gebeuren, maar op het Nederlandse rekeningstelsel: de
+<p class="lucati">Bij Lucati staat hetzelfde intussen gezet, op het Nederlandse rekeningstelsel: de
 verkoopbelasting heet daar <code>21% ST</code> (ST&nbsp;= sales/turnover, <em>Verkopen/omzet hoog</em>;
-de kale <code>21%</code> is de aankoopkant) en de positie heet <strong>EU private B2C</strong>. Die
-positie staat er al, met dezelfde instellingen als hier (EU-groep, geen btw-nummer, volgorde 2), maar
-nog zonder belastingtoewijzing.</p>
+de kale <code>21%</code> is de aankoopkant) en de positie heet <strong>EU private B2C</strong>, met
+dezelfde instellingen als hier (EU-groep, geen btw-nummer, volgorde 2). Verschil met Babimex: een
+prijslijst met adviesprijzen incl. btw bestaat daar nog niet, dus de belasting wacht er op haar
+prijslijst.</p>
 
 
 <!-- ============================================================= -->
