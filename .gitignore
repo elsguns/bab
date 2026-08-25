@@ -205,3 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Werkdossiers gaan naar de aparte repo cld, niet hierin. De gerenderde
+# IMPLEMENTATIE.pdf staat hier wel, naast de .html waar ze uit komt.
+$claude/*
+!$claude/IMPLEMENTATIE.pdf
