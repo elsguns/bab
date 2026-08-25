@@ -159,6 +159,7 @@
                 <li><a href="#peppol-status-in-de-factuurlijst">Peppol-status in de factuurlijst (idem Lucati)</a></li>
                 <li><a href="#totale-hoeveelheid-op-het-factuurformulier">Totale hoeveelheid op het factuurformulier (idem Lucati)</a></li>
                 <li><a href="#nullijnen-op-een-inkoopfactuur-verwijderen">Nullijnen op een inkoopfactuur verwijderen</a></li>
+                <li><a href="#btw-inclusief-voor-eu-consumenten">Btw inclusief voor EU-consumenten</a></li>
             </ul>
         </li>
     </ul>
@@ -1280,6 +1281,54 @@ lijn (hoeveelheid&nbsp;1, prijs&nbsp;0) ook. Geboekte facturen worden overgeslag
     ).unlink()</code></pre>
 <p>Een lijn die je zo wegneemt is niet verloren: de koppeling met de bestellijn verdwijnt mee, dus zodra er
 weer iets te factureren valt komt ze bij een volgende <em>Automatisch aanvullen</em> gewoon terug.</p>
+
+<h2 id="btw-inclusief-voor-eu-consumenten">Btw inclusief voor EU-consumenten</h2>
+<p>Een particulier denkt in brutoprijzen: hij wil dat het bedrag dat hij ziet ook het bedrag is dat hij
+betaalt. Een bedrijf denkt in nettoprijzen. Beide klantengroepen krijgen dezelfde prijs te zien, dus
+mag het verschil niet in de prijslijst zitten maar in de <strong>belasting</strong>: dezelfde 21&nbsp;%,
+één keer als bedrag <em>boven op</em> de prijs en één keer als bedrag <em>in</em> de prijs.</p>
+<p>De schakelaar is de fiscale positie. Odoo levert bij het Belgische rekeningstelsel vijf posities;
+twee ervan doen hier het werk:</p>
+<table class="voorbeeld">
+    <tr><th>Fiscale positie</th><th>Volgorde</th><th>Past toe op</th><th>Btw</th></tr>
+    <tr><td>België B2B</td><td>1</td><td>België, btw-nummer vereist</td><td>21&nbsp;% exclusief</td></tr>
+    <tr><td>EU B2C</td><td>2</td><td>Europese Unie, geen btw-nummer</td><td>21&nbsp;% B2C, inclusief</td></tr>
+    <tr><td>Intracommunautair</td><td>3</td><td>Europese Unie, btw-nummer vereist</td><td>0&nbsp;% verlegd</td></tr>
+</table>
+<p class="bijschrift">België zit mee in de landengroep <em>Europese Unie</em>. Een Belgische particulier
+valt dus ook onder EU B2C: <em>België B2B</em> staat vóór in de volgorde maar eist een btw-nummer, en
+een particulier heeft er geen.</p>
+<p>EU B2C is de standaardpositie van Odoo; enkel de belasting waarnaar ze omzet is toegevoegd.
+<strong>21&nbsp;% B2C</strong> is een kopie van de gewone 21&nbsp;% met één verschil: <em>Prijs inclusief
+btw</em> staat aan. Roosters (+03/+54 en +49/+64) en btw-rekening zijn identiek, dus in de aangifte is er
+geen onderscheid tussen een B2B- en een B2C-verkoop.</p>
+<table class="voorbeeld">
+    <tr><th>Prijs op het product</th><th>Klant</th><th>Belasting</th><th>Excl.</th><th>Btw</th><th>Totaal</th></tr>
+    <tr><td>100,00</td><td>bedrijf met btw-nummer</td><td>21&nbsp;%</td><td>100,00</td><td>21,00</td><td>121,00</td></tr>
+    <tr><td>100,00</td><td>particulier</td><td>21&nbsp;% B2C</td><td>82,64</td><td>17,36</td><td>100,00</td></tr>
+</table>
+<p class="bijschrift">Dezelfde catalogusprijs, twee lezingen. De particulier betaalt een rond bedrag; de
+omzet die overblijft is navenant lager. Wie voor beide groepen dezelfde marge wil, moet dus met een
+aparte prijslijst werken.</p>
+<p>Beide bedrijven hebben hun eigen exemplaar: <code>21% B2C</code> bij Babimex en bij Vasa International,
+elk gekoppeld aan de eigen 21&nbsp;%. De webshop toont de prijs in dezelfde logica: publieke bezoekers
+inclusief, ingelogde klanten volgens hun eigen instelling (zie eCommerce &rarr;
+<em>Btw in- of exclusief per bezoekerstype</em>).</p>
+<p><span class="tag">[conf]</span> <code>account.tax</code> <strong>21% B2C</strong> (21&nbsp;%, verkoop,
+<em>Prijs inclusief btw</em>) &mdash; <span class="tag">[conf]</span> <code>account.fiscal.position</code>
+<strong>EU B2C</strong>, belastingtoewijzing <code>21%</code> &rarr; <code>21% B2C</code>.</p>
+<p class="status">De gewone 21&nbsp;% heet in het Nederlands <strong>21% B2B</strong>, om ze in de
+keuzelijst uit elkaar te houden. Dat is enkel de naam; het is nog altijd de standaardbelasting uit het
+rekeningstelsel.</p>
+<p class="status">Aandachtspunt: dit rekent <em>Belgische</em> btw aan EU-consumenten. Dat mag zolang de
+afstandsverkopen binnen de EU onder de drempel van &euro;&nbsp;10.000 per jaar blijven. Daarboven is de
+btw van het land van de klant verschuldigd en moet dat via de OSS-aangifte
+(module <code>l10n_eu_oss</code>, vandaag niet geïnstalleerd).</p>
+<p class="lucati">Bij Lucati moet hetzelfde gebeuren, maar op het Nederlandse rekeningstelsel: de
+verkoopbelasting heet daar <code>21% ST</code> (ST&nbsp;= sales/turnover, <em>Verkopen/omzet hoog</em>;
+de kale <code>21%</code> is de aankoopkant) en de positie heet <strong>EU private B2C</strong>. Die
+positie staat er al, met dezelfde instellingen als hier (EU-groep, geen btw-nummer, volgorde 2), maar
+nog zonder belastingtoewijzing.</p>
 
 
 <!-- ============================================================= -->
