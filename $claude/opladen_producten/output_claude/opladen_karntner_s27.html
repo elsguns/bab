@@ -1,0 +1,1185 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAB — Karntner Summer 27 opladen</title>
+<style>
+:root{--fg:#1d2433;--muted:#5b6478;--accent:#875a7b;--accent-soft:#f3e8ee;
+--rule:#e3e6ed;--code-bg:#f4f5f7;--ok:#eef7ee;--ok-bd:#bcdfbc;--warn:#fff7e6;--warn-bd:#f0c36d;
+--bad:#fdecea;--bad-bd:#f0b3ac;--info:#eef4fb;--info-bd:#b8d0eb;}
+*,*::before,*::after{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+color:var(--fg);background:#fff;display:grid;grid-template-columns:320px minmax(0,1fr);min-height:100vh;}
+aside.toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;padding:1.4rem 1.2rem 2rem;
+border-right:1px solid var(--rule);background:#fafbfd;font-size:14px;}
+aside.toc h2{margin:0 0 .6rem;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+aside.toc ol{list-style:none;padding:0;margin:0 0 1.2rem;}
+aside.toc ol ol{padding-left:.9rem;margin:.15rem 0 .35rem;border-left:2px solid var(--rule);}
+aside.toc a{display:block;padding:.2rem .4rem;color:var(--fg);text-decoration:none;border-radius:4px;}
+aside.toc a:hover{background:var(--accent-soft);color:var(--accent);}
+main{padding:2rem 2.4rem 4rem;max-width:1040px;}
+h1{margin:0 0 .3rem;font-size:26px;}
+.sub{color:var(--muted);margin:0 0 1.6rem;}
+h2{margin:2.2rem 0 .5rem;padding-bottom:.3rem;border-bottom:2px solid var(--accent);color:var(--accent);font-size:20px;}
+h3{margin:1.6rem 0 .4rem;font-size:16px;}
+p{margin:.5rem 0;}
+table{border-collapse:collapse;width:100%;margin:.6rem 0 1rem;font-size:14px;}
+th,td{text-align:left;vertical-align:top;padding:.5rem .6rem;border-bottom:1px solid var(--rule);}
+th{background:#fafbfd;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+td.num{text-align:right;white-space:nowrap;}
+code{background:var(--code-bg);padding:.05em .35em;border-radius:4px;font-size:13px;
+font-family:ui-monospace,Menlo,Consolas,monospace;}
+pre{background:var(--code-bg);border:1px solid var(--rule);border-radius:8px;padding:.8rem 1rem;
+overflow-x:auto;font-size:13px;line-height:1.45;font-family:ui-monospace,Menlo,Consolas,monospace;}
+.box{border-radius:8px;padding:.8rem 1rem;margin:1rem 0;font-size:13.5px;border:1px solid;}
+.box-info{background:var(--info);border-color:var(--info-bd);}
+.box-ok{background:var(--ok);border-color:var(--ok-bd);}
+.box-warn{background:var(--warn);border-color:var(--warn-bd);}
+.box-bad{background:var(--bad);border-color:var(--bad-bd);}
+.box h3{margin:0 0 .35rem;}
+.muted{color:var(--muted);}
+ol.steps{list-style:none;counter-reset:step;padding:0;margin:1rem 0;}
+ol.steps>li{position:relative;padding:.55rem .6rem .55rem 2.4rem;border-bottom:1px solid var(--rule);}
+ol.steps>li::before{content:"";position:absolute;left:.55rem;top:.62rem;width:1.05rem;height:1.05rem;
+border:1.5px solid var(--accent);border-radius:4px;}
+ol.steps input{position:absolute;left:.5rem;top:.55rem;width:1.2rem;height:1.2rem;margin:0;opacity:0;cursor:pointer;}
+ol.steps input:checked+span::before{content:"\2713";position:absolute;left:.7rem;top:.5rem;color:var(--accent);font-weight:700;}
+ol.steps ul{margin:.4rem 0 0;padding-left:1.1rem;}
+ol.steps .stapnr{display:inline-block;min-width:2.6rem;font-weight:700;color:var(--accent);}
+.o_code{position:relative;}
+.o_code>button.o_copy{position:absolute;top:.5rem;right:.5rem;font:inherit;font-size:12px;line-height:1;
+padding:.3rem .6rem;cursor:pointer;color:var(--accent);background:#fff;border:1px solid var(--rule);
+border-radius:4px;opacity:.55;transition:opacity .15s;}
+.o_code:hover>button.o_copy{opacity:1;}
+.o_code>button.o_copy:hover{background:var(--accent-soft);}
+.o_code>button.o_copy.done{color:#198754;border-color:#9dcda3;opacity:1;}
+.o_code>pre{margin-top:0;}
+@media print{.o_code>button.o_copy{display:none;}}
+@media (max-width:800px){body{grid-template-columns:1fr;}
+aside.toc{position:relative;height:auto;border-right:0;border-bottom:1px solid var(--rule);}}
+</style></head><body><aside class="toc"><h2>Inhoud</h2><ol>
+<li><a href="#doel">Doel en bronbestanden</a></li>
+<li><a href="#exports">Wat ik nodig heb uit productie</a>
+  <ol>
+    <li><a href="#exports-actie">Eén serveractie voor alle acht</a></li>
+    <li><a href="#exports-lijst">Wat er in de tabbladen komt</a></li>
+    <li><a href="#exports-tweede">De negende export, halverwege</a></li>
+  </ol>
+</li>
+<li><a href="#verschillen">Wat er in S27 anders is dan in S26</a>
+  <ol>
+    <li><a href="#v-omvang">Omvang</a></li>
+    <li><a href="#v-duits">Duitstalige waarden</a></li>
+    <li><a href="#v-ontbreekt">Wat het bestand niet bevat</a></li>
+    <li><a href="#v-vuil">Vuile data</a></li>
+    <li><a href="#v-fotos">De afbeeldingen</a></li>
+  </ol>
+</li>
+<li><a href="#keuzes">De vijf keuzes, beslecht</a></li>
+<li><a href="#bestanden">De importbestanden</a>
+  <ol><li><a href="#importeren">Importeren, en eerst proefdraaien</a></li>
+<li><a href="#open-175">Artikel 175 bestaat al</a></li></ol></li>
+<li><a href="#procedure">De procedure stap voor stap</a>
+  <ol>
+    <li><a href="#p-voorbereiden">A. Voorbereiden</a></li>
+    <li><a href="#p-kenmerken">B. Kenmerkwaarden</a></li>
+    <li><a href="#p-templates">C. Hoofdproducten</a></li>
+    <li><a href="#p-varianten">D. Varianten en barcodes</a></li>
+    <li><a href="#p-prijzen">E. Prijzen</a></li>
+    <li><a href="#p-instellingen">G. Vinkjes en routes</a></li>
+    <li><a href="#p-fotos">F. Afbeeldingen</a></li>
+  </ol>
+</li>
+<li><a href="#valkuilen">Valkuilen uit de S26-oplading</a>
+  <ol>
+    <li><a href="#val-gewicht">Gewicht met komma wordt tienduizend keer te zwaar</a></li>
+    <li><a href="#val-code">Kenmerkcode wordt stilzwijgend verzonnen</a></li>
+    <li><a href="#val-saleok">Nieuwe producten staan niet te koop en niet te kopen</a></li>
+    <li><a href="#val-route">De route MTO, en waarom S26 ze niet heeft</a></li>
+    <li><a href="#val-dbid">De wizard kan niet op databank-id importeren</a></li>
+    <li><a href="#val-kolom">Een kolom geldt voor élke rij, ook leeg</a></li>
+    <li><a href="#val-dubbelzinnig">Maat S bestaat twee keer</a></li>
+    <li><a href="#val-dubbel">Het hoofdproduct dat op een 2 eindigt</a></li>
+    <li><a href="#val-vlookup">De VLOOKUPs in het voorbeeldbestand</a></li>
+    <li><a href="#val-namen">De adviesprijslijst heet in het Engels anders</a></li>
+    <li><a href="#val-fotorij">De foto's kunnen niet in het C-bestand</a></li>
+  </ol>
+</li>
+<li><a href="#controle">Controles na afloop</a></li>
+</ol></aside>
+<main>
+<h1>Karntner Summer 27 opladen</h1>
+<p class="sub">BAB &middot; Odoo 18.0 (Odoo.sh) &middot; bedrijf Vasa International &middot; opgesteld 23 augustus 2026</p>
+
+<h2 id="doel">Doel en bronbestanden</h2>
+<p>De collectie <strong>Summer 27</strong> van Textil Karntner in Odoo krijgen, op dezelfde manier als
+Summer 26. De werkwijze komt uit het tabblad <em>Procedure</em> van het S26-bestand; die elf regels zijn
+hieronder uitgeschreven en aangevuld met wat ik in de twee bestanden en in de databankkopie van 18 juni
+2026 nagekeken heb.</p>
+<table>
+<thead><tr><th>Bestand</th><th>Rol</th><th>Inhoud</th></tr></thead>
+<tbody>
+<tr><td><code>Textil Karntner S27.xlsx</code></td><td>Nieuwe bron</td>
+<td>Eén tabblad <em>Blad1</em>, 18 kolommen, 7&nbsp;598 datarijen vanaf rij 3 (rij 2 is de kop)</td></tr>
+<tr><td><code>Karntner S26 Odoo - vb. Excel Els.xlsx</code></td><td>Model</td>
+<td>Veertien tabbladen: de ruwe leverancierslijst, de vier importbladen, de kenmerklijsten en de procedure</td></tr>
+<tr><td><code>Produktfotos-&hellip;-DAMEN-4422.zip</code><br><code>Produktfotos-&hellip;-HERREN-4423.zip</code></td>
+<td>Foto's</td>
+<td>Nagestuurd op 25&nbsp;augustus 2026. Samen 463 JPEG's van 853&times;1280, één per artikel, met de
+artikelnummer als bestandsnaam. <a href="#v-fotos">Wat er aansluit</a></td></tr>
+</tbody></table>
+<p>De vier importbladen komen overeen met vier modellen. Die volgorde is ook de importvolgorde, want elk
+model verwijst naar het vorige:</p>
+<table>
+<thead><tr><th>Blad</th><th>Model</th><th>Wat het aanmaakt</th></tr></thead>
+<tbody>
+<tr><td>import product.template</td><td><code>product.template</code></td><td>De hoofdproducten met hun drie kenmerklijnen</td></tr>
+<tr><td>import product.product</td><td><code>product.product</code></td><td>De barcodes op de varianten die Odoo zelf aanmaakte</td></tr>
+<tr><td>import product_supplierinfo</td><td><code>product.supplierinfo</code></td><td>De aankoopprijs per hoofdproduct</td></tr>
+<tr><td>import product.pricelist.item</td><td><code>product.pricelist.item</code></td><td>De verkoop- en adviesprijs per hoofdproduct</td></tr>
+</tbody></table>
+
+<h2 id="exports">Wat ik nodig heb uit productie</h2>
+<p>De acht exports zijn op <strong>24 augustus 2026</strong> uit productie gehaald; alle cijfers in deze gids
+zijn daartegen gemeten. Het bestand staat in
+<code>opladen_producten/output_claude/karntner_exports.xls</code>. Op één punt is productie sinds de
+junikopie veranderd, en niet ten goede: de gewichten van S26. <a href="#val-gewicht">Zie de valkuil</a>.</p>
+
+<h3 id="exports-actie">Eén serveractie voor alle acht</h3>
+<p>De acht exports hoeven niet één voor één door de lijstweergave. Eén serveractie haalt ze alle acht op en
+levert ze als één werkmap met acht tabbladen, klaar om naast <em>Blad1</em> te plakken. Aanmaken via
+Instellingen &rarr; Technisch &rarr; Serveracties, naam <code>* Karntner-exports ophalen</code>, model
+<strong>Product</strong> (<code>product.template</code>), type <em>Python-code uitvoeren</em>:</p>
+<div class="o_code"><pre>LEVERANCIER = 'Textil Karntner GmbH &amp; Co KG'
+KENMERKEN = ['Kleur Kartner', 'Kledingmaat', 'Kwaliteit/materiaal']
+# alle bedrijven waar de gebruiker toegang toe heeft, los van welk bedrijf
+# er in de bedrijvenkiezer actief staat -- anders vallen de Vasa-producten weg
+BEDRIJVEN = env.user.company_ids.ids
+
+BLADEN = [
+    ('1 attribuutwaarden', 'product.attribute.value',
+     [('attribute_id.name', 'in', KENMERKEN)],
+     ['id', 'attribute_id', 'name', 'code', 'sequence']),
+    ('2 hoofdproducten', 'product.template',
+     [('seller_ids.partner_id', '=', LEVERANCIER)],
+     ['id', 'name', 'code_prefix', 'reference_mask', 'product_brand_id',
+      'categ_id', 'country_of_origin', 'hs_code', 'weight',
+      'product_tag_ids', 'company_id', 'product_add_mode', 'active']),
+    ('3 varianten', 'product.product',
+     [('seller_ids.partner_id', '=', LEVERANCIER)],
+     ['id', 'default_code', 'barcode', 'active', 'product_tmpl_id']),
+    ('4 merken', 'product.brand', [], ['id', 'name']),
+    ('5 categorieen', 'product.category', [], ['id', 'complete_name']),
+    ('6 tags', 'product.tag', [], ['id', 'name']),
+    ('7 prijslijsten', 'product.pricelist', [], ['id', 'name']),
+    ('8 landen', 'res.country', [], ['id', 'name', 'code']),
+]
+
+
+def esc(waarde):
+    if waarde is False or waarde is None:
+        return ''
+    tekst = str(waarde)
+    tekst = tekst.replace('&amp;', '&amp;amp;')
+    tekst = tekst.replace('&lt;', '&amp;lt;')
+    return tekst.replace('&gt;', '&amp;gt;')
+
+
+def rij(cellen):
+    stukken = ['&lt;Row&gt;']
+    for cel in cellen:
+        stukken.append('&lt;Cell&gt;&lt;Data ss:Type="String"&gt;%s&lt;/Data&gt;&lt;/Cell&gt;' % esc(cel))
+    stukken.append('&lt;/Row&gt;')
+    return ''.join(stukken)
+
+
+delen = ['&lt;?xml version="1.0"?&gt;\n&lt;?mso-application progid="Excel.Sheet"?&gt;\n'
+         '&lt;Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"'
+         ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"&gt;']
+telling = []
+
+for naam, modelnaam, domein, velden in BLADEN:
+    doel = env[modelnaam].with_context(active_test=False, allowed_company_ids=BEDRIJVEN)
+    # velden die deze databank niet kent gewoon overslaan i.p.v. vastlopen
+    aanwezig = [v for v in velden if v.split('/')[0] in doel._fields]
+    records = doel.search(domein, order='id')
+    if modelnaam == 'product.template' and not records:
+        raise UserError('Geen enkel product gevonden bij leverancier %s. '
+                        'Controleer de naam van de leverancier in de actie.' % LEVERANCIER)
+    regels = records.export_data(aanwezig)['datas'] if records else []
+    delen.append('&lt;Worksheet ss:Name="%s"&gt;&lt;Table&gt;' % esc(naam))
+    delen.append(rij(aanwezig))
+    for regel in regels:
+        delen.append(rij(regel))
+    delen.append('&lt;/Table&gt;&lt;/Worksheet&gt;')
+    telling.append('%s: %s' % (naam, len(regels)))
+
+delen.append('&lt;/Workbook&gt;')
+
+bijlage = env['ir.attachment'].create({
+    'name': 'karntner_exports.xls',
+    'type': 'binary',
+    'mimetype': 'application/vnd.ms-excel',
+    'datas': b64encode(''.join(delen).encode()),
+})
+log('Karntner-exports: ' + ' | '.join(telling))
+
+action = {
+    'type': 'ir.actions.act_url',
+    'url': '/web/content/%s?download=true' % bijlage.id,
+    'target': 'self',
+}</pre></div>
+<p><strong>Draaien:</strong> Voorraad &rarr; Producten &rarr; Producten openen, één willekeurig product
+aanvinken, en <em>Actie &rarr; * Karntner-exports ophalen</em>. De download start meteen.</p>
+
+<div class="box box-info">
+<h3>Waarom dit dezelfde gegevens oplevert als de handmatige export</h3>
+<p>De actie roept <code>export_data()</code> aan, en dat is precies de methode achter <em>Actie &rarr;
+Exporteren</em> met <em>Ik wil gegevens bijwerken (compatibele import-export)</em> aangevinkt. Ze maakt dus
+ook de ontbrekende externe ID's aan in de vorm <code>__export__.product_template_31510</code>, en ze zet een
+many2many zoals <code>product_tag_ids</code> in één cel met komma's. <code>with_context(active_test=False)</code>
+doet wat het vinkje <em>Gearchiveerd</em> in de lijstweergave doet.</p>
+</div>
+
+<div class="box box-warn">
+<h3>Drie dingen om te weten</h3>
+<ul>
+<li>De actie is <strong>niet zuiver lezend</strong>. Records die nog geen externe ID hebben, krijgen er een.
+Dat gebeurt bij een handmatige export net zo goed, maar het gebeurt wel op productie.</li>
+<li>Het bestand is <strong>Excel-2003-XML</strong> met de extensie <code>.xls</code>, niet een echte xlsx &mdash;
+een serveractie mag geen <code>xlsxwriter</code> importeren. Excel en LibreOffice openen het gewoon als werkmap
+met acht tabbladen; Excel kan bij het openen één keer waarschuwen dat de indeling niet bij de extensie past.
+Sla het bij de eerste bewerking op als <code>.xlsx</code>.</li>
+<li>Vertaalbare namen (prijslijsten, categorieën, landen) komen eruit in de <strong>taal van wie de actie
+draait</strong>. Draai ze in het Nederlands, dan sluiten de namen aan bij wat je in het scherm ziet.</li>
+<li>Het product dat je aanvinkt om de actie te starten, moet er een zijn waar je <strong>schrijfrecht</strong>
+op hebt: <code>run()</code> controleert dat vóór de code draait. Welk product je kiest maakt verder niet uit,
+de actie doet er niets mee.</li>
+</ul>
+</div>
+
+<div class="box box-bad">
+<h3>Waarom hier <code>allowed_company_ids</code> staat</h3>
+<p>De Karntner-producten staan alle 452 op <strong>Vasa International</strong>. Draait de actie terwijl
+<em>Babimex</em> in de bedrijvenkiezer actief staat, dan filtert de multi-companyregel ze allemaal weg en komen
+tabblad 2 en 3 er <strong>leeg</strong> uit &mdash; zonder foutmelding. Vandaar
+<code>allowed_company_ids=BEDRIJVEN</code>: de actie kijkt naar alle bedrijven waar je toegang toe hebt, los van
+de bedrijvenkiezer. Dat is geen omzeiling van de rechten, enkel van de kiezer. De <code>UserError</code> erbij
+vangt het geval dat de leveranciersnaam niet meer klopt, zodat een lege tabel nooit meer stil passeert.</p>
+</div>
+
+<p>Het aantal rijen per tabblad in de productie-export van 24 augustus: 598 attribuutwaarden,
+452 hoofdproducten, 9&nbsp;592 varianten, 47 merken, 276 categorieën, 8 tags, 54 prijslijsten en 251 landen.
+Precies dezelfde aantallen als in de junikopie, dus er zijn sinds 18 juni geen Karntner-producten bij gekomen
+of weggevallen. Tabblad 2 en 3 tellen alle Karntner-seizoenen mee, gearchiveerde inbegrepen &mdash; niet
+enkel S26.</p>
+
+<h3 id="exports-lijst">Wat er in de tabbladen komt</h3>
+<p>Acht tabbladen, in deze volgorde. De menupaden staan erbij voor het geval een export toch handmatig moet:
+filter zetten, alle records selecteren, dan <em>Actie &rarr; Exporteren</em>, formaat <strong>XLSX</strong>,
+en <em>Ik wil gegevens bijwerken (compatibele import-export)</em> aanvinken.</p>
+<table>
+<thead><tr><th>#</th><th>Model &amp; menu</th><th>Filter</th><th>Velden</th><th>Waarvoor</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><code>product.attribute.value</code><br><span class="muted">geen menu in Odoo 18 &mdash; enkel via de actie</span></td>
+<td>Kenmerk = Kleur Kartner, Kledingmaat, Kwaliteit/materiaal</td>
+<td><code>id</code>, <code>attribute_id</code>, <code>name</code>, <code>code</code>, <code>sequence</code></td>
+<td>Bepalen welke kleuren en kwaliteiten al bestaan, en met welke code</td></tr>
+<tr><td>2</td><td><code>product.template</code><br>Voorraad &rarr; Producten &rarr; Producten</td>
+<td>Leverancier = Textil Karntner GmbH &amp; Co KG, filter <em>Gearchiveerd</em> mee</td>
+<td><code>id</code>, <code>name</code>, <code>code_prefix</code>, <code>reference_mask</code>, <code>product_brand_id</code>,
+<code>categ_id</code>, <code>country_of_origin</code>, <code>hs_code</code>, <code>weight</code>,
+<code>product_tag_ids</code>, <code>company_id</code>, <code>product_add_mode</code>, <code>active</code></td>
+<td>Nagaan welke artikelnummers al bestaan, en de instellingen van S26 overnemen</td></tr>
+<tr><td>3</td><td><code>product.product</code><br>Voorraad &rarr; Producten &rarr; Productvarianten</td>
+<td>Zelfde leveranciersfilter, gearchiveerde mee</td>
+<td><code>id</code>, <code>default_code</code>, <code>barcode</code>, <code>active</code>, <code>product_tmpl_id</code></td>
+<td>Controleren dat geen enkele S27-barcode al in gebruik is</td></tr>
+<tr><td>4</td><td><code>product.brand</code><br>Verkoop &rarr; Configuratie &rarr; Product Brands</td><td>Alles</td>
+<td><code>id</code>, <code>name</code></td><td>De vijf merken uit S27 terugvinden</td></tr>
+<tr><td>5</td><td><code>product.category</code><br>Voorraad &rarr; Configuratie &rarr; Productcategorieën</td><td>Alles</td>
+<td><code>id</code>, <code>complete_name</code></td><td>De categorie per merk</td></tr>
+<tr><td>6</td><td><code>product.tag</code><br>Verkoop &rarr; Configuratie &rarr; Producttags</td><td>Alles</td>
+<td><code>id</code>, <code>name</code></td><td>Nagaan of het seizoenslabel al bestaat</td></tr>
+<tr><td>7</td><td><code>product.pricelist</code><br>Verkoop &rarr; Configuratie &rarr; Prijslijsten</td><td>Alles</td>
+<td><code>id</code>, <code>name</code></td><td>De externe ID van de twee prijslijsten ophalen &mdash; op naam matchen lukt niet</td></tr>
+<tr><td>8</td><td><code>res.country</code><br>Instellingen &rarr; Technisch &rarr; Landen</td><td>Alles</td>
+<td><code>id</code>, <code>name</code>, <code>code</code></td><td>De Duitse landnamen uit S27 omzetten naar wat Odoo verwacht</td></tr>
+</tbody></table>
+<div class="box box-info">
+<h3>Waarom de gearchiveerde records mee moeten</h3>
+<p>Bij S26 zijn de varianten zonder barcode gearchiveerd. Die records bestaan nog en houden hun interne
+referentie en barcode bezet. Een export zonder <em>Gearchiveerd</em> laat ze weg, en dan lijkt een referentie
+vrij die het niet is.</p>
+</div>
+
+<h3 id="exports-tweede">De negende export, halverwege</h3>
+<p>Eén export kan pas later, en die doet meer dan hij lijkt te doen. Zodra de hoofdproducten geladen zijn,
+maakt Odoo zelf de varianten aan &mdash; <strong>zonder externe ID</strong>. Na de import van C hebben de
+7&nbsp;472 nieuwe varianten er geen enkele. Het is de export zelf die ze aanmaakt, via
+<code>export_data()</code>, en pas daarna kan de barcode op de juiste variant gezet worden. Dat is precies wat
+in het S26-bestand op het tabblad <em>bestaande varianten</em> staat.</p>
+<p>Het is dezelfde serveractie met een andere <code>BLADEN</code>-lijst. Bewaar ze als een <strong>tweede</strong>
+actie, <code>* Karntner-varianten opnieuw ophalen</code>, zodat de eerste onaangeroerd blijft. Model
+<strong>Product</strong> (<code>product.template</code>), type <em>Python-code uitvoeren</em>, beschikbaar in
+het Actie-menu:</p>
+<div class="o_code"><pre>LABEL = 'Spring/Summer 27'
+BEDRIJVEN = env.user.company_ids.ids
+
+BLADEN = [
+    ('varianten S27', 'product.product',
+     [('product_tag_ids.name', '=', LABEL)],
+     ['id', 'default_code', 'barcode']),
+]
+
+def esc(waarde):
+    if waarde is False or waarde is None:
+        return ''
+    tekst = str(waarde)
+    tekst = tekst.replace('&amp;', '&amp;amp;')
+    tekst = tekst.replace('&lt;', '&amp;lt;')
+    return tekst.replace('&gt;', '&amp;gt;')
+
+
+def rij(cellen):
+    stukken = ['&lt;Row&gt;']
+    for cel in cellen:
+        stukken.append('&lt;Cell&gt;&lt;Data ss:Type="String"&gt;%s&lt;/Data&gt;&lt;/Cell&gt;' % esc(cel))
+    stukken.append('&lt;/Row&gt;')
+    return ''.join(stukken)
+
+
+delen = ['&lt;?xml version="1.0"?&gt;\n&lt;?mso-application progid="Excel.Sheet"?&gt;\n'
+         '&lt;Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"'
+         ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"&gt;']
+telling = []
+
+for naam, modelnaam, domein, velden in BLADEN:
+    doel = env[modelnaam].with_context(active_test=False, allowed_company_ids=BEDRIJVEN)
+    # velden die deze databank niet kent gewoon overslaan i.p.v. vastlopen
+    aanwezig = [v for v in velden if v.split('/')[0] in doel._fields]
+    records = doel.search(domein, order='id')
+    if modelnaam == 'product.template' and not records:
+        raise UserError('Geen enkel product gevonden bij leverancier %s. '
+                        'Controleer de naam van de leverancier in de actie.' % LEVERANCIER)
+    regels = records.export_data(aanwezig)['datas'] if records else []
+    delen.append('&lt;Worksheet ss:Name="%s"&gt;&lt;Table&gt;' % esc(naam))
+    delen.append(rij(aanwezig))
+    for regel in regels:
+        delen.append(rij(regel))
+    delen.append('&lt;/Table&gt;&lt;/Worksheet&gt;')
+    telling.append('%s: %s' % (naam, len(regels)))
+
+delen.append('&lt;/Workbook&gt;')
+
+bijlage = env['ir.attachment'].create({
+    'name': 'karntner_varianten.xls',
+    'type': 'binary',
+    'mimetype': 'application/vnd.ms-excel',
+    'datas': b64encode(''.join(delen).encode()),
+})
+log('Karntner-varianten: ' + ' | '.join(telling))
+
+action = {
+    'type': 'ir.actions.act_url',
+    'url': '/web/content/%s?download=true' % bijlage.id,
+    'target': 'self',
+}</pre></div>
+<p><strong>Draaien:</strong> Voorraad &rarr; Producten &rarr; Producten, één willekeurig product aanvinken,
+Actie &rarr; <em>* Karntner-varianten opnieuw ophalen</em>. Je krijgt <code>karntner_varianten.xls</code> met
+één tabblad en 7&nbsp;598 rijen: de externe ID van elke variant, zijn interne referentie en de barcode die er
+op dat moment staat.</p>
+
+<div class="box box-ok">
+<h3>Gedaan &mdash; en wat eruit kwam</h3>
+<p>De actie is op 25&nbsp;augustus 2026 op productie gedraaid; <code>karntner_varianten.xls</code> staat in
+<code>opladen_producten/output_claude/</code>. Eén tabblad, <strong>7&nbsp;598 rijen</strong> over 272
+artikelen &mdash; exact het aantal dat uit de bron voorspeld was, dus stap C is volledig geland en Odoo heeft
+elke matrixcombinatie aangemaakt.</p>
+<p>Van die 7&nbsp;598 dragen er <strong>126</strong> al een barcode: precies de varianten van artikel 175, dat
+al sinds Winter 26 bestond. Ze komen tot op het cijfer overeen met de koppeltabel, dus daar is niets
+rechtgezet en niets aan te passen.</p>
+<p>Daaruit is <code>import_D_barcodes.xlsx</code> gebouwd: <strong>7&nbsp;460 rijen</strong>,
+<code>id</code>&nbsp;+&nbsp;<code>barcode</code>. Twee groepen vallen weg, en dat zijn de twee die eerder al
+voorspeld waren &mdash; de 126 van 175 die er al op staan, en de 12 van artikel 72255 waarvoor Karntner enkel
+dummy-EAN's leverde. Ze staan met hun reden op het tweede tabblad <em>niet mee</em>.</p>
+<p>Elke interne referentie uit de koppeltabel is in de export teruggevonden, geen enkele dubbel. De 7&nbsp;460
+barcodes zijn onderling uniek en botsen met geen enkele barcode die al bij een Karntner-variant in productie
+staat.</p>
+</div>
+
+<h2 id="verschillen">Wat er in S27 anders is dan in S26</h2>
+
+<h3 id="v-omvang">Omvang</h3>
+<table>
+<thead><tr><th>&nbsp;</th><th class="num">S26</th><th class="num">S27</th></tr></thead>
+<tbody>
+<tr><td>Datarijen (varianten)</td><td class="num">3&nbsp;253</td><td class="num">7&nbsp;598</td></tr>
+<tr><td>Hoofdproducten</td><td class="num">233</td><td class="num">272</td></tr>
+<tr><td>Varianten per hoofdproduct</td><td class="num">&nbsp;</td><td class="num">5 tot 126, gemiddeld 28</td></tr>
+<tr><td>Kleuren</td><td class="num">196</td><td class="num">284</td></tr>
+<tr><td>Maten</td><td class="num">15</td><td class="num">15</td></tr>
+<tr><td>Kwaliteiten</td><td class="num">56</td><td class="num">72</td></tr>
+<tr><td>Merken</td><td class="num">4</td><td class="num">5</td></tr>
+</tbody></table>
+<p>Gemeten tegen de productie-export van 24 augustus 2026:</p>
+<ul>
+<li><strong>Maten:</strong> alle vijftien bestaan al. Geen enkele nieuwe waarde nodig.</li>
+<li><strong>Kleuren:</strong> 88 van de 284 bestaan al, <strong>196 moeten aangemaakt worden</strong>.</li>
+<li><strong>Kwaliteiten:</strong> 8 bestaan letterlijk, 29 bestaan in Engelse vorm, <strong>35 zijn echt nieuw</strong>.</li>
+<li><strong>Merken:</strong> alle vijf bestaan al, inclusief <em>M.X.O. neu</em>, en alle vijf hebben een
+categorie onder <code>All / Saleable</code>.</li>
+<li><strong>Artikelnummers:</strong> geen enkele van de 272 komt voor in S26.</li>
+<li><strong>Kleurcodes:</strong> van de 88 kleuren die al bestaan, heeft er geen enkele een andere code in Odoo
+dan in S27. De interne referenties blijven dus consistent.</li>
+</ul>
+<div class="box box-ok">
+<h3>Meevaller: de matrix is volledig</h3>
+<p>Voor elk hoofdproduct staat elke combinatie van kleur en maat effectief in het bestand: 7&nbsp;598 rijen
+tegenover 7&nbsp;598 mogelijke combinaties. Odoo zal dus geen enkele variant genereren die niet in de lijst
+staat, en stap 9 van de procedure &mdash; de varianten zonder barcode archiveren &mdash; valt deze keer weg.
+Bij S26 was dat niet zo: daar staan bijvoorbeeld de varianten <code>31510-30-*</code> gearchiveerd.</p>
+</div>
+
+<h3 id="v-duits">Duitstalige waarden</h3>
+<p>Dit is het grootste verschil, en het is niet zichtbaar als er niet naar gezocht wordt. S26 was Nederlands
+en Engels ingevuld, S27 komt rechtstreeks uit het Duitse systeem van de leverancier.</p>
+<table>
+<thead><tr><th>Kolom</th><th>S26</th><th>S27</th><th>Gevolg zonder ingreep</th></tr></thead>
+<tbody>
+<tr><td>Land v oorsprong</td><td>Bangladesh, India, Griekenland, Italië</td>
+<td>Bangladesch, Indien, Griechenland, Italien, Türkiye, Myanmar</td>
+<td>Odoo zoekt het land op naam in de taal van de import en vindt er zes van de zeven niet</td></tr>
+<tr><td>Kwaliteit</td><td>100%Cotton, 95%Cotton5%Elasthan</td><td>100%Baumwolle, 95%Baumwolle5%Elasthan</td>
+<td>65 nieuwe kenmerkwaarden náást de bestaande Engelse, met dezelfde betekenis</td></tr>
+</tbody></table>
+<p>Alleen <em>China</em> is in beide talen gelijk. De omzetting van de kwaliteiten is grotendeels mechanisch:
+<code>Baumwolle&nbsp;&rarr;&nbsp;Cotton</code>, <code>Viskose&nbsp;&rarr;&nbsp;Viscose</code>,
+<code>Leinen&nbsp;&rarr;&nbsp;Linen</code>. Na die drie vervangingen vallen 29 van de 64 resterende waarden
+samen met een bestaande waarde.</p>
+
+<h3 id="v-ontbreekt">Wat het bestand niet bevat</h3>
+<ul>
+<li><strong>Art. Variant nr.</strong> (kolom E) is helemaal leeg. In S26 stond daar
+<code>31108-[49]-[S]</code>. Die kolom moet opgebouwd worden uit artikelnummer, kleurnummer en maat.</li>
+<li><strong>Besteld aantal</strong> en <strong>Leverperiode</strong> ontbreken. Die werden bij S26 ook niet
+geïmporteerd, dus dat is geen bezwaar.</li>
+<li><strong>Seizoen</strong> staat er wél, maar als <code>Summer 27</code>, terwijl het label in Odoo bij S26
+<code>Spring/Summer 26</code> heet.</li>
+</ul>
+
+<h3 id="v-vuil">Vuile data</h3>
+<table>
+<thead><tr><th>Wat</th><th>Omvang</th><th>Aanpak</th></tr></thead>
+<tbody>
+<tr><td>Kolom <em>Omschrijving</em> bevat <code>&nbsp;T-Shirt</code> met een spatie vooraan, náást
+<code>T-Shirt</code></td><td>39 hoofdproducten</td>
+<td>Trimmen vóór de naam samengesteld wordt, anders staat er <code>71102&nbsp;&nbsp;T-Shirt</code> met een
+dubbele spatie</td></tr>
+<tr><td>Dummy-EAN-codes <code>1000000000009</code> tot <code>6000000000004</code>, elk twee keer gebruikt</td>
+<td>12 rijen, allemaal op artikel 72255, kleuren <em>12 sand/brown</em> en <em>49 black/offwhite</em></td>
+<td>Echte barcodes opvragen bij Karntner. Odoo weigert een dubbele barcode</td></tr>
+<tr><td>Kwaliteitsomschrijvingen afgekapt, bijvoorbeeld
+<code>3%metallisiertes&nbsp;Polye</code></td><td>enkele</td><td>Zo laten of manueel aanvullen &mdash; het is een
+kenmerkwaarde zonder verdere functie</td></tr>
+</tbody></table>
+<h3 id="v-fotos">De afbeeldingen</h3>
+<p>De twee zips samen bevatten 463 JPEG's, alle 853&times;1280 en 100&nbsp;tot&nbsp;345&nbsp;kB. De bestandsnaam
+is het artikelnummer gevolgd door <code>&nbsp;S1.jpg</code> &mdash; dus één foto per <em>hoofdproduct</em>,
+niet per kleur. Dat sluit aan bij hoe S26 in productie staat: van de 452 bestaande Karntner-artikelen dragen
+er 451 een foto op <code>product.template</code>, geen enkele op een variant.</p>
+<table>
+<thead><tr><th>Wat</th><th class="num">Aantal</th><th>Gevolg</th></tr></thead>
+<tbody>
+<tr><td>S27-artikelen met een foto</td><td class="num">261</td>
+<td>Gaan mee in <code>import_F_afbeeldingen.xlsx</code></td></tr>
+<tr><td>S27-artikelen zonder foto</td><td class="num">11</td>
+<td>Blijven zonder foto. Het zijn 175, 71144, 71226, 71923, 71952, 71964, 71995, 72281, 72725, 72903 en 73310;
+ze staan op het tweede tabblad van het F-bestand</td></tr>
+<tr><td>Foto's van artikelen buiten S27</td><td class="num">202</td>
+<td>Artikelen die BAB niet afneemt &mdash; de zip is de volledige Karntner-catalogus. Niet uitgepakt en niet
+op te laden. Twee ervan, <code>71535OT</code> en <code>71543OT</code>, hebben zelfs geen kaal
+artikelnummer</td></tr>
+</tbody></table>
+<p>Omdat alles onder 1920&nbsp;pixels blijft, bewaart Odoo de foto's ongewijzigd; de 261 relevante zijn samen
+44,5&nbsp;MB. Ze staan uitgepakt klaar in
+<code>opladen_producten/output_claude/afbeeldingen_s27/</code>, met de bestandsnaam onaangeroerd &mdash;
+de importwizard koppelt op precies die naam, spatie inbegrepen.</p>
+
+<p class="muted">Wat wél in orde is: elk artikelnummer heeft precies één merk, land, intrastatcode, gewicht,
+kwaliteit en prijzenset, elke EAN op één na is uniek, en binnen een hoofdproduct botsen geen twee kleuren op
+hetzelfde kleurnummer. Dat laatste is de voorwaarde waar de interne referenties op steunen.</p>
+
+<h2 id="keuzes">De vijf keuzes, beslecht</h2>
+<p>Els heeft de vijf openstaande punten op 24 augustus 2026 vastgelegd. Zo zien de importbestanden er dus uit.</p>
+<table>
+<thead><tr><th>Keuze</th><th>Beslissing</th><th>Gevolg voor de import</th></tr></thead>
+<tbody>
+<tr><td>Naam van het seizoenslabel</td><td><code>Spring/Summer 27</code></td>
+<td>In lijn met het label van S26. Aan te maken als producttag bij stap A5, en de waarde voor
+<code>product_tag_ids</code> in tabblad C</td></tr>
+<tr><td>Kwaliteitswaarden</td><td>Vertalen naar de Engelse vorm</td>
+<td><code>Baumwolle&nbsp;&rarr;&nbsp;Cotton</code>, <code>Viskose&nbsp;&rarr;&nbsp;Viscose</code>,
+<code>Leinen&nbsp;&rarr;&nbsp;Linen</code>. Daarna vallen 29 waarden samen met een bestaande;
+er blijven er <strong>35</strong> nieuw aan te maken in plaats van 64</td></tr>
+<tr><td>Merk <em>M.X.O. neu</em></td><td>Zoals in het bestand</td>
+<td>Geen samenvoeging. Het merk en zijn categorie onder <code>All / Saleable</code> bestaan al in productie</td></tr>
+<tr><td>Artikel 72255</td><td>Mee opladen, <strong>zonder barcode</strong></td>
+<td>De twaalf varianten komen er gewoon bij, enkel het veld <code>barcode</code> blijft leeg. Ze vallen dus
+weg uit het barcodebestand van stap D2, en stap D3 moet er twaalf verwachten in plaats van nul.
+De vraag naar echte codes staat in <code>barcodes_72255.html</code></td></tr>
+<tr><td>Prijslijsten</td><td><em>Verkoopsprijzen B2B (excl.btw) Vasa</em> (id 58) en
+<em>Adviesprijzen (incl. btw) Vasa</em> (id 21)</td>
+<td>Aan te duiden met <code>pricelist_id/id</code> op hun externe ID, niet op naam.
+<a href="#val-namen">Zie de valkuil</a></td></tr>
+</tbody></table>
+
+<h2 id="bestanden">De importbestanden</h2>
+<p>Negen bestanden, alle negen in <code>opladen_producten/output_claude/</code>. Ze zijn gebouwd op de
+productie-export van 24 augustus, dus de externe ID's erin horen bij <strong>die</strong> databank. Wordt er
+opnieuw geëxporteerd, dan blijven ze geldig &mdash; een <code>__export__</code>-ID ligt na het aanmaken vast.</p>
+<table>
+<thead><tr><th>Stap</th><th>Bestand</th><th class="num">Rijen</th><th>Model</th><th>Wat het doet</th></tr></thead>
+<tbody>
+<tr><td>B</td><td><code>import_B_kenmerkwaarden.xlsx</code></td><td class="num">224</td>
+<td><code>product.attribute.value</code></td>
+<td>189 kleuren met hun kleurnummer als code, en 35 kwaliteiten in de Engelse vorm. Elke waarde krijgt een
+externe ID <code>__import__.karntner_s27_&hellip;</code>, waar stap C naar verwijst</td></tr>
+<tr><td>C</td><td><code>import_C_hoofdproducten.xlsx</code></td><td class="num">813</td>
+<td><code>product.template</code></td>
+<td>De 271 <strong>nieuwe</strong> artikelen, elk drie regels: de hoofdregel met de kleurenlijn, dan de maten-
+en de kwaliteitslijn. Tweede tabblad <em>controle</em> met het aantal kleuren, maten en varianten per
+artikel</td></tr>
+<tr><td>C2</td><td><code>import_C2_bestaande_artikelen.xlsx</code></td><td class="num">1</td>
+<td><code>product.template</code></td>
+<td>Artikel 175, dat al bestaat. Enkel <code>id</code> en <code>product_tag_ids</code>, met
+<em>Winter 26,Spring/Summer 27</em> zodat het oude label blijft staan.
+<a href="#val-kolom">Waarom apart</a></td></tr>
+<tr><td>D</td><td><code>koppeltabel_D_barcodes.xlsx</code></td><td class="num">7&nbsp;586</td>
+<td>&mdash;</td>
+<td>Geen import maar de opzoektabel waar D uit gebouwd is: interne referentie naast barcode</td></tr>
+<tr><td>D</td><td><code>import_D_barcodes.xlsx</code></td><td class="num">7&nbsp;460</td>
+<td><code>product.product</code></td>
+<td>De barcode op elke variant, op de externe ID uit de negende export. Tweede tabblad <em>niet mee</em> met de
+138 varianten die er geen krijgen: 126 van artikel 175 die er al een dragen, en de 12 dummy's van 72255</td></tr>
+<tr><td>G</td><td><code>import_productinstellingen.xlsx</code></td><td class="num">271</td>
+<td><code>product.template</code></td>
+<td><strong>Makkelijk te vergeten, en zonder gevolg tot je het merkt.</strong> De vinkjes <em>Verkoop</em> en
+<em>Inkoop</em> aan, en de routes <em>Kopen</em>&nbsp;+&nbsp;<em>MTO</em>. Die drie zitten met opzet niet in C
+&mdash; <a href="#val-saleok">waarom</a>. Artikel 175 heeft ze al en zit er niet in</td></tr>
+<tr><td>H</td><td><code>import_175_gewicht.xlsx</code></td><td class="num">1</td>
+<td><code>product.template</code></td>
+<td>Eén regel, <code>id</code>&nbsp;+&nbsp;<code>weight</code>. Enkel nodig waar het gewicht van 175 nog op 0
+staat; in productie stond dat al goed</td></tr>
+<tr><td>E1</td><td><code>import_E1_leveranciersprijzen.xlsx</code></td><td class="num">271</td>
+<td><code>product.supplierinfo</code></td>
+<td>Eén aankoopprijs per artikel bij Textil Karntner, bedrijf Vasa International. Artikel 175 zit er niet in:
+dat heeft al een leveranciersregel, en die blijft toch op 9,992</td></tr>
+<tr><td>E2</td><td><code>import_E2_prijslijsten.xlsx</code></td><td class="num">542</td>
+<td><code>product.pricelist.item</code></td>
+<td>Twee vaste prijzen per artikel, op de externe ID van prijslijst 58 en 21. De twee regels van 175 worden
+met de hand bijgewerkt. <a href="#val-dbid">Waarom</a></td></tr>
+<tr><td>F</td><td><code>import_F_afbeeldingen.xlsx</code></td><td class="num">261</td>
+<td><code>product.template</code></td>
+<td>Enkel <code>id</code> en <code>image_1920</code>, met in die tweede kolom de <em>bestandsnaam</em> van de
+foto. De jpg's zelf gaan apart mee in de wizard, uit de map <code>afbeeldingen_s27/</code>. Tweede tabblad
+<em>zonder foto</em> met de elf artikelen die er geen kregen.
+<a href="#val-fotorij">Waarom een apart bestand</a></td></tr>
+</tbody></table>
+
+<p class="muted">De twee bestanden die niet met de hand te maken zijn, D en F, worden gebouwd door
+<code>bouwscripts/bouw_D_barcodes.py</code> en <code>bouwscripts/bouw_F_afbeeldingen.py</code>. De overige
+zijn in een eerdere ronde met de hand samengesteld; wat erin hoort staat hierboven per bestand beschreven.</p>
+
+<h3 id="importeren">Importeren, en eerst proefdraaien</h3>
+<p>De volgorde ligt vast, want elk bestand steunt op het vorige.</p>
+<table>
+<thead><tr><th>#</th><th>Bestand</th><th>Waar importeren</th></tr></thead>
+<tbody>
+<tr><td>0a</td><td>&mdash;</td><td><strong>Zet de bedrijvenkiezer op Vasa International.</strong> Vanaf
+stap 2 is dat noodzakelijk: een product aanmaken met <code>company_id</code> Vasa terwijl enkel Babimex
+actief staat, wordt geweigerd met een toegangsfout</td></tr>
+<tr><td>0b</td><td>&mdash;</td><td>De producttag <code>Spring/Summer 27</code> aanmaken: Verkoop &rarr;
+Configuratie &rarr; Producttags. Zonder die tag lopen C en C2 vast</td></tr>
+<tr><td>1</td><td><code>import_B_kenmerkwaarden.xlsx</code></td>
+<td>Verkoop &rarr; Configuratie &rarr; Producten &rarr; <em>Kenmerkwaardes (EXTRA)</em>, het menu dat Els met
+Studio heeft toegevoegd. <code>product.attribute.value</code> heeft in standaard Odoo 18 geen eigen menu.
+Het actieve bedrijf speelt hier geen rol: kenmerkwaarden hebben geen <code>company_id</code></td></tr>
+<tr><td>2</td><td><code>import_C_hoofdproducten.xlsx</code></td>
+<td>Voorraad &rarr; Producten &rarr; Producten</td></tr>
+<tr><td>3</td><td><code>import_C2_bestaande_artikelen.xlsx</code></td>
+<td>Voorraad &rarr; Producten &rarr; Producten</td></tr>
+<tr><td>4</td><td><code>import_E1_leveranciersprijzen.xlsx</code></td>
+<td>Voorraad &rarr; Configuratie &rarr; Leveranciersprijslijst</td></tr>
+<tr><td>5</td><td><code>import_E2_prijslijsten.xlsx</code></td>
+<td>De prijslijst openen, tabblad Prijsregels, of het model
+<code>product.pricelist.item</code> rechtstreeks</td></tr>
+<tr><td>6</td><td><code>import_175_gewicht.xlsx</code> <span class="muted">(H)</span></td>
+<td>Voorraad &rarr; Producten &rarr; Producten. Eén regel, <code>id</code>&nbsp;+&nbsp;<code>weight</code>.
+Enkel nodig waar het gewicht van 175 nog op 0 staat</td></tr>
+<tr><td>7</td><td><code>import_productinstellingen.xlsx</code> <span class="muted">(G)</span></td>
+<td>Voorraad &rarr; Producten &rarr; Producten. 271 regels met <code>sale_ok</code>,
+<code>purchase_ok</code> en <code>route_ids/id</code>: de vinkjes <em>Verkoop</em> en <em>Inkoop</em> aan,
+en de routes <em>Kopen</em> + <em>Aanvullen per order (MTO)</em>.
+<a href="#val-saleok">Zie de valkuil</a></td></tr>
+<tr><td>8</td><td><code>import_D_barcodes.xlsx</code></td>
+<td>Voorraad &rarr; Producten &rarr; <strong>Productvarianten</strong> &mdash;
+<code>product.product</code>, niet <code>product.template</code>. Kon pas na de <em>negende export</em>, die
+de externe ID's van de varianten aanmaakt; die is intussen gedraaid. <a href="#exports-tweede">Zie
+daar</a></td></tr>
+<tr><td>9</td><td><code>import_F_afbeeldingen.xlsx</code> <span class="muted">(F)</span></td>
+<td>Voorraad &rarr; Producten &rarr; Producten, samen met de map <code>afbeeldingen_s27/</code>.
+Mag eender wanneer ná stap 2; achteraan omdat het de enige stap is die 44,5&nbsp;MB door de browser
+duwt</td></tr>
+</tbody></table>
+
+<div class="box box-info">
+<h3>De twee prijzen van artikel 175</h3>
+<p>Die kunnen niet in een importbestand: de prijslijstregels 20076 en 20514 hebben geen externe ID, en op
+databank-id importeren kan de wizard niet. <a href="#val-dbid">Zie de valkuil</a>. Twee wegen:</p>
+<ul>
+<li><strong>Met de hand</strong>, twee velden: 13,19&nbsp;&rarr;&nbsp;13,09 en 30,35&nbsp;&rarr;&nbsp;30,10.</li>
+<li><strong>Exporteren en terugsturen</strong>, als er een spoor van moet blijven: de twee regels selecteren,
+Actie &rarr; Exporteren met <em>Ik wil gegevens bijwerken</em> aangevinkt, velden <code>id</code> en
+<code>fixed_price</code>. Die export maakt de externe ID's aan, en het bestand dat eruit komt is meteen het
+importbestand &mdash; enkel de twee bedragen aanpassen en weer inlezen.</li>
+</ul>
+</div>
+
+<h4>Eerst proefdraaien in de werkkopie</h4>
+<p>De cijfers hierboven komen uit een proef met <code>load()</code> in de shell. De importwizard zit daar
+nog vóór, en die laag is niet meegetest: de veldherkenning van de kopregels, de getalherkenning van de
+prijzen, het opsplitsen in batches en de tijdslimiet van een webrequest bij 813 rijen.</p>
+<div class="box box-bad">
+<p>De bestanden in de hoofdmap verwijzen naar <code>__export__</code>-ID's die op 24 augustus <strong>in
+productie</strong> zijn aangemaakt. De werkkopie van 18 juni kent die niet en heeft eigen ID's met andere
+achtervoegsels. Voor de proef staat er daarom een tweede set in
+<code>output_claude/werkkopie_test/</code>, gebouwd op de export van de werkkopie zelf. Dezelfde namen,
+dus niet door elkaar halen.</p>
+</div>
+<p>Waar het op aankomt tijdens die proef:</p>
+<ul>
+<li><strong>Bij C:</strong> herkent de wizard <code>attribute_line_ids/value_ids/id</code>, en meldt hij bij
+<em>Testen</em> 271 producten in plaats van 813 rijen? Splitst hij in batches, dan mogen de drie regels van
+één product niet uit elkaar vallen.</li>
+<li><strong>Bij E1 en E2:</strong> of alle kolommen een veld toegewezen krijgen. Blijft er één op
+<em>Selecteer een veld om te importeren&hellip;</em> staan, dan wordt die kolom <strong>genegeerd</strong> en
+loopt de import gewoon door met de rest.</li>
+<li><strong>Prijzen en gewicht:</strong> in de voorbeeldweergave 13,09 en 0,3 &mdash; niet 1309 of 3.
+<a href="#val-gewicht">Zie de valkuil</a>.</li>
+<li><strong>De duur van C:</strong> twintig seconden in de shell. Loopt het in de browser tegen een
+tijdslimiet, dan weet je dat vóór je op productie zit.</li>
+</ul>
+<p class="muted">Na de proef staan er 272 producten in de werkkopie. Ze is dan niet meer bruikbaar als
+schone junikopie.</p>
+
+<div class="box box-info">
+<h3>Zes kleuren zijn enkel anders geschreven</h3>
+<p>Van de 196 kleuren die S27 nieuw lijken aan te brengen, zijn er zes dezelfde kleur als een waarde die al
+bestaat, met hetzelfde kleurnummer en een andere spelling. Ze worden niet aangemaakt; stap C verwijst naar de
+bestaande waarde. Anders zouden er twee waarden met dezelfde code naast elkaar staan.</p>
+<table>
+<thead><tr><th>In S27</th><th>Bestaat al als</th></tr></thead>
+<tbody>
+<tr><td>67 dk. olive</td><td>67 dk.olive</td></tr>
+<tr><td>58 dk. blue</td><td rowspan="2">58 dk.blue</td></tr>
+<tr><td>58 dk.blau</td></tr>
+<tr><td>48 anthrazit</td><td>48 anthracite</td></tr>
+<tr><td>19 brown comb</td><td>19 brown comb.</td></tr>
+<tr><td>26 brick comb</td><td>26 brick comb.</td></tr>
+</tbody></table>
+<p>Geen enkel artikel gebruikt twee van deze zes tegelijk, dus er smelten geen varianten samen: het blijven
+7&nbsp;472. De overige 190 nieuwe kleuren zijn echt nieuw; dat 185 daarvan een bestaand kleurnummer
+hergebruiken is normaal, Karntner hergebruikt nummers over de seizoenen heen.</p>
+</div>
+
+<div class="box box-ok">
+<h3>Wat de proefoplading gaf</h3>
+<p>De vier importbestanden zijn op de werkkopie in volgorde ingelezen: <strong>0 fouten en 0
+waarschuwingen</strong>, 224 nieuwe kenmerkwaarden, 272 hoofdproducten, 7&nbsp;598 varianten, geen enkele variant zonder interne
+referentie en geen twee met dezelfde, alle 272 in matrixmodus, 272 leveranciersregels en 544
+prijslijstregels. Artikel 175 hield zijn 126 varianten, zijn drie kenmerklijnen en zijn ene
+leveranciersregel, en kreeg er enkel het label en de nieuwe prijzen bij. Daarna teruggedraaid.</p>
+</div>
+
+<div class="box box-info">
+<h3 id="open-175">Artikel 175 bestaat al &mdash; drie aanpassingen</h3>
+<p>Van de 272 artikelen in S27 bestaat er één al in productie: <strong>175 Broek</strong>, met externe ID
+<code>__export__.product_template_175</code> en het label <em>Winter 26</em>. Naam, merk, categorie, land,
+intrastatcode en gewicht zijn identiek aan wat S27 voorschrijft; enkel de prijzen verschillen licht
+(13,19 tegenover 13,09) en het seizoen natuurlijk.</p>
+<p>Ongewijzigd meeladen zou het label <em>Winter 26</em> <strong>vervangen</strong> door
+<em>Spring/Summer 27</em>, de kleurenlijn overschrijven, en er een tweede leveranciersprijs en twee extra
+prijslijstregels bij zetten &mdash; met vier regels op dezelfde twee prijslijsten als gevolg. Daarom staat 175
+in geen van de vijf bestanden.</p>
+<p>Het is hetzelfde kledingstuk: dezelfde negen maten, dezelfde veertien kleuren, dezelfde kwaliteit, hetzelfde
+gewicht en dezelfde aankoopprijs van 9,992. Enkel de verkoopprijzen wijken af, en die gaan omláág.</p>
+<p>Op 24 augustus is met de serveractie <em>* Openstaande bewegingen tonen</em> op productie nagegaan of er nog
+iets liep op dit artikel: <strong>niets</strong> &mdash; geen enkele beweging die niet Klaar of Geannuleerd is,
+en geen offertes of aankoopaanvragen in concept. Het artikel kan dus zonder gevolgen bijgewerkt worden.</p>
+<p>Het zit in de importbestanden verwerkt, als bijwerking en niet als nieuw product:</p>
+<table>
+<thead><tr><th>Wat</th><th>Record</th><th>Waar</th><th>Van</th><th>Naar</th></tr></thead>
+<tbody>
+<tr><td>Producttag</td><td>product 38269</td><td>C2</td><td>Winter 26</td>
+<td>Winter 26 <strong>+</strong> Spring/Summer 27</td></tr>
+<tr><td>Verkoopprijs B2B</td><td>prijslijstregel 20076</td><td>met de hand</td><td>13,19</td><td>13,09</td></tr>
+<tr><td>Adviesprijs</td><td>prijslijstregel 20514</td><td>met de hand</td><td>30,35</td><td>30,10</td></tr>
+<tr><td>Aankoopprijs</td><td>leveranciersregel 2932</td><td>niets te doen</td><td>9,992</td><td>9,992, ongewijzigd</td></tr>
+</tbody></table>
+<p>De kenmerklijnen blijven zoals ze zijn &mdash; het product heeft de veertien kleuren en negen maten van S27
+al &mdash; en daarom staat 175 niet in het gewone C-bestand. <a href="#val-kolom">Zie de valkuil</a>.</p>
+<div class="box box-warn">
+<h3>Het handwerk voor 175, op een rij</h3>
+<p>Alles behalve de twee prijzen zit in een bestand. Wat overblijft:</p>
+<ol class="steps">
+<li><label><input type="checkbox"><span></span><span class="stapnr">1</span>Prijslijstregel <strong>20076</strong>
+op <em>Verkoopsprijzen B2B (excl.btw) Vasa</em>: 13,19 &rarr; <strong>13,09</strong>.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">2</span>Prijslijstregel <strong>20514</strong>
+op <em>Adviesprijzen (incl. btw) Vasa</em>: 30,35 &rarr; <strong>30,10</strong>.</label></li>
+</ol>
+<p>Meer niet. Het label komt uit <code>import_C2_bestaande_artikelen.xlsx</code>, het gewicht uit
+<code>import_175_gewicht.xlsx</code> (in productie staat dat al goed), de aankoopprijs blijft 9,992, en de
+vinkjes <em>Verkoop</em> en <em>Inkoop</em> stonden al aan. Wil je toch een spoor van die twee prijzen, dan
+kan het via exporteren en terugsturen &mdash; <a href="#importeren">zie daar</a>.</p>
+</div>
+<p class="muted">Eén detail voor later: S27 schrijft de kleur van dit artikel als <em>48 anthra</em>, terwijl
+het product <em>48 anthracite</em> gebruikt. Er staan al vijf kleuren met code 48 in de databank
+(<em>48 anthracite</em>, <em>48 grey</em>, <em>48 anthracite mel.</em>, <em>48 dk.grey</em>,
+<em>48 anthra mel.</em>). Wordt de kleurenlijn van 175 ooit tóch uit het S27-blad geïmporteerd, dan komt daar
+een zesde bij.</p>
+</div>
+
+<h2 id="procedure">De procedure stap voor stap</h2>
+<p>De nummers tussen haakjes verwijzen naar de regels van het tabblad <em>Procedure</em> in het S26-bestand.</p>
+
+<h3 id="p-voorbereiden">A. Voorbereiden</h3>
+<ol class="steps">
+<li><label><input type="checkbox"><span></span><span class="stapnr">A1</span>De serveractie
+<code>* Karntner-exports ophalen</code> draaien op productie en de acht tabbladen naast <em>Blad1</em> in een
+werkkopie van het S27-bestand zetten.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">A2</span>De drie afgeleide gegevens zitten
+al in de importbestanden verwerkt; dit staat er voor wie ze zelf wil narekenen:
+<ul>
+<li><strong>Naam</strong> = artikelnummer + spatie + getrimde omschrijving, met hoofdletters zoals in S26
+(<code>31108 T-shirt</code>, niet <code>T-Shirt</code>);</li>
+<li><strong>Variantnummer</strong> = <code>artikelnummer-[kleurnummer]-[maat]</code>;</li>
+<li><strong>Land NL</strong> = het Duitse land omgezet via export 8.</li>
+</ul></label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">A3</span>Het gewicht controleren: het moet
+als getal in de cel staan, niet als tekst met een komma. <a href="#val-gewicht">Zie de valkuil</a>.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">A4</span><span class="muted">(2.0)</span>
+Nagaan of er nieuwe merken bij zijn. Voor S27 niet: de vijf merken en hun categorieën bestaan al.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">A5</span><span class="muted">(3.0)</span>
+De producttag <code>Spring/Summer 27</code> aanmaken. Tabblad 6 telt acht tags en die zit er niet bij, dus
+ze is nieuw.</label></li>
+</ol>
+
+<h3 id="p-kenmerken">B. Kenmerkwaarden</h3>
+<ol class="steps">
+<li><label><input type="checkbox"><span></span><span class="stapnr">B1</span><span class="muted">(1.0)</span>
+Per kenmerk de unieke waarden uit <em>Blad1</em> halen en met een VLOOKUP tegen export 1 leggen. Wat er al
+staat, blijft ongemoeid; alleen de rest wordt geladen.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">B2</span>De kwaliteiten eerst vertalen naar
+de Engelse vorm (<code>Baumwolle&nbsp;&rarr;&nbsp;Cotton</code>,
+<code>Viskose&nbsp;&rarr;&nbsp;Viscose</code>, <code>Leinen&nbsp;&rarr;&nbsp;Linen</code>), dan pas
+vergelijken. Anders worden 29 waarden dubbel aangemaakt. Er blijven er 35 over om aan te maken.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">B2b</span>Bij de kleuren hetzelfde doen voor
+de zes die enkel anders geschreven zijn: koppelen aan de bestaande waarde, niet aanmaken.
+<a href="#bestanden">Zie de tabel</a>.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">B3</span>De nieuwe waarden importeren
+<strong>met hun code erbij</strong>: kleur &rarr; kleurnummer, maat &rarr; de maat zelf. Zonder code verzint
+Odoo er zelf een. <a href="#val-code">Zie de valkuil</a>.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">B4</span>Elke nieuwe waarde een
+<strong>externe ID</strong> geven in het importbestand. Bij stap C worden de waarden daarop aangeduid en niet
+op hun naam, want <code>S</code>, <code>M</code>, <code>L</code>, <code>XL</code> en <code>3XL</code> bestaan
+zowel bij <em>Kledingmaat</em> als bij <em>Schoenmaat</em>.
+<a href="#val-dubbelzinnig">Zie de valkuil</a>.</label></li>
+</ol>
+
+<h3 id="p-templates">C. Hoofdproducten</h3>
+<ol class="steps">
+<li><label><input type="checkbox"><span></span><span class="stapnr">C1</span><span class="muted">(8.0)</span>
+Eén regel per uniek artikelnummer opbouwen, met de vaste velden:
+<code>company_id</code>, <code>name</code>, <code>code_prefix</code>, <code>reference_mask</code>,
+<code>product_brand_id</code>, <code>categ_id</code>, <code>country_of_origin</code>, <code>hs_code</code>,
+<code>weight</code>, <code>product_tag_ids</code>.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">C2</span><span class="muted">(6.0)</span>
+Een externe ID kiezen in dezelfde vorm als S26: <code>__export__.product_template_31510</code>. Daarmee is
+een tweede import een update in plaats van een duplicaat.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">C3</span><span class="muted">(5.0)</span>
+<code>code_prefix</code> is het artikelnummer, <code>reference_mask</code> wordt
+<code>31510-[Kleur Kartner]-[Kledingmaat]</code>. De namen tussen de haken moeten <strong>letterlijk</strong>
+de kenmerknamen zijn, anders weigert de module de mask.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">C4</span>Onder elke hoofdregel drie lege
+regels met alleen <code>attribute_line_ids/attribute_id</code> en
+<code>attribute_line_ids/value_ids</code>: <em>Kleur Kartner</em>, <em>Kledingmaat</em>,
+<em>Kwaliteit/materiaal</em>, in die volgorde, met de kommagescheiden waardenlijst per kenmerk.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">C5</span>Eerst nummeren, dan pas invullen:
+de rijen nummeren met ruimte ertussen, de ontbrekende nummers erbij zetten, sorteren op nummer, en dan de
+kenmerknamen doortrekken. Dat is de truc uit het S26-bestand om de drie regels per product te maken.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">C6</span><span class="muted">(7.0)</span>
+<code>product_add_mode</code> op <code>matrix</code> zetten, zodat een verkooporder de maten- en
+kleurenmatrix toont.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">C7</span>Importeren en de teller
+controleren: <strong>271 nieuwe hoofdproducten</strong> en <strong>7&nbsp;472 varianten</strong>. Daarna
+<code>import_C2_bestaande_artikelen.xlsx</code> voor artikel 175, dat zijn eigen 126 varianten houdt.
+Samen 272 en 7&nbsp;598. <a href="#open-175">Zie de uitleg</a>.</label></li>
+</ol>
+
+<h3 id="p-varianten">D. Varianten en barcodes</h3>
+<p>Stap D1 is gedaan: de negende export staat er. <a href="#exports-tweede">Wat eruit kwam</a>.</p>
+<ol class="steps">
+<li><label><input type="checkbox" checked><span></span><span class="stapnr">D1</span>De varianten opnieuw
+exporteren met <code>id</code>, <code>default_code</code> en <code>barcode</code>
+(<a href="#exports-tweede">de negende export</a>). <span class="muted">Gedaan op 25 augustus 2026 &mdash;
+<code>karntner_varianten.xls</code>, 7&nbsp;598 rijen.</span></label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">D2</span><span class="muted">(9.0)</span>
+<code>import_D_barcodes.xlsx</code> importeren op Voorraad &rarr; Producten &rarr;
+<strong>Productvarianten</strong>: 7&nbsp;460 regels, <code>id</code> op <em>Externe ID</em> en
+<code>barcode</code> op <em>Barcode</em>. De VLOOKUP tegen de koppeltabel is al gelegd, dus hier valt niets
+meer met de hand te doen.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">D3</span>Controleren of er varianten zonder
+barcode overblijven. Voor S27 horen dat er <strong>precies twaalf</strong> te zijn, alle twaalf van artikel
+72255. Zijn er andere bij, dan is een deel van de import niet doorgekomen &mdash; niet archiveren, want de
+matrix is volledig.</label></li>
+</ol>
+<div class="box box-info">
+<h3>Waarom 7&nbsp;460 en niet 7&nbsp;598</h3>
+<p>138 varianten blijven buiten het bestand, en om twee verschillende redenen. De <strong>126</strong> van
+artikel 175 dragen hun barcode al sinds Winter 26, identiek aan wat de koppeltabel geeft &mdash; die opnieuw
+wegschrijven zou niets veranderen. De <strong>12</strong> van artikel 72255 hebben er geen: Karntner leverde
+daar dummy-EAN's <code>1000000000009</code>&hellip;<code>6000000000004</code>, elk twee keer gebruikt, en Odoo
+weigert een dubbele barcode. Die twaalf blijven leeg tot Karntner echte codes stuurt. Beide groepen staan met
+hun reden op het tabblad <em>niet mee</em>.</p>
+</div>
+
+<h3 id="p-prijzen">E. Prijzen</h3>
+<ol class="steps">
+<li><label><input type="checkbox"><span></span><span class="stapnr">E1</span><span class="muted">(10.0)</span>
+<code>product.supplierinfo</code> importeren: één regel per hoofdproduct met <code>partner_id</code>
+= Textil Karntner GmbH &amp; Co KG en <code>price</code> = AKP.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">E2</span><span class="muted">(11.0)</span>
+<code>product.pricelist.item</code> importeren: per hoofdproduct twee regels, de VKP op de B2B-prijslijst en
+de adviesprijs op de adviesprijslijst, telkens met <code>applied_on</code> op <em>product</em> en
+<code>compute_price</code> op <em>vaste prijs</em>.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">E3</span>De prijslijsten aanduiden met
+<code>pricelist_id/id</code> en de externe ID uit tabblad 7, niet met de namen uit het S26-bestand.
+<a href="#val-namen">Zie de valkuil</a>.</label></li>
+</ol>
+
+<h3 id="p-instellingen">G. Vinkjes en routes</h3>
+<div class="box box-warn">
+<p><strong>Deze stap valt het makkelijkst weg.</strong> Ze zit niet in het C-bestand, ze staat achteraan in
+de volgorde, en als ze overgeslagen wordt merk je er niets van tot iemand een van de 271 artikelen op een
+verkooporder probeert te zetten &mdash; dan staat het er niet tussen. Ze mag zo vaak opnieuw als nodig: het is
+een gewone update op de externe ID, herhalen verandert niets extra.</p>
+</div>
+<ol class="steps">
+<li><label><input type="checkbox"><span></span><span class="stapnr">G1</span>Voorraad &rarr; Producten &rarr;
+Producten, <code>import_productinstellingen.xlsx</code> importeren. 271 regels met <code>sale_ok</code>,
+<code>purchase_ok</code> en <code>route_ids/id</code>. Artikel 175 zit er niet in: dat draagt beide vinkjes en
+de MTO-route al sinds Winter 26.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">G2</span>Nakijken op één artikel:
+tabblad <em>Inkoop</em> moet er zijn, en onder <em>Voorraad</em> staan de routes <em>Kopen</em> en
+<em>Aanvullen per order (MTO)</em> alle twee aangevinkt. Eén van de twee volstaat niet &mdash;
+<code>route_ids</code> is een many2many en de cel vervangt wat er stond.</label></li>
+</ol>
+
+<h3 id="p-fotos">F. Afbeeldingen</h3>
+<p>Odoo 18 kan afbeeldingen opladen zonder ze in base64 in het bestand te zetten: in de kolom
+<code>image_1920</code> staat de <strong>bestandsnaam</strong>, en de jpg's zelf worden apart in de wizard
+gekozen. Odoo koppelt ze na de import per rij aan het aangemaakte product.</p>
+<ol class="steps">
+<li><label><input type="checkbox"><span></span><span class="stapnr">F1</span>Voorraad &rarr; Producten &rarr;
+Producten, <em>Importeren</em>, en <code>import_F_afbeeldingen.xlsx</code> kiezen. Twee kolommen:
+<code>id</code> op <em>Externe ID</em> en <code>image_1920</code> op <em>Afbeelding</em>.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">F2</span>In de zijbalk verschijnt het blok
+<em>Bestanden importeren</em> zodra Odoo ziet dat er een afbeeldingsveld bij zit. Op
+<em>Upload your files</em> klikken, in de map
+<code>opladen_producten/output_claude/afbeeldingen_s27/</code> <strong>alle 261 bestanden</strong> selecteren
+(Ctrl&nbsp;+&nbsp;A) en openen. Er hoort <em>261 file(s) selected</em> te staan.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">F3</span><em>Testen</em> geeft hier maar
+een halve controle: bij een proefdraai slaat Odoo de foto's bewust over. Het toont wel of de 261 externe ID's
+gevonden worden &mdash; dát is wat er mis kan gaan.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">F4</span>Importeren. De foto's gaan in
+schijven van 10&nbsp;MB naar de server met een seconde pauze ertussen, dus reken op een zestal rondjes na de
+eigenlijke import. Het scherm niet sluiten zolang dat loopt.</label></li>
+<li><label><input type="checkbox"><span></span><span class="stapnr">F5</span>Nakijken:
+filter op de tag <em>Spring/Summer 27</em> in de kanbanweergave. Elf artikelen horen zonder foto te blijven,
+die van het tabblad <em>zonder foto</em>. Staan er meer leeg, dan is een batch stilgevallen &mdash; het
+bestand mag gewoon opnieuw, een tweede keer overschrijft dezelfde foto.</label></li>
+</ol>
+<div class="box box-info">
+<h3>Artikel 175 houdt zijn oude foto</h3>
+<p>175 bestaat al sinds Winter 26 en kreeg geen S27-foto mee. Het staat niet in het F-bestand, dus wat er nu
+op staat blijft staan.</p>
+</div>
+
+<h2 id="valkuilen">Valkuilen uit de S26-oplading</h2>
+<p>Alle vijf zijn ze in de productie-export van 24 augustus vastgesteld, en geen ervan valt op tenzij er
+gericht naar gekeken wordt.</p>
+<div class="box box-warn">
+<h3>Doe de hele oplading in het Nederlands</h3>
+<p>Odoo matcht een naam bij een import <strong>in de taal van de sessie</strong>. Bij de adviesprijslijst en
+bij de kwaliteiten wijkt de <code>en_US</code>-waarde af van wat het Nederlandse scherm toont, dus een import
+die in het Engels draait, koppelt aan andere records &mdash; of maakt stilzwijgend duplicaten aan. Waar het kan:
+op de externe ID in plaats van op de naam.</p>
+<p class="muted">Een derde geval is intussen weg. Kenmerkwaarde 736 bij <em>Kledingmaat</em> heette 42 in het
+Nederlands en 39 in het Engels, met code 42; Els heeft de Engelse naam op 24 augustus in productie
+rechtgezet. Maat 42 uit S27 matcht nu in beide talen op de bestaande waarde.</p>
+</div>
+
+<h3 id="val-gewicht">Gewicht met komma wordt tienduizend keer te zwaar</h3>
+<div class="box box-bad">
+<p><strong>De 231 S26-producten van Karntner wegen in productie 1&nbsp;500 tot 6&nbsp;000&nbsp;kg per stuk.</strong>
+In het S26-bestand staat het gewicht als tekst met een komma (<code>0,2000</code>). Odoo leest de komma als
+duizendtalscheider, laat ze vallen, en maakt er <code>2000</code> van in plaats van 0,2&nbsp;kg &mdash; een
+factor 10&nbsp;000. Twee producten staan nog op 0.</p>
+</div>
+<table>
+<thead><tr><th>In het S26-bestand</th><th>In productie</th><th>Aantal</th><th>Zou moeten zijn</th></tr></thead>
+<tbody>
+<tr><td><code>0,2000</code></td><td>2&nbsp;000</td><td>107</td><td>0,2&nbsp;kg</td></tr>
+<tr><td><code>0,1500</code></td><td>1&nbsp;500</td><td>50</td><td>0,15&nbsp;kg</td></tr>
+<tr><td><code>0,5000</code></td><td>5&nbsp;000</td><td>27</td><td>0,5&nbsp;kg</td></tr>
+<tr><td><code>0,4000</code></td><td>4&nbsp;000</td><td>22</td><td>0,4&nbsp;kg</td></tr>
+<tr><td><code>0,3000</code></td><td>3&nbsp;000</td><td>22</td><td>0,3&nbsp;kg</td></tr>
+<tr><td><code>0,6000</code></td><td>6&nbsp;000</td><td>3</td><td>0,6&nbsp;kg</td></tr>
+<tr><td>&mdash;</td><td>0</td><td>2</td><td>nog te bepalen</td></tr>
+</tbody></table>
+<p>Dit is nieuw sinds 18 juni: toen stonden diezelfde producten op 0. Er is dus tussenin een correctie
+gebeurd die de fout heeft omgedraaid in plaats van weggenomen. De rechtzetting is een deling door 10&nbsp;000
+op de 231 producten met het label <em>Spring/Summer 26</em>; de 219 producten met <em>Winter 26</em> staan wél
+juist (0,15 tot 0,75&nbsp;kg) en mogen niet mee.</p>
+<p>Voor S27 zelf gaat het goed: daar staat het gewicht als echt getal (<code>0.3</code>). Let wel op de
+kolomkop, die zegt <em>Gewicht (gr)</em> terwijl de waarden in kilogram staan &mdash; 0,3 voor een broek. Wie
+de kop letterlijk neemt en door duizend deelt, maakt de spiegelbeeldige fout.</p>
+
+<h3 id="val-code">Kenmerkcode wordt stilzwijgend verzonnen</h3>
+<p>De module <code>product_variant_default_code</code> vult de code van een kenmerkwaarde automatisch aan als
+ze leeg blijft, met <strong>de eerste twee tekens van de naam</strong>. Zo staat er in productie
+<em>transparant</em> met code <code>tr</code> en <em>100%Viscose</em> met code <code>10</code>. Voor kleur en
+maat is dat fataal, want die codes komen in de interne referentie terecht: twee kleuren die met dezelfde twee
+letters beginnen, leveren dezelfde referentie op. De code moet dus altijd mee in de import.</p>
+<div class="box box-bad">
+<p><strong>Ook voor <em>Kwaliteit/materiaal</em> moet de code ingevuld zijn</strong>, ook al maakt dat kenmerk
+geen varianten aan en komt het niet in de mask voor. <code>_generate_default_code()</code> begint met
+<code>if not all(value_codes): return None</code>, en <code>value_codes</code> zijn de codes van
+<em>alle</em> kenmerklijnen samen. Eén waarde zonder code laat de interne referentie van <strong>elke
+variant van dat product</strong> leeg.</p>
+</div>
+<p>Dat is geen theorie: in de proefoplading bleven zo 1&nbsp;059 van de 7&nbsp;472 varianten zonder referentie,
+precies die van de producten met een van de 35 nieuwe kwaliteiten. In het importbestand staat daarom voor elke
+nieuwe kwaliteit de code ingevuld met de eerste twee tekens &mdash; net wat de module er zelf van maakt, en wat
+in productie ook al bij alle bestaande waarden staat.</p>
+
+<h3 id="val-saleok">Nieuwe producten staan niet te koop en niet te kopen</h3>
+<div class="box box-bad">
+<p>In deze databank staat er een <strong>gebruikersstandaard</strong> op
+<code>product.template.sale_ok</code> met waarde <em>false</em>, en op <code>purchase_ok</code> ook. Elk
+nieuw product krijgt het vinkje <em>Verkoop</em> dus <strong>uit</strong>, ook via een import. Bij S27 zijn
+dat alle 271.</p>
+</div>
+<p>De 233 producten van S26 staan wél alle 233 op <em>Verkoop</em> aan, en artikel 175 ook. Een import
+springt niet over zo'n standaard heen: een veld dat niet in het bestand staat, krijgt de standaardwaarde.
+Beide vinkjes worden daarom bijgezet met <code>import_productinstellingen.xlsx</code>.</p>
+<p class="muted">Dat S26 voor <em>Inkoop</em> grotendeels uit staat is geen vergetelheid: dat is daar later
+bewust uitgezet. Bij S27 gaat het vinkje wel overal aan.</p>
+
+<h3 id="val-route">De route MTO, en waarom S26 ze niet heeft</h3>
+<p>De nieuwe producten krijgen twee routes: <em>Kopen</em> en <em>Aanvullen per order (MTO)</em>, net als
+Winter 26 (215 van de 219). De 233 producten van S26 hebben enkel <em>Kopen</em>, en dat is geen fout: in dat
+seizoen liepen de aankopen nog via de AS400 en niet via Odoo.</p>
+<p>In het importbestand staan ze als <code>route_ids/id</code> met
+<code>purchase_stock.route_warehouse0_buy,stock.route_warehouse0_mto</code> &mdash; op externe ID en niet op
+naam, want routenamen zijn vertaalbaar. Het is een many2many, dus de cel moet <strong>beide</strong> routes
+bevatten: één waarde zou de andere wegduwen.</p>
+<p class="muted">Vier producten van Winter 26 hebben helemaal geen route. Dat staat los van S27, maar het is
+de moeite om bij gelegenheid na te kijken.</p>
+
+<h3 id="val-dbid">De wizard kan niet op databank-id importeren</h3>
+<div class="box box-bad">
+<p>De importwizard biedt bovenaan de veldenlijst maar één sleutel aan: <strong>Externe ID</strong>. Een
+kolom <code>.id</code> met het databank-id blijft op <em>Selecteer een veld om te importeren&hellip;</em>
+staan en is niet te koppelen. In <code>get_fields_tree()</code> wordt <em>Databank-ID</em> alleen toegevoegd
+als <strong>subveld van een relatie</strong> (<code>product_tmpl_id/.id</code>), nooit voor het record
+zelf.</p>
+</div>
+<p>Via <code>load()</code> in de shell werkt <code>.id</code> wél &mdash; daar liep mijn proefoplading op door
+zonder iets te melden. Voor de wizard betekent het: een bestaand record zonder externe ID valt niet bij te
+werken met een import. Dat raakt <code>product.supplierinfo</code> en <code>product.pricelist.item</code>,
+die geen externe ID hebben.</p>
+<p>Twee uitwegen. Ofwel die records eerst <em>exporteren</em> met <em>Ik wil gegevens bijwerken</em>
+aangevinkt &mdash; dat maakt de <code>__export__</code>-ID's aan &mdash; en dan importeren op <code>id</code>.
+Ofwel, bij een handvol waarden, ze gewoon met de hand aanpassen. Voor S27 gaat het om twee prijzen op artikel
+175, dus dat laatste.</p>
+<p class="muted">Een kolom die niet gekoppeld raakt, wordt genegeerd; de import loopt gewoon door. Bij E1 en
+E2 zou dat een tweede leveranciersregel en twee extra prijslijstregels op artikel 175 opgeleverd hebben.</p>
+
+<h3 id="val-kolom">Een kolom geldt voor élke rij, ook leeg</h3>
+<div class="box box-bad">
+<p>Een product dat al bestaat, kan niet mee in het gewone C-bestand. De kolom
+<code>attribute_line_ids/&hellip;</code> geldt voor elke rij, en er is geen manier om ze voor één rij
+&laquo;over te slaan&raquo;:</p>
+<ul>
+<li><strong>Ingevuld</strong> &rarr; de lijnen worden <em>toegevoegd</em>, niet vervangen. Het product krijgt
+zes kenmerklijnen in plaats van drie, en Odoo weigert met <em>"Het aantal te genereren varianten
+overschrijdt de toegestane limiet"</em> &mdash; 14&times;14&times;9&times;9 combinaties tegen een grens van
+1&nbsp;000.</li>
+<li><strong>Leeg gelaten</strong> &rarr; de bestaande lijnen worden <em>gewist</em>. In de proefoplading hield
+artikel 175 daar één variant aan over, van de 126.</li>
+</ul>
+</div>
+<p>Vandaar een apart bestand <code>import_C2_bestaande_artikelen.xlsx</code> met enkel de twee kolommen die
+wél moeten wijzigen. Dezelfde regel geldt voor de losse prijsregels: die worden op hun databank-id
+(<code>.id</code>) aangeduid, zodat ze bijgewerkt worden en er geen tweede regel op dezelfde prijslijst
+bijkomt.</p>
+<div class="box box-warn">
+<p><strong>Gevolg: het C-bestand is niet herhaalbaar.</strong> Een tweede keer inlezen voegt bij elk van de
+271 producten drie kenmerklijnen toe. Loopt de import halverwege mis, herstel dan eerst en begin niet
+gewoon opnieuw.</p>
+</div>
+
+<h3 id="val-dubbelzinnig">Maat S bestaat twee keer</h3>
+<div class="box box-bad">
+<p>De waarden <strong>S, M, L, XL en 3XL</strong> bestaan zowel bij <em>Kledingmaat</em> als bij
+<em>Schoenmaat</em>. Het veld <code>value_ids</code> op een kenmerklijn verwijst naar
+<code>product.attribute.value</code> zonder filter op het kenmerk, dus een import op naam vindt er twee. Odoo
+meldt dat als een <em>waarschuwing</em>, geen fout, en kiest er zelf een &mdash; mogelijk de schoenmaat.</p>
+</div>
+<p>In de proefoplading gaf dat 1&nbsp;546 meldingen op 813 regels. De oplossing is de waarden aan te duiden met
+<code>attribute_line_ids/value_ids/id</code> en de externe ID: die uit tabblad 1 voor de waarden die al
+bestaan, en een zelfgekozen ID voor de nieuwe, dat in het B-bestand meegegeven wordt. Zeven waardenamen in
+de databank komen bij meer dan één kenmerk voor.</p>
+
+<h3 id="val-dubbel">Het hoofdproduct dat op een 2 eindigt</h3>
+<p>Artikel <strong>31966</strong> heet in productie <em>31966 T-shirt2</em>, met een 2 aan het einde, terwijl
+elk ander Karntner-product de vorm <em>artikelnummer&nbsp;+&nbsp;omschrijving</em> heeft. Het is één
+hoofdproduct met 48 varianten. Waarschijnlijk is dat ooit een uitwijkmanoeuvre geweest voor een dubbele naam.
+Voor S27 heeft het geen gevolgen &mdash; 31966 komt er niet in voor &mdash; maar het is de moeite om de naam bij
+gelegenheid recht te zetten.</p>
+
+<h3 id="val-vlookup">De VLOOKUPs in het voorbeeldbestand</h3>
+<p>Op het tabblad <em>import product.template</em> staan drie VLOOKUPs die de kenmerkwaarden ophalen:</p>
+<div class="o_code"><pre>=VLOOKUP(C2;'Artikelstammdaten auftragsbezo'!A:N;4;false)
+=VLOOKUP(C2;'Artikelstammdaten auftragsbezo'!A:O;5;false)
+=VLOOKUP(C2;'Artikelstammdaten auftragsbezo'!A:P;13;false)</pre></div>
+<p>Die kolomnummers kloppen niet meer met de kolommen waar ze naar wijzen: 4, 5 en 13 leveren nu de adviesprijs,
+het artikelnummer en de maat op, terwijl het de kleurenlijst (kolom&nbsp;N), de matenlijst (kolom&nbsp;O) en de
+kwaliteit (kolom&nbsp;P) moeten zijn. Er zijn na het schrijven van de formules kolommen bijgekomen. Wie het
+S26-bestand als vertrekpunt neemt, neemt die fout mee. Beter is de opzoeking op de kolomkop te doen in plaats
+van op een volgnummer, dan kan een ingevoegde kolom er niets meer aan bederven.</p>
+
+<h3 id="val-namen">De adviesprijslijst heet in het Engels anders</h3>
+<p>Het S26-bestand importeert op <em>Verkoopsprijzen B2B (excl.btw) Vasa</em> en <em>Adviesprijzen (incl btw.)
+Vasa</em>. Allebei bestaan ze nog, maar de tweede is een valstrik in twee lagen.</p>
+<table>
+<thead><tr><th>Prijslijst</th><th>Naam in het S26-bestand</th><th>Naam in productie</th></tr></thead>
+<tbody>
+<tr><td>Verkoopprijs</td><td>Verkoopsprijzen B2B (excl.btw) Vasa</td>
+<td>Verkoopsprijzen B2B (excl.btw) Vasa &mdash; gelijk in <code>nl_BE</code> en <code>en_US</code></td></tr>
+<tr><td>Adviesprijs</td><td>Adviesprijzen (incl <strong>btw.</strong>) Vasa</td>
+<td><code>nl_BE</code>: Adviesprijzen (incl<strong>.</strong> btw) Vasa<br>
+<code>en_US</code>: <strong>Standaard</strong></td></tr>
+</tbody></table>
+<ul>
+<li><strong>De punt staat elders.</strong> Het bestand heeft <em>(incl btw.)</em>, productie heeft
+<em>(incl. btw)</em>. Eén teken verschil, en een import op naam vindt niets.</li>
+<li><strong>De brontaal is een andere naam.</strong> De <code>en_US</code>-waarde van diezelfde prijslijst is
+<em>Standaard</em>. Odoo zoekt een many2one op de naam <strong>in de taal van de importsessie</strong>, dus
+importeren in het Engels loopt sowieso mis. Hierdoor leek de prijslijst bij mijn eerste lezing van de
+junikopie verdwenen; ze bestaat wel degelijk, met id 21.</li>
+</ul>
+<div class="box box-ok">
+<h3>De import op de externe ID zetten</h3>
+<p>Beide problemen verdwijnen door niet op naam te matchen. Tabblad 7 geeft per prijslijst de externe ID; zet
+in het importbestand de kolom <code>pricelist_id/id</code> in plaats van <code>pricelist_id</code>, met de
+waarde uit dat tabblad. In de export van 24 augustus zijn dat
+<code>__export__.product_pricelist_21_35401e79</code> voor de adviesprijzen en
+<code>__export__.product_pricelist_58_e9e58e1c</code> voor de B2B-prijzen. Taal en leestekens spelen dan geen
+rol meer.</p>
+<p class="muted">Die achtervoegsels worden bij de eerste export aangemaakt en blijven daarna vastliggen, dus ze
+blijven geldig zolang niemand de <code>__export__</code>-registraties wist.</p>
+</div>
+
+<div class="box box-warn">
+<h3 id="val-fotorij">De foto's kunnen niet in het C-bestand</h3>
+<p>Het lijkt eenvoudiger om <code>image_1920</code> gewoon als kolom aan
+<code>import_C_hoofdproducten.xlsx</code> toe te voegen. Dat levert stilzwijgend de verkeerde foto's op.</p>
+<p>Odoo koppelt de bestanden achteraf <strong>op rijnummer</strong>: bestandsnaam van rij <em>n</em> gaat naar
+het <em>n</em>-de aangemaakte record. In C loopt dat uit elkaar &mdash; 813 rijen voor 272 producten, want elk
+artikel heeft na zijn hoofdregel nog twee vervolgregels voor de maten- en de kwaliteitslijn. Vanaf het tweede
+artikel schuift alles op, en er komt geen enkele foutmelding: elk product krijgt een geldige foto, alleen niet
+de zijne.</p>
+<p>Vandaar een apart bestand met precies één rij per product. Meteen ook handiger: het mag zo vaak opnieuw als
+nodig, los van de rest.</p>
+</div>
+
+<h2 id="controle">Controles na afloop</h2>
+<ol class="steps">
+<li><label><input type="checkbox"><span></span>272 hoofdproducten met het seizoenslabel, en 7&nbsp;598 actieve
+varianten. Artikel 175 draagt <em>beide</em> labels.</label></li>
+<li><label><input type="checkbox"><span></span>Enkel de twaalf varianten van artikel 72255 zonder
+barcode, en geen dubbele barcode.</label></li>
+<li><label><input type="checkbox"><span></span>Geen enkele variant zonder interne referentie, en geen twee
+varianten met dezelfde.</label></li>
+<li><label><input type="checkbox"><span></span>Geen enkel hoofdproduct met gewicht 0.</label></li>
+<li><label><input type="checkbox"><span></span>Alle hoofdproducten met de vinkjes <em>Verkoop</em> en
+<em>Inkoop</em> aan, en met de routes <em>Kopen</em> + <em>MTO</em>.</label></li>
+<li><label><input type="checkbox"><span></span>Per hoofdproduct één leveranciersregel en twee
+prijslijstregels.</label></li>
+<li><label><input type="checkbox"><span></span>Steekproef op één hoofdproduct met veel varianten &mdash;
+artikel 175 heeft er 126, het grootste van de collectie &mdash; om te zien of de matrix op de verkooporder
+klopt.</label></li>
+<li><label><input type="checkbox"><span></span>De lijst kenmerkwaarden nakijken op dubbels die door de import
+ontstaan zijn.</label></li>
+<li><label><input type="checkbox"><span></span>261 van de 272 hoofdproducten met een foto, en de foto hoort
+bij het artikel &mdash; steekproef van een handvol, verspreid over de lijst, niet enkel de eerste.</label></li>
+</ol>
+</main><script>
+(function () {
+  document.querySelectorAll('pre').forEach(function (pre) {
+    if (pre.parentNode.classList.contains('o_code')) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'o_code';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+  });
+  document.querySelectorAll('.o_code').forEach(function (wrap) {
+    var pre = wrap.querySelector('pre');
+    if (!pre) return;
+    var knop = document.createElement('button');
+    knop.type = 'button';
+    knop.className = 'o_copy';
+    knop.textContent = 'Kopiëren';
+    wrap.appendChild(knop);
+    knop.addEventListener('click', function () {
+      var tekst = pre.innerText;
+      function gelukt() {
+        knop.textContent = 'Gekopieerd';
+        knop.classList.add('done');
+        setTimeout(function () {
+          knop.textContent = 'Kopiëren';
+          knop.classList.remove('done');
+        }, 1500);
+      }
+      function terugval() {
+        var hulp = document.createElement('textarea');
+        hulp.value = tekst;
+        hulp.style.position = 'fixed';
+        hulp.style.opacity = '0';
+        document.body.appendChild(hulp);
+        hulp.select();
+        try { document.execCommand('copy'); gelukt(); } catch (e) { knop.textContent = 'Mislukt'; }
+        document.body.removeChild(hulp);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(tekst).then(gelukt, terugval);
+      } else {
+        terugval();
+      }
+    });
+  });
+})();
+</script>
+</body></html>

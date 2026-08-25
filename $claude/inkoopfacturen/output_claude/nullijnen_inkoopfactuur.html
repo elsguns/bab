@@ -1,0 +1,256 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAB — Serveractie "Nullijnen verwijderen" op een inkoopfactuur</title>
+<style>
+:root{--fg:#1d2433;--muted:#5b6478;--accent:#875a7b;--accent-soft:#f3e8ee;
+--rule:#e3e6ed;--code-bg:#f4f5f7;--ok:#eef7ee;--ok-bd:#bcdfbc;--warn:#fff7e6;--warn-bd:#f0c36d;
+--bad:#fdecea;--bad-bd:#f0b3ac;--info:#eef4fb;--info-bd:#b8d0eb;}
+*,*::before,*::after{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+color:var(--fg);background:#fff;display:grid;grid-template-columns:300px minmax(0,1fr);min-height:100vh;}
+aside.toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;padding:1.4rem 1.2rem 2rem;
+border-right:1px solid var(--rule);background:#fafbfd;font-size:14px;}
+aside.toc h2{margin:0 0 .6rem;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+aside.toc ol{list-style:none;padding:0;margin:0 0 1.2rem;}
+aside.toc ol ol{padding-left:.9rem;margin:.15rem 0 .35rem;border-left:2px solid var(--rule);}
+aside.toc a{display:block;padding:.2rem .4rem;color:var(--fg);text-decoration:none;border-radius:4px;}
+aside.toc a:hover{background:var(--accent-soft);color:var(--accent);}
+main{padding:2rem 2.4rem 4rem;max-width:1000px;}
+h1{margin:0 0 .3rem;font-size:26px;}
+.sub{color:var(--muted);margin:0 0 1.6rem;}
+h2{margin:2.2rem 0 .5rem;padding-bottom:.3rem;border-bottom:2px solid var(--accent);color:var(--accent);font-size:20px;}
+h3{margin:1.6rem 0 .4rem;font-size:16px;}
+p{margin:.5rem 0;}
+table{border-collapse:collapse;width:100%;margin:.6rem 0 1rem;font-size:14px;}
+th,td{text-align:left;vertical-align:top;padding:.5rem .6rem;border-bottom:1px solid var(--rule);}
+th{background:#fafbfd;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+code{background:var(--code-bg);padding:.05em .35em;border-radius:4px;font-size:13px;
+font-family:ui-monospace,Menlo,Consolas,monospace;}
+pre{background:var(--code-bg);border:1px solid var(--rule);border-radius:8px;padding:.8rem 1rem;
+overflow-x:auto;font-size:13px;line-height:1.45;font-family:ui-monospace,Menlo,Consolas,monospace;}
+.box{border-radius:8px;padding:.8rem 1rem;margin:1rem 0;font-size:13.5px;border:1px solid;}
+.box-info{background:var(--info);border-color:var(--info-bd);}
+.box-ok{background:var(--ok);border-color:var(--ok-bd);}
+.box-warn{background:var(--warn);border-color:var(--warn-bd);}
+.box-bad{background:var(--bad);border-color:var(--bad-bd);}
+.box h3{margin:0 0 .35rem;}
+.muted{color:var(--muted);}
+ol.steps{list-style:none;counter-reset:step;padding:0;margin:1rem 0;}
+ol.steps>li{position:relative;padding:.55rem .6rem .55rem 2.4rem;border-bottom:1px solid var(--rule);}
+ol.steps>li::before{content:"";position:absolute;left:.55rem;top:.62rem;width:1.05rem;height:1.05rem;
+border:1.5px solid var(--accent);border-radius:4px;}
+ol.steps input{position:absolute;left:.5rem;top:.55rem;width:1.2rem;height:1.2rem;margin:0;opacity:0;cursor:pointer;}
+ol.steps input:checked+span::before{content:"\2713";position:absolute;left:.7rem;top:.5rem;color:var(--accent);font-weight:700;}
+ol.steps ul{margin:.4rem 0 0;padding-left:1.1rem;}
+
+  /* Kopieerknop op elk codeblok. */
+  .o_code { position: relative; }
+  .o_code > button.o_copy {
+    position: absolute; top: .5rem; right: .5rem;
+    font: inherit; font-size: 12px; line-height: 1;
+    padding: .3rem .6rem; cursor: pointer;
+    color: var(--accent); background: #fff;
+    border: 1px solid var(--rule); border-radius: 4px;
+    opacity: .55; transition: opacity .15s;
+  }
+  .o_code:hover > button.o_copy { opacity: 1; }
+  .o_code > button.o_copy:hover { background: var(--accent-soft); }
+  .o_code > button.o_copy.done { color: #198754; border-color: #9dcda3; opacity: 1; }
+  .o_code > pre { margin-top: 0; }
+  @media print { .o_code > button.o_copy { display: none; } }
+
+@media (max-width:800px){body{grid-template-columns:1fr;}
+aside.toc{position:relative;height:auto;border-right:0;border-bottom:1px solid var(--rule);}}
+</style></head><body><aside class="toc"><h2>Inhoud</h2><ol>
+<li><a href="#doel">Doel</a></li>
+<li><a href="#waarom">Waarom die nullijnen ontstaan</a>
+  <ol>
+    <li><a href="#waarom-knop">De knop op de bestelling</a></li>
+    <li><a href="#waarom-auto">Het veld Automatisch aanvullen</a></li>
+  </ol>
+</li>
+<li><a href="#code">De code</a>
+  <ol><li><a href="#code-uitleg">Wat elke regel doet</a></li></ol>
+</li>
+<li><a href="#aanmaken">De serveractie aanmaken</a></li>
+<li><a href="#gebruik">Gebruiken</a></li>
+<li><a href="#verif">Verifiëren — vier testgevallen</a></li>
+<li><a href="#let">Aandachtspunten</a>
+  <ol>
+    <li><a href="#let-ontvangst">Nog niet ontvangen lijnen</a></li>
+    <li><a href="#let-terug">Terugdraaien</a></li>
+  </ol>
+</li>
+</ol></aside>
+<main>
+<h1>Serveractie &ldquo;Nullijnen verwijderen&rdquo;</h1>
+<p class="sub">BAB · Odoo 18.0 (Odoo.sh) · serveractie op <code>account.move</code> · genoteerd 19 augustus 2026</p>
+
+<h2 id="doel">Doel</h2>
+<p>Eén klik op een inkoopfactuur in concept die alle factuurlijnen met <strong>hoeveelheid 0</strong> weggooit,
+zodat de factuur enkel de lijnen bevat die je effectief boekt.</p>
+<table>
+<thead><tr><th>Soort lijn</th><th>Wordt ze verwijderd?</th></tr></thead>
+<tbody>
+<tr><td>Productlijn met hoeveelheid 0</td><td><strong>Ja</strong></td></tr>
+<tr><td>Productlijn met hoeveelheid 1 en prijs 0 (gratis artikel)</td><td>Nee</td></tr>
+<tr><td>Sectie of notitie</td><td>Nee</td></tr>
+<tr><td>Btw- en tegenboekingslijnen</td><td>Nee &mdash; die staan niet in de factuurlijnen</td></tr>
+<tr><td>Om het even welke lijn op een <em>geboekte</em> factuur</td><td>Nee &mdash; de factuur wordt overgeslagen</td></tr>
+</tbody></table>
+<p>Het is een databankrecord, geen module: aanmaken kan rechtstreeks in productie, zonder deploy.</p>
+
+<h2 id="waarom">Waarom die nullijnen ontstaan</h2>
+
+<h3 id="waarom-knop">De knop <em>Factuur aanmaken</em> op de bestelling</h3>
+<p>Die knop laat nullijnen <strong>niet</strong> door. Odoo 18 slaat er elke bestellijn over waarvan de nog te
+factureren hoeveelheid 0 is (<code>action_create_invoice</code> in de module <em>purchase</em>). Vertrek je vanaf de
+bestelling, dan heb je deze actie dus niet nodig.</p>
+
+<h3 id="waarom-auto">Het veld <em>Automatisch aanvullen</em> op de factuur</h3>
+<p>Hier zit het verschil. Maak je eerst een lege inkoopfactuur en kies je daarna een bestelling in het veld
+<strong>Automatisch aanvullen</strong>, dan neemt Odoo <em>alle</em> nog niet gekoppelde bestellijnen over
+&mdash; zonder te kijken of er nog iets te factureren valt:</p>
+<div class="o_code"><pre>po_lines = self.purchase_id.order_line - self.invoice_line_ids.mapped('purchase_line_id')
+self._add_purchase_order_lines(po_lines)</pre></div>
+<p class="muted">purchase/models/account_invoice.py · <code>_onchange_purchase_auto_complete</code></p>
+<p>De hoeveelheid van zo'n lijn wordt de <em>nog te factureren</em> hoeveelheid. Die is 0 in twee gevallen:</p>
+<ul>
+<li>de lijn is al <strong>volledig gefactureerd</strong> op een eerdere factuur;</li>
+<li>de lijn staat op <em>factureren op ontvangen hoeveelheden</em> en er is nog <strong>niets ontvangen</strong>
+(zie <a href="#let-ontvangst">Aandachtspunten</a>).</li>
+</ul>
+<div class="box box-info">
+<p>Dit is standaardgedrag van Odoo 18, geen fout in het maatwerk. Er staat geen instelling tegenover; wegwerken
+kan enkel achteraf, en dat is precies wat deze actie doet.</p>
+</div>
+
+<h2 id="code">De code</h2>
+<div class="o_code"><pre>for record in records.filtered(lambda move: move.state == 'draft'):
+    # Een factuur die via "Automatisch aanvullen" van een bestelling komt, neemt alle
+    # bestellijnen mee, ook de al volledig gefactureerde (hoeveelheid 0).
+    # Secties en notities hebben ook hoeveelheid 0 en moeten blijven staan.
+    record.invoice_line_ids.filtered(
+        lambda line: line.display_type == 'product' and not line.quantity
+    ).unlink()</pre></div>
+
+<h3 id="code-uitleg">Wat elke regel doet</h3>
+<table>
+<thead><tr><th>Stuk</th><th>Waarom</th></tr></thead>
+<tbody>
+<tr><td><code>records</code></td><td>Meervoud: de actie werkt evengoed op één factuur als op een selectie in de lijstweergave.</td></tr>
+<tr><td><code>state == 'draft'</code></td><td>Geboekte en geannuleerde facturen worden stil overgeslagen. Odoo zou het schrappen van een lijn op een geboekte factuur toch weigeren; zo krijg je geen foutmelding halverwege een selectie.</td></tr>
+<tr><td><code>invoice_line_ids</code></td><td>Enkel de zichtbare factuurlijnen. De btw- en tegenboekingslijnen zitten in <code>line_ids</code> en blijven dus buiten schot &mdash; Odoo herrekent die zelf na het schrappen.</td></tr>
+<tr><td><code>display_type == 'product'</code></td><td>In Odoo&nbsp;18 zitten secties en notities mee in <code>invoice_line_ids</code> (<code>display_type in ('product','line_section','line_note')</code>). Zonder deze test zou de actie ook de opmaak van de factuur wissen.</td></tr>
+<tr><td><code>not line.quantity</code></td><td>Het criterium is de <strong>hoeveelheid</strong>, niet het subtotaal. Zo blijft een gratis lijn (hoeveelheid&nbsp;1, prijs&nbsp;0) staan; die hoort er wél op.</td></tr>
+</tbody></table>
+
+<h2 id="aanmaken">De serveractie aanmaken</h2>
+<ol class="steps">
+<li><label><input type="checkbox"><span>Zet de <strong>ontwikkelaarsmodus</strong> aan: <em>Instellingen &rarr; onderaan &ldquo;Ontwikkelaarstools activeren&rdquo;</em>.</span></label></li>
+<li><label><input type="checkbox"><span>Ga naar <em>Instellingen &rarr; Technisch &rarr; Acties &rarr; <strong>Serveracties</strong></em> en klik <strong>Nieuw</strong>.</span></label></li>
+<li><label><input type="checkbox"><span>Vul in:
+  <ul>
+    <li><strong>Actienaam:</strong> <code>* Nullijnen verwijderen</code> <em class="muted">(de ster vooraan markeert het als eigen actie)</em></li>
+    <li><strong>Model:</strong> <code>Boeking</code> (<code>account.move</code>)</li>
+    <li><strong>Type:</strong> <em>Python-code uitvoeren</em></li>
+  </ul></span></label></li>
+<li><label><input type="checkbox"><span>Plak <a href="#code">de code</a> in het codeveld, zonder extra spaties vooraan.</span></label></li>
+<li><label><input type="checkbox"><span>Vink onderaan <strong>In contextmenu</strong> (&ldquo;Beschikbaar in het Actie-menu&rdquo;) aan, zodat de actie onder de knop <em>Actie</em> verschijnt.</span></label></li>
+<li><label><input type="checkbox"><span><strong>Opslaan.</strong> Odoo weigert de code bij een syntaxfout &mdash; dat is meteen je eerste controle.</span></label></li>
+<li><label><input type="checkbox"><span>Ververs het tabblad met de facturen; het <em>Actie</em>-menu pikt de nieuwe actie pas op na een herlaad.</span></label></li>
+</ol>
+<div class="box box-warn">
+<p><strong>Let op de inspringing.</strong> Het codeveld is gewone Python: plak de code links uitgelijnd, anders
+krijg je een <em>IndentationError</em> bij het opslaan.</p>
+</div>
+
+<h2 id="gebruik">Gebruiken</h2>
+<ol class="steps">
+<li><label><input type="checkbox"><span><strong>Op één factuur:</strong> open de inkoopfactuur in concept &rarr; tandwielmenu / knop <em>Actie</em> &rarr; <strong>* Nullijnen verwijderen</strong>.</span></label></li>
+<li><label><input type="checkbox"><span><strong>Op meerdere tegelijk:</strong> <em>Boekhouding &rarr; Leveranciers &rarr; Facturen</em>, filter op <em>Concept</em>, vink de facturen aan &rarr; <em>Actie</em> &rarr; <strong>* Nullijnen verwijderen</strong>.</span></label></li>
+<li><label><input type="checkbox"><span>De pagina herlaadt niet vanzelf: druk op <strong>F5</strong> (of open de factuur opnieuw) om het resultaat te zien.</span></label></li>
+</ol>
+
+<h2 id="verif">Verifiëren &mdash; vier testgevallen</h2>
+<p>Doe dit op een factuur die je nadien mag wissen.</p>
+<ol class="steps">
+<li><label><input type="checkbox"><span><strong>De nullijnen verdwijnen.</strong> Maak een lege inkoopfactuur, kies bij <em>Automatisch aanvullen</em> een deels gefactureerde bestelling, sla op, draai de actie. Enkel de lijnen met een hoeveelheid blijven over.</span></label></li>
+<li><label><input type="checkbox"><span><strong>Secties blijven staan.</strong> Staat er een sectiekop of notitie op de factuur, dan staat die er nadien nog.</span></label></li>
+<li><label><input type="checkbox"><span><strong>Het totaal klopt.</strong> Het factuurtotaal en de btw zijn ongewijzigd &mdash; nullijnen dragen niets bij.</span></label></li>
+<li><label><input type="checkbox"><span><strong>Geboekt blijft ongemoeid.</strong> Draai de actie op een geboekte factuur: er gebeurt niets, zonder foutmelding.</span></label></li>
+</ol>
+
+<h2 id="let">Aandachtspunten</h2>
+
+<div class="box box-warn">
+<h3 id="let-ontvangst">Nog niet ontvangen lijnen verdwijnen mee</h3>
+<p>Staat een product op <strong>factureren op ontvangen hoeveelheden</strong> en is er nog niets binnengekomen,
+dan komt die lijn óók met hoeveelheid 0 op de factuur &mdash; en dus wist de actie ze mee.</p>
+<p>Dat is geen verlies: de bestellijn blijft openstaan, en zodra je ze ontvangt komt ze bij een volgende
+<em>Automatisch aanvullen</em> gewoon opnieuw op de factuur, dan mét hoeveelheid. Odoo vertrekt namelijk van de
+bestellijnen die nog niet aan een factuurlijn hangen.</p>
+</div>
+
+<div class="box box-info">
+<h3 id="let-terug">Terugdraaien</h3>
+<p>Ging het te snel op een factuur? Zet het veld <strong>Automatisch aanvullen</strong> nog eens op dezelfde
+bestelling: de geschrapte lijnen komen terug (met hun actuele hoeveelheid). De actie zelf draai je terug door
+ze te <strong>archiveren</strong> of te wissen bij <em>Instellingen &rarr; Technisch &rarr; Acties &rarr;
+Serveracties</em>.</p>
+</div>
+
+<div class="box box-info">
+<h3>Waarom geen module</h3>
+<p>Een serveractie is een record in de databank: aan te maken en aan te passen in de productie-omgeving zonder
+deploy, en zichtbaar voor iedereen met ontwikkelaarsmodus. Wil je ze mee in versiebeheer op Odoo.sh, dan giet
+ik dezelfde code in een klein moduletje &mdash; zeg maar.</p>
+</div>
+</main><script>
+(function () {
+  document.querySelectorAll('pre').forEach(function (pre) {
+    if (pre.parentNode.classList.contains('o_code')) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'o_code';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+  });
+  document.querySelectorAll('.o_code').forEach(function (wrap) {
+    var pre = wrap.querySelector('pre');
+    if (!pre) return;
+    var knop = document.createElement('button');
+    knop.type = 'button';
+    knop.className = 'o_copy';
+    knop.textContent = 'Kopiëren';
+    wrap.appendChild(knop);
+    knop.addEventListener('click', function () {
+      var tekst = pre.innerText;
+      function gelukt() {
+        knop.textContent = 'Gekopieerd';
+        knop.classList.add('done');
+        setTimeout(function () {
+          knop.textContent = 'Kopiëren';
+          knop.classList.remove('done');
+        }, 1500);
+      }
+      function terugval() {
+        var hulp = document.createElement('textarea');
+        hulp.value = tekst;
+        hulp.style.position = 'fixed';
+        hulp.style.opacity = '0';
+        document.body.appendChild(hulp);
+        hulp.select();
+        try { document.execCommand('copy'); gelukt(); } catch (e) { knop.textContent = 'Mislukt'; }
+        document.body.removeChild(hulp);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(tekst).then(gelukt, terugval);
+      } else {
+        terugval();
+      }
+    });
+  });
+})();
+</script>
+</body></html>

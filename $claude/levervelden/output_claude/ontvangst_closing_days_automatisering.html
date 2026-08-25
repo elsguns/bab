@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAB — Ontvangst versnellen: "Closing days"-automatisering ombouwen (DB, geen module)</title>
+<style>
+  :root {
+    --fg: #1d2433;
+    --muted: #5b6478;
+    --accent: #714B67;          /* Odoo purple */
+    --accent-soft: #f3e8ee;
+    --warn-bg: #fff7e6;
+    --warn-border: #f0c36d;
+    --note-bg: #eef4fb;
+    --note-border: #b8d0eb;
+    --ok-bg: #eaf7ee;
+    --ok-border: #9bd4ac;
+    --rule: #e3e6ed;
+    --code-bg: #f4f5f7;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+    color: var(--fg);
+    background: #fff;
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    min-height: 100vh;
+  }
+  aside.toc {
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
+    padding: 1.4rem 1.2rem 2rem; border-right: 1px solid var(--rule);
+    background: #fafbfd; font-size: 14px;
+  }
+  aside.toc h2 { margin: 0 0 .6rem 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  aside.toc ol { list-style: none; padding: 0; margin: 0; }
+  aside.toc ol ol { padding-left: 1rem; margin: .2rem 0 .4rem; border-left: 2px solid var(--rule); }
+  aside.toc a { display: block; padding: .15rem .4rem; color: var(--fg); text-decoration: none; border-radius: 4px; }
+  aside.toc a:hover, aside.toc a:focus { background: var(--accent-soft); color: var(--accent); }
+  aside.toc .toc-badge { display: inline-block; background: var(--accent); color: #fff; border-radius: 999px; padding: 0 .55em; font-size: 11px; margin-left: .35em; vertical-align: 1px; }
+  aside.toc .actions { margin-top: 1.2rem; padding-top: .8rem; border-top: 1px solid var(--rule); font-size: 12px; color: var(--muted); }
+  aside.toc .actions button { font: inherit; color: var(--accent); background: transparent; border: 1px solid var(--accent); border-radius: 4px; padding: .2rem .6rem; cursor: pointer; }
+  aside.toc .actions button:hover { background: var(--accent-soft); }
+  aside.toc .progress { margin-top: .6rem; font-variant-numeric: tabular-nums; }
+
+  main { padding: 2rem clamp(1rem, 4vw, 3rem) 5rem; max-width: 920px; }
+  h1 { font-size: 1.7rem; line-height: 1.25; margin: 0 0 .6rem; }
+  h2 { margin-top: 2.4rem; padding-top: 1rem; border-top: 1px solid var(--rule); font-size: 1.35rem; }
+  h3 { margin-top: 1.8rem; font-size: 1.08rem; color: var(--accent); }
+  p { margin: .6rem 0; }
+  ul { padding-left: 1.2rem; margin: .4rem 0 1rem; }
+  ul.checklist { list-style: none; padding-left: 0; }
+  ul.checklist > li { padding: .35rem 0 .35rem 1.9rem; position: relative; margin: .2rem 0; }
+  ul.checklist > li > input[type=checkbox] { position: absolute; left: 0; top: .55rem; width: 1.1rem; height: 1.1rem; cursor: pointer; }
+  ul.checklist > li.done { color: var(--muted); text-decoration: line-through; text-decoration-color: rgba(0,0,0,.3); }
+  ul.checklist > li.done code { opacity: .7; }
+  ul.checklist ul { margin-top: .3rem; }
+  code { background: var(--code-bg); padding: .05em .35em; border-radius: 4px; font-size: .92em; font-family: "SF Mono", Menlo, Consolas, monospace; }
+  strong { color: #111; }
+  table.metrics { border-collapse: collapse; margin: 1rem 0; font-size: .95em; }
+  table.metrics th, table.metrics td { border: 1px solid var(--rule); padding: .4rem .7rem; text-align: left; }
+  table.metrics th { background: #fafbfd; }
+  table.metrics td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .callout { border-left: 4px solid var(--note-border); background: var(--note-bg); padding: .7rem 1rem; margin: 1rem 0; border-radius: 4px; font-size: .95em; }
+  .callout.warn { background: var(--warn-bg); border-left-color: var(--warn-border); }
+  .callout.ok { background: var(--ok-bg); border-left-color: var(--ok-border); }
+  .callout p:first-child { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 2rem 0; }
+  pre { background: var(--code-bg); padding: .8rem 1rem; border-radius: 6px; overflow: auto; font-size: .9em; font-family: "SF Mono", Menlo, Consolas, monospace; line-height: 1.45; }
+
+  @media (max-width: 800px) {
+    body { grid-template-columns: 1fr; }
+    aside.toc { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--rule); }
+  }
+  @media print {
+    body { display: block; }
+    aside.toc { display: none; }
+    main { max-width: none; padding: 0; }
+    h2 { break-before: page; }
+    ul.checklist > li.done { text-decoration: none; color: inherit; }
+  }
+
+  /* Kopieerknop op elk codeblok. */
+  .o_code { position: relative; }
+  .o_code > button.o_copy {
+    position: absolute; top: .5rem; right: .5rem;
+    font: inherit; font-size: 12px; line-height: 1;
+    padding: .3rem .6rem; cursor: pointer;
+    color: var(--accent); background: #fff;
+    border: 1px solid var(--rule); border-radius: 4px;
+    opacity: .55; transition: opacity .15s;
+  }
+  .o_code:hover > button.o_copy { opacity: 1; }
+  .o_code > button.o_copy:hover { background: var(--accent-soft); }
+  .o_code > button.o_copy.done { color: #198754; border-color: #9dcda3; opacity: 1; }
+  .o_code > pre { margin-top: 0; }
+  @media print { .o_code > button.o_copy { display: none; } }
+</style>
+</head>
+<body>
+
+<aside class="toc">
+  <h2>Inhoud</h2>
+  <ol>
+    <li><a href="#s0">0. Wat &amp; waarom</a></li>
+    <li><a href="#s1">1. Vooraf</a></li>
+    <li><a href="#s2">2. De regel ombouwen <span class="toc-badge">kern</span></a></li>
+    <li><a href="#s3">3. Afweging: vuurt "On UI change" genoeg?</a></li>
+    <li><a href="#s4">4. Verifiëren</a></li>
+    <li><a href="#s5">5. Alternatief: gewoon uitzetten</a></li>
+    <li><a href="#s6">6. Achtergrond (waarom een filter niet helpt)</a></li>
+  </ol>
+  <div class="actions">
+    <div class="progress" id="progress">— / — afgevinkt</div>
+    <p style="margin-top:.6rem">
+      <button id="clear-state" type="button">Alle vinkjes wissen</button>
+    </p>
+    <p style="margin-top:.6rem;font-size:11px">
+      Vinkjes worden alleen in deze browser bewaard. Synct niet, verlaat de pagina niet.
+    </p>
+  </div>
+</aside>
+
+<main>
+  <h1>Ontvangst versnellen — de "Closing days"-automatisering ombouwen naar <em>On UI change</em></h1>
+
+  <div class="callout">
+    <p><strong>Doel.</strong> De automatiseringsregel <code>Closing days (contact) to delivery info (transfer)</code>
+    op <code>stock.picking</code> laat Odoo bij <em>elke</em> wijziging van <em>elke</em> transfer een
+    (niet-gecachede) opzoeking in <code>base_automation</code> doen. Bij het valideren van één ontvangst
+    van 115 regels zijn dat ~123 extra queries. Deze gids zet de regel om zodat die overhead volledig
+    verdwijnt — <strong>rechtstreeks in de database via de UI, zonder module</strong> — met behoud van de
+    functie voor carriers die je in het scherm kiest.</p>
+    <p>Getest op werkkopie <code>bab18-20260618</code> met ontvangst <code>VAS/IN/00060</code> (van inkooporder P00081).</p>
+  </div>
+
+  <h2 id="s0">0. Wat &amp; waarom</h2>
+  <p>De regel doet dit: <em>wanneer de carrier van een transfer wordt gezet of gewijzigd, kopieer de
+  "sluitingsdagen" van de klant (<code>res.partner.x_studio_closing_days</code>) naar het veld
+  Leveringsinformatie (<code>stock.picking.delivery_information</code>).</em></p>
+  <p>Het probleem zit niet in wat de regel <em>doet</em> (bij een ontvangst verandert de carrier niet, dus de
+  actie zelf draait niet), maar in haar <strong>trigger-type</strong>. De regel staat op
+  <strong>"On save"</strong> (<code>on_create_or_write</code>). Zodra er op een model één zo'n regel bestaat,
+  hangt <code>base_automation</code> zich vast aan <code>create</code> én <code>write</code> van dat model. Elke
+  picking-write moet dan eerst opzoeken "zijn er regels voor mij?" — en die opzoeking is <strong>niet
+  gecached</strong>, dus telt telkens een echte query.</p>
+
+  <p>Gemeten bij het valideren van <code>VAS/IN/00060</code> (115 regels):</p>
+  <table class="metrics">
+    <tr><th>Variant</th><th class="num">queries</th><th class="num"><code>base_automation</code>-scans</th><th><code>stock.picking.write</code> gepatcht?</th></tr>
+    <tr><td>Nu — <strong>On save</strong></td><td class="num">~2045</td><td class="num">123</td><td>ja</td></tr>
+    <tr><td>Na fix — <strong>On UI change</strong></td><td class="num">~1918</td><td class="num">0</td><td><strong>nee</strong></td></tr>
+  </table>
+
+  <div class="callout">
+    <p><strong>Waar zit de winst echt?</strong> Lokaal blijft de wandkloktijd ~2,5 s (die wordt bepaald door het
+    kern-voorraadwerk per regel, niet door deze regel). De winst is het <strong>aantal queries</strong>: op
+    Odoo.sh staat de database op een aparte host, dus elke query kost netwerk-latency. ~125 queries minder
+    per ontvangst — en de patch verdwijnt voor <em>alle</em> transfers (leveringen, interne, ...), niet
+    enkel deze ontvangst.</p>
+  </div>
+
+  <h2 id="s1">1. Vooraf</h2>
+  <ul class="checklist">
+    <li><input type="checkbox" id="c-1-1"> Zet <strong>Ontwikkelaarsmodus</strong> aan (Instellingen → onderaan → Ontwikkelaarstools activeren).</li>
+    <li><input type="checkbox" id="c-1-2"> Doe dit <strong>eerst op een werkkopie / staging</strong> (bv. <code>bab18-20260618</code> lokaal of een Odoo.sh staging-branch), test één ontvangst mét carrier, en zet het pas daarna live.</li>
+    <li><input type="checkbox" id="c-1-3"> Beslis eerst §3 (de afweging): dekt "On UI change" jullie manier van carriers toewijzen? Zo niet, kies dan §5.</li>
+  </ul>
+
+  <h2 id="s2">2. De regel ombouwen — <em>On save</em> → <em>On UI change</em></h2>
+  <p>Alles gebeurt op het bestaande regel-record; je verwijdert of dupliceert niets.</p>
+  <ul class="checklist">
+    <li><input type="checkbox" id="c-2-1"> Ga naar <strong>Instellingen → Technisch → Automatisering → Automatiseringsregels</strong>.</li>
+    <li><input type="checkbox" id="c-2-2"> Open de regel <code>Closing days (contact) to delivery info (transfer)</code> (Model = <code>Voorraadverplaatsing</code> / <code>stock.picking</code>).</li>
+    <li><input type="checkbox" id="c-2-3"> Zet <strong>Trigger</strong> van <code>Bij opslaan</code> (On save) naar <strong><code>Bij UI-wijziging</code></strong> (On UI change).</li>
+    <li><input type="checkbox" id="c-2-4"><strong>Cruciaal:</strong> in het veld dat nu verschijnt — <strong>"On Change Fields Trigger"</strong> / "Bij wijzigen van" — voeg <strong><code>Carrier</code> (<code>carrier_id</code>)</strong> toe.
+      <ul>
+        <li>Bij het omschakelen maakt Odoo dit veld <strong>leeg</strong>. Laat je het leeg, dan vuurt de regel op <em>niets</em> (of op elke veldwijziging) — dus zet hier expliciet <code>carrier_id</code>.</li>
+      </ul>
+    </li>
+    <li><input type="checkbox" id="c-2-5"> Controleer dat de <strong>actie</strong> ongewijzigd blijft: één <em>Python-code</em>-actie die <code>delivery_information</code> vult vanuit <code>partner_id.x_studio_closing_days</code>. (On UI change werkt enkel met een <em>code</em>-actie — dat is hier al zo, dus geen probleem.)</li>
+    <li><input type="checkbox" id="c-2-6"> <strong>Opslaan.</strong> Bij het opslaan herregistreert Odoo automatisch zijn hooks: <code>stock.picking.write</code> wordt niet langer onderschept.</li>
+  </ul>
+
+  <div class="callout warn">
+    <p><strong>Doe dit via de UI, niet via ruwe SQL.</strong> Een <code>UPDATE base_automation SET trigger='on_change'</code>
+    zou het veld wel veranderen, maar Odoo zou zijn method-patches pas bij een <em>herstart</em> herregistreren,
+    én <code>on_change_field_ids</code> zou leeg blijven (regel werkt dan niet). De UI-weg voert de herregistratie
+    en de veld-berekening correct uit.</p>
+  </div>
+
+  <h2 id="s3">3. Afweging — vuurt "On UI change" vaak genoeg voor jullie?</h2>
+  <p>Dit is de enige functionele nuance, en de reden om §1-stap 3 eerst te beslissen.</p>
+  <p><strong>On UI change vuurt enkel</strong> wanneer iemand de carrier <em>in het formulier</em> wijzigt.
+  Het vuurt <strong>niet</strong> bij:</p>
+  <ul>
+    <li>carriers die <strong>programmatisch</strong> worden gezet (bv. door een verzendkoppeling zoals GLS, of automatische overname vanuit de verkooporder);</li>
+    <li><strong>imports</strong> of andere schrijfacties buiten het scherm;</li>
+    <li>het louter <strong>aanmaken</strong> van een transfer met al een carrier zonder dat veld handmatig aan te raken.</li>
+  </ul>
+  <div class="callout">
+    <p><strong>Beslishulp.</strong> Zetten jullie de carrier op leveringen normaal <em>met de hand in het scherm</em>?
+    Dan dekt "On UI change" het volledig en is dit de juiste keuze. Worden carriers vooral automatisch/geïmporteerd
+    toegewezen én is het stempelen van de sluitingsdagen dan nog nodig? Dan is dit niet gelijkwaardig — overweeg
+    §5, of laat het me weten en we lossen het functioneel anders op (bv. een klein codeveld).</p>
+  </div>
+
+  <h2 id="s4">4. Verifiëren</h2>
+  <ul class="checklist">
+    <li><input type="checkbox" id="c-4-1"> Open op een levering in het scherm het veld <strong>Carrier</strong> en kies een waarde → <strong>Leveringsinformatie</strong> vult zich meteen met de sluitingsdagen van de klant (indien ingevuld). De regel werkt dus nog.</li>
+    <li><input type="checkbox" id="c-4-2"> In <strong>Automatiseringsregels</strong> toont de regel nu Trigger = <em>Bij UI-wijziging</em> met <code>carrier_id</code> als wijzigingsveld.</li>
+    <li><input type="checkbox" id="c-4-3"> (Optioneel, technisch) Ontvang opnieuw een grote ontvangst en vergelijk de duur; op Odoo.sh voel je ~125 queries minder per validatie.</li>
+  </ul>
+
+  <h2 id="s5">5. Alternatief — de regel gewoon deactiveren</h2>
+  <p>Is het kopiëren van de sluitingsdagen naar de leveringsinformatie eigenlijk niet (meer) nodig? Dan is de
+  simpelste en snelste winst: de regel <strong>uitzetten</strong>. Dat haalt exact dezelfde overhead weg.</p>
+  <ul class="checklist">
+    <li><input type="checkbox" id="c-5-1"> Open dezelfde regel en zet hem op <strong>gearchiveerd / inactief</strong> (schuif "Actief" uit, of Actie → Archiveren).</li>
+    <li><input type="checkbox" id="c-5-2"> Opslaan. <code>stock.picking</code> heeft dan geen actieve automatisering meer → geen write-patch.</li>
+  </ul>
+  <div class="callout warn">
+    <p>Nadeel: je verliest het automatisch invullen van <code>delivery_information</code> volledig (ook in het scherm).
+    Kies dit enkel als de functie gemist mag worden.</p>
+  </div>
+
+  <h2 id="s6">6. Achtergrond — waarom een filter of andere tuning niet helpt</h2>
+  <p>Intuïtief zou je denken: "zet een <em>Voorwaarde/Domein</em> op de regel zodat ze minder vaak draait."
+  Dat helpt hier <strong>niet</strong> voor de snelheid. De dure opzoeking gebeurt in
+  <code>base_automation._get_actions()</code> — dat is de stap die bepaalt <em>of</em> er regels zijn — en die
+  draait <strong>vóór</strong> enig domein/voorwaarde wordt geëvalueerd, op elke write. Er zit geen
+  <code>ormcache</code> op die opzoeking.</p>
+  <pre># base_automation/models/base_automation.py — write-patch, per write:
+automations = self.env['base.automation']._get_actions(self, WRITE_TRIGGERS)
+#            -> search([('model_name','=','stock.picking'), ...])  # niet gecached
+
+# _register_hook koppelt de patch enkel voor write-achtige triggers:
+if automation_rule.trigger in WRITE_TRIGGERS:   # on_create_or_write valt hieronder
+    patch(Model, 'write', make_write())
+elif automation_rule.trigger == 'on_change':    # <-- patcht write NIET
+    for field in automation_rule.on_change_field_ids:
+        Model._onchange_methods[field.name].append(method)</pre>
+  <p>Daarom is het <strong>trigger-type</strong> de enige knop die de overhead echt wegneemt: <code>on_change</code>
+  registreert alleen een onchange-methode op <code>carrier_id</code> en patcht <code>create</code>/<code>write</code>
+  helemaal niet.</p>
+
+  <hr>
+  <p style="color:var(--muted);font-size:.9em">Onderdeel van de o.s.admin BAB-documentatie · werkkopie <code>bab18-20260618</code> · ontvangst <code>VAS/IN/00060</code>.</p>
+</main>
+
+<script>
+(function () {
+  var STORE_KEY = 'bab-receipt-closing-days-v1';
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) {}
+  var boxes = document.querySelectorAll('ul.checklist > li > input[type=checkbox]');
+  function updateProgress() {
+    var done = 0;
+    boxes.forEach(function (b) { if (b.checked) done++; });
+    var el = document.getElementById('progress');
+    if (el) el.textContent = done + ' / ' + boxes.length + ' afgevinkt';
+  }
+  boxes.forEach(function (b) {
+    if (saved[b.id]) b.checked = true;
+    b.parentNode.classList.toggle('done', b.checked);
+    b.addEventListener('change', function () {
+      saved[b.id] = b.checked;
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(saved)); } catch (e) {}
+      b.parentNode.classList.toggle('done', b.checked);
+      updateProgress();
+    });
+  });
+  updateProgress();
+  var clearBtn = document.getElementById('clear-state');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function () {
+      if (!confirm('Alle vinkjes op deze pagina wissen?')) return;
+      boxes.forEach(function (b) { b.checked = false; b.parentNode.classList.remove('done'); });
+      saved = {};
+      try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+      updateProgress();
+    });
+  }
+})();
+</script>
+<script>
+(function () {
+  document.querySelectorAll('pre').forEach(function (pre) {
+    if (pre.parentNode.classList.contains('o_code')) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'o_code';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+    var knop = document.createElement('button');
+    knop.type = 'button';
+    knop.className = 'o_copy';
+    knop.textContent = 'Kopiëren';
+    wrap.appendChild(knop);
+    knop.addEventListener('click', function () {
+      var tekst = pre.innerText;
+      function gelukt() {
+        knop.textContent = 'Gekopieerd';
+        knop.classList.add('done');
+        setTimeout(function () {
+          knop.textContent = 'Kopiëren';
+          knop.classList.remove('done');
+        }, 1500);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(tekst).then(gelukt, terugval);
+      } else {
+        terugval();
+      }
+      function terugval() {
+        var hulp = document.createElement('textarea');
+        hulp.value = tekst;
+        hulp.style.position = 'fixed';
+        hulp.style.opacity = '0';
+        document.body.appendChild(hulp);
+        hulp.select();
+        try { document.execCommand('copy'); gelukt(); } catch (e) { knop.textContent = 'Mislukt'; }
+        document.body.removeChild(hulp);
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

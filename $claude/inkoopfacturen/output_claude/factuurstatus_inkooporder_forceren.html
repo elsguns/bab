@@ -1,0 +1,302 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAB — Serveractie "Factuurstatus forceren" op een inkooporder</title>
+<style>
+:root{--fg:#1d2433;--muted:#5b6478;--accent:#875a7b;--accent-soft:#f3e8ee;
+--rule:#e3e6ed;--code-bg:#f4f5f7;--ok:#eef7ee;--ok-bd:#bcdfbc;--warn:#fff7e6;--warn-bd:#f0c36d;
+--bad:#fdecea;--bad-bd:#f0b3ac;--info:#eef4fb;--info-bd:#b8d0eb;}
+*,*::before,*::after{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+color:var(--fg);background:#fff;display:grid;grid-template-columns:300px minmax(0,1fr);min-height:100vh;}
+aside.toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;padding:1.4rem 1.2rem 2rem;
+border-right:1px solid var(--rule);background:#fafbfd;font-size:14px;}
+aside.toc h2{margin:0 0 .6rem;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+aside.toc ol{list-style:none;padding:0;margin:0 0 1.2rem;}
+aside.toc ol ol{padding-left:.9rem;margin:.15rem 0 .35rem;border-left:2px solid var(--rule);}
+aside.toc a{display:block;padding:.2rem .4rem;color:var(--fg);text-decoration:none;border-radius:4px;}
+aside.toc a:hover{background:var(--accent-soft);color:var(--accent);}
+main{padding:2rem 2.4rem 4rem;max-width:1000px;}
+h1{margin:0 0 .3rem;font-size:26px;}
+.sub{color:var(--muted);margin:0 0 1.6rem;}
+h2{margin:2.2rem 0 .5rem;padding-bottom:.3rem;border-bottom:2px solid var(--accent);color:var(--accent);font-size:20px;}
+h3{margin:1.6rem 0 .4rem;font-size:16px;}
+p{margin:.5rem 0;}
+table{border-collapse:collapse;width:100%;margin:.6rem 0 1rem;font-size:14px;}
+th,td{text-align:left;vertical-align:top;padding:.5rem .6rem;border-bottom:1px solid var(--rule);}
+th{background:#fafbfd;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+code{background:var(--code-bg);padding:.05em .35em;border-radius:4px;font-size:13px;
+font-family:ui-monospace,Menlo,Consolas,monospace;}
+pre{background:var(--code-bg);border:1px solid var(--rule);border-radius:8px;padding:.8rem 1rem;
+overflow-x:auto;font-size:13px;line-height:1.45;font-family:ui-monospace,Menlo,Consolas,monospace;}
+.box{border-radius:8px;padding:.8rem 1rem;margin:1rem 0;font-size:13.5px;border:1px solid;}
+.box-info{background:var(--info);border-color:var(--info-bd);}
+.box-ok{background:var(--ok);border-color:var(--ok-bd);}
+.box-warn{background:var(--warn);border-color:var(--warn-bd);}
+.box-bad{background:var(--bad);border-color:var(--bad-bd);}
+.box h3{margin:0 0 .35rem;}
+.muted{color:var(--muted);}
+ol.steps{list-style:none;counter-reset:step;padding:0;margin:1rem 0;}
+ol.steps>li{position:relative;padding:.55rem .6rem .55rem 2.4rem;border-bottom:1px solid var(--rule);}
+ol.steps>li::before{content:"";position:absolute;left:.55rem;top:.62rem;width:1.05rem;height:1.05rem;
+border:1.5px solid var(--accent);border-radius:4px;}
+ol.steps input{position:absolute;left:.5rem;top:.55rem;width:1.2rem;height:1.2rem;margin:0;opacity:0;cursor:pointer;}
+ol.steps input:checked+span::before{content:"\2713";position:absolute;left:.7rem;top:.5rem;color:var(--accent);font-weight:700;}
+ol.steps ul{margin:.4rem 0 0;padding-left:1.1rem;}
+
+  /* Kopieerknop op elk codeblok. */
+  .o_code { position: relative; }
+  .o_code > button.o_copy {
+    position: absolute; top: .5rem; right: .5rem;
+    font: inherit; font-size: 12px; line-height: 1;
+    padding: .3rem .6rem; cursor: pointer;
+    color: var(--accent); background: #fff;
+    border: 1px solid var(--rule); border-radius: 4px;
+    opacity: .55; transition: opacity .15s;
+  }
+  .o_code:hover > button.o_copy { opacity: 1; }
+  .o_code > button.o_copy:hover { background: var(--accent-soft); }
+  .o_code > button.o_copy.done { color: #198754; border-color: #9dcda3; opacity: 1; }
+  .o_code > pre { margin-top: 0; }
+  @media print { .o_code > button.o_copy { display: none; } }
+
+@media (max-width:800px){body{grid-template-columns:1fr;}
+aside.toc{position:relative;height:auto;border-right:0;border-bottom:1px solid var(--rule);}}
+</style></head><body><aside class="toc"><h2>Inhoud</h2><ol>
+<li><a href="#doel">Doel</a></li>
+<li><a href="#waarom">Waarom je het niet gewoon kunt invullen</a>
+  <ol>
+    <li><a href="#waarom-berekend">Een berekend veld</a></li>
+    <li><a href="#waarom-restant">Waarom het restant blijft hangen</a></li>
+  </ol>
+</li>
+<li><a href="#code">De code</a>
+  <ol>
+    <li><a href="#code-forceren">Actie 1 &mdash; forceren</a></li>
+    <li><a href="#code-terug">Actie 2 &mdash; opnieuw berekenen</a></li>
+  </ol>
+</li>
+<li><a href="#aanmaken">De serveracties aanmaken</a>
+  <ol>
+    <li><a href="#aanmaken-1">Actie 1 aanmaken</a></li>
+    <li><a href="#aanmaken-2">Actie 2 aanmaken</a></li>
+  </ol>
+</li>
+<li><a href="#gebruik">Gebruiken</a></li>
+<li><a href="#verif">Verifi&euml;ren &mdash; vier testgevallen</a></li>
+<li><a href="#let">Aandachtspunten</a>
+  <ol>
+    <li><a href="#let-terugval">Wanneer de status terugvalt</a></li>
+    <li><a href="#let-boekhouding">De boekhouding verandert niet</a></li>
+    <li><a href="#let-rechten">Wie mag dit</a></li>
+  </ol>
+</li>
+</ol></aside>
+<main>
+<h1>Serveractie &ldquo;Factuurstatus forceren&rdquo;</h1>
+<p class="sub">BAB &middot; Odoo 18.0 (Odoo.sh) &middot; serveractie op <code>purchase.order</code> &middot; genoteerd 19 augustus 2026</p>
+
+<h2 id="doel">Doel</h2>
+<p>E&eacute;n klik op een bestelling die de <strong>factuurstatus</strong> op <em>Volledig gefactureerd</em> zet,
+zodat een bestelling die de leverancier nooit helemaal zal factureren uit de lijst
+<em>Wacht op facturen</em> verdwijnt. Jij beslist wanneer een bestelling afgerond is, niet Odoo.</p>
+<table>
+<thead><tr><th>Wat de actie doet</th><th>Wat ze niet doet</th></tr></thead>
+<tbody>
+<tr><td>Het veld <strong>Factuurstatus</strong> op de bestelling overschrijven</td><td>Besteld&nbsp;/ ontvangen&nbsp;/ gefactureerd aantal wijzigen &mdash; die blijven exact zoals ze zijn</td></tr>
+<tr><td>Werkt op &eacute;&eacute;n bestelling of op een hele selectie tegelijk</td><td>Facturen aanmaken, boeken of aanpassen</td></tr>
+<tr><td>Is terug te draaien met een tweede actie</td><td>Bestellijnen toevoegen, wissen of afsluiten</td></tr>
+</tbody></table>
+<p>Het zijn databankrecords, geen module: aanmaken kan rechtstreeks in productie, zonder deploy.</p>
+
+<h2 id="waarom">Waarom je het niet gewoon kunt invullen</h2>
+
+<h3 id="waarom-berekend">Een berekend veld</h3>
+<p><strong>Factuurstatus</strong> staat niet als invulveld op het scherm. Odoo&nbsp;18 rekent het zelf uit
+(<code>_get_invoiced</code> in de module <em>purchase</em>) en bewaart het resultaat:</p>
+<div class="o_code"><pre>invoice_status = fields.Selection([
+    ('no', 'Nothing to Bill'),
+    ('to invoice', 'Waiting Bills'),
+    ('invoiced', 'Fully Billed'),
+], compute='_get_invoiced', store=True, readonly=True)</pre></div>
+<p class="muted">purchase/models/purchase_order.py</p>
+<p>Omdat de waarde <em>bewaard</em> wordt (<code>store=True</code>), staat er een echte kolom in de databank.
+Die kolom kan een serveractie overschrijven &mdash; dat is precies wat deze actie doet.</p>
+
+<h3 id="waarom-restant">Waarom het restant blijft hangen</h3>
+<p>Odoo kijkt per bestellijn naar de nog te factureren hoeveelheid. Zolang &eacute;&eacute;n lijn daar niet op
+nul staat, blijft de hele bestelling op <em>Wacht op facturen</em>:</p>
+<div class="o_code"><pre>if line.product_id.purchase_method == 'purchase':
+    line.qty_to_invoice = line.product_qty - line.qty_invoiced   # op bestelde hoeveelheid
+else:
+    line.qty_to_invoice = line.qty_received - line.qty_invoiced  # op ontvangen hoeveelheid</pre></div>
+<p class="muted">purchase/models/purchase_order_line.py &middot; <code>_compute_qty_invoiced</code></p>
+<p>Bij BAB staan zo goed als alle producten op <strong>factureren op ontvangen hoeveelheid</strong>. Het restant
+is daar dus <em>ontvangen min gefactureerd</em>. Ontvangt de leverancier 100 stuks en factureert hij er 97, dan
+blijven die 3 eeuwig openstaan &mdash; tenzij je de ontvangst zelf terugdraait, en dat wil je bij een
+afgehandelde bestelling niet.</p>
+<div class="box box-ok">
+<p>Vandaar deze aanpak: <strong>de aantallen blijven staan zoals ze werkelijk zijn</strong> &mdash; 100 ontvangen,
+97 gefactureerd &mdash; en enkel de status wordt op afgerond gezet. De historiek blijft dus kloppen.</p>
+</div>
+
+<h2 id="code">De code</h2>
+
+<h3 id="code-forceren">Actie 1 &mdash; forceren</h3>
+<div class="o_code"><pre># Zet de factuurstatus op "Volledig gefactureerd" zonder iets aan de bestelling te wijzigen.
+# Aantallen, ontvangsten en facturen blijven ongemoeid: enkel het statusveld wordt overschreven.
+# Odoo berekent de status alsnog opnieuw zodra er op de bestelling nog een factuur wordt
+# geboekt of geannuleerd, of nog een ontvangst wijzigt. Draai de actie dan gewoon opnieuw.
+for record in records:
+    record['invoice_status'] = 'invoiced'</pre></div>
+<table>
+<thead><tr><th>Regel</th><th>Waarom zo</th></tr></thead>
+<tbody>
+<tr><td><code>records</code></td><td>Alles wat je aangevinkt hebt. E&eacute;n bestelling of vijftig tegelijk maakt geen verschil.</td></tr>
+<tr><td><code>record['invoice_status']</code></td><td>Met vierkante haken, niet met een punt. In het codeveld van een serveractie laat Odoo <code>record.veld = waarde</code> niet toe.</td></tr>
+<tr><td><code>'invoiced'</code></td><td>De technische waarde achter het label <em>Volledig gefactureerd</em>. De andere twee zijn <code>'to invoice'</code> en <code>'no'</code>.</td></tr>
+</tbody></table>
+
+<h3 id="code-terug">Actie 2 &mdash; opnieuw berekenen</h3>
+<p>De tegenhanger, voor als je je vergist van bestelling of als je later toch weer wil zien wat Odoo er zelf
+van maakt:</p>
+<div class="o_code"><pre># Draait de forcering terug: laat Odoo de factuurstatus opnieuw berekenen uit de
+# aantallen en de gekoppelde leveranciersfacturen.
+records._compute_field_value(records._fields['invoice_status'])</pre></div>
+<p>Dit is geen &ldquo;ongedaan maken&rdquo; met geheugen: het gooit de geforceerde waarde weg en laat Odoo
+opnieuw rekenen. Stond de bestelling v&oacute;&oacute;r het forceren op <em>Wacht op facturen</em>, dan staat ze
+daar nadien weer.</p>
+
+<h2 id="aanmaken">De serveracties aanmaken</h2>
+
+<h3 id="aanmaken-1">Actie 1 aanmaken</h3>
+<ol class="steps">
+<li><label><input type="checkbox"><span>Zet de <strong>ontwikkelaarsmodus</strong> aan: <em>Instellingen &rarr; onderaan &ldquo;Ontwikkelaarstools activeren&rdquo;</em>.</span></label></li>
+<li><label><input type="checkbox"><span>Ga naar <em>Instellingen &rarr; Technisch &rarr; Acties &rarr; <strong>Serveracties</strong></em> en klik <strong>Nieuw</strong>.</span></label></li>
+<li><label><input type="checkbox"><span>Vul in:
+  <ul>
+    <li><strong>Actienaam:</strong> <code>* Factuurstatus forceren op volledig gefactureerd</code> <em class="muted">(de ster vooraan markeert het als eigen actie)</em></li>
+    <li><strong>Model:</strong> <code>Inkooporder</code> (<code>purchase.order</code>)</li>
+    <li><strong>Type:</strong> <em>Python-code uitvoeren</em></li>
+  </ul></span></label></li>
+<li><label><input type="checkbox"><span>Plak <a href="#code-forceren">de code van actie 1</a> in het codeveld, zonder extra spaties vooraan.</span></label></li>
+<li><label><input type="checkbox"><span>Vink onderaan <strong>In contextmenu</strong> (&ldquo;Beschikbaar in het Actie-menu&rdquo;) aan, zodat de actie onder de knop <em>Actie</em> verschijnt.</span></label></li>
+<li><label><input type="checkbox"><span><strong>Opslaan.</strong> Odoo weigert de code bij een syntaxfout &mdash; dat is meteen je eerste controle.</span></label></li>
+</ol>
+
+<h3 id="aanmaken-2">Actie 2 aanmaken</h3>
+<ol class="steps">
+<li><label><input type="checkbox"><span>Klik opnieuw <strong>Nieuw</strong> en herhaal dezelfde stappen, met als <strong>Actienaam</strong> <code>* Factuurstatus opnieuw berekenen</code> en <a href="#code-terug">de code van actie 2</a>.</span></label></li>
+<li><label><input type="checkbox"><span>Model en type zijn identiek: <code>purchase.order</code> en <em>Python-code uitvoeren</em>. Vink ook hier <strong>In contextmenu</strong> aan.</span></label></li>
+<li><label><input type="checkbox"><span>Ververs het tabblad met de bestellingen; het <em>Actie</em>-menu pikt de nieuwe acties pas op na een herlaad.</span></label></li>
+</ol>
+<div class="box box-warn">
+<p><strong>Let op de inspringing.</strong> Het codeveld is gewone Python: plak de code links uitgelijnd, anders
+krijg je een <em>IndentationError</em> bij het opslaan. Bij actie&nbsp;1 hoort enkel de laatste regel
+&eacute;&eacute;n niveau ingesprongen te staan, onder de <code>for</code>.</p>
+</div>
+
+<h2 id="gebruik">Gebruiken</h2>
+<ol class="steps">
+<li><label><input type="checkbox"><span><strong>Op &eacute;&eacute;n bestelling:</strong> open de inkooporder &rarr; tandwielmenu / knop <em>Actie</em> &rarr; <strong>* Factuurstatus forceren op volledig gefactureerd</strong>.</span></label></li>
+<li><label><input type="checkbox"><span><strong>Op meerdere tegelijk:</strong> <em>Inkoop &rarr; Bestellingen &rarr; Inkooporders</em>, groepeer of filter op <em>Factuurstatus = Wacht op facturen</em>, vink de bestellingen aan &rarr; <em>Actie</em> &rarr; dezelfde keuze.</span></label></li>
+<li><label><input type="checkbox"><span>De pagina herlaadt niet vanzelf: druk op <strong>F5</strong> (of open de bestelling opnieuw) om de nieuwe status te zien.</span></label></li>
+<li><label><input type="checkbox"><span><strong>Vergist?</strong> Selecteer dezelfde bestelling en draai <strong>* Factuurstatus opnieuw berekenen</strong>.</span></label></li>
+</ol>
+
+<h2 id="verif">Verifi&euml;ren &mdash; vier testgevallen</h2>
+<p>Doe dit eerst op &eacute;&eacute;n bestelling die je nadien mag terugzetten.</p>
+<ol class="steps">
+<li><label><input type="checkbox"><span><strong>De status kantelt.</strong> Neem een bestelling op <em>Wacht op facturen</em>, draai actie&nbsp;1, herlaad: ze staat op <em>Volledig gefactureerd</em>.</span></label></li>
+<li><label><input type="checkbox"><span><strong>De aantallen zijn ongewijzigd.</strong> Noteer v&oacute;&oacute;raf besteld, ontvangen en gefactureerd op elke lijn en vergelijk nadien &mdash; ze staan er nog identiek.</span></label></li>
+<li><label><input type="checkbox"><span><strong>Ze verdwijnt uit de lijst.</strong> Filter op <em>Factuurstatus = Wacht op facturen</em>: de bestelling staat er niet meer tussen.</span></label></li>
+<li><label><input type="checkbox"><span><strong>Terugdraaien werkt.</strong> Draai actie&nbsp;2 op dezelfde bestelling: ze staat weer op <em>Wacht op facturen</em>.</span></label></li>
+</ol>
+
+<h2 id="let">Aandachtspunten</h2>
+
+<div class="box box-warn">
+<h3 id="let-terugval">Wanneer de status terugvalt</h3>
+<p>De geforceerde waarde blijft staan zolang er niets meer aan de bestelling verandert. Odoo rekent het veld
+w&eacute;l opnieuw uit zodra er nadien nog:</p>
+<ul>
+<li>een leveranciersfactuur op die bestelling wordt geboekt, gewijzigd of geannuleerd;</li>
+<li>een ontvangst of retour op die bestelling wordt gevalideerd;</li>
+<li>een bestellijn of het aantal ervan wordt aangepast.</li>
+</ul>
+<p>Dat is bedoeld gedrag &mdash; als er alsnog iets beweegt, mag Odoo opnieuw oordelen. Gebeurt dat op een
+bestelling die je bewust had afgesloten, draai je de actie gewoon opnieuw. Voor bestellingen die echt
+afgehandeld zijn, komt dat in de praktijk niet meer voor.</p>
+</div>
+
+<div class="box box-info">
+<h3 id="let-boekhouding">De boekhouding verandert niet</h3>
+<p>De factuurstatus is een <strong>opvolgingsveld op de bestelling</strong>, geen boekhoudkundig gegeven. Er
+wordt niets geboekt, niets afgeboekt en niets tegengeboekt. Het verschil tussen ontvangen en gefactureerd blijft
+zichtbaar op de bestellijnen en in de voorraadwaardering &mdash; wil je dat verschil ook boekhoudkundig
+wegwerken, dan is dat een aparte beslissing (creditnota of afboeking).</p>
+</div>
+
+<div class="box box-info">
+<h3 id="let-rechten">Wie mag dit</h3>
+<p>De actie verschijnt in het <em>Actie</em>-menu voor iedereen die de bestelling mag openen. Wil je ze
+voorbehouden aan een kleinere groep, dan zet je op de serveractie een <strong>toegestane groep</strong>
+&mdash; zeg maar welke.</p>
+</div>
+
+<div class="box box-info">
+<h3>Waarom geen module</h3>
+<p>Een serveractie is een record in de databank: aan te maken en aan te passen in de productie-omgeving zonder
+deploy, en zichtbaar voor iedereen met ontwikkelaarsmodus. Wil je ze mee in versiebeheer op Odoo.sh &mdash; of
+wil je een echt vinkje <em>Handmatig afgesloten</em> op de bestelling, dat ook na een herberekening blijft staan
+&mdash; dan giet ik dit in een klein moduletje. Dat is de enige manier om de terugval hierboven volledig uit te
+sluiten.</p>
+</div>
+</main>
+<script>
+(function () {
+  document.querySelectorAll('pre').forEach(function (pre) {
+    if (pre.parentNode.classList.contains('o_code')) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'o_code';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+  });
+  document.querySelectorAll('.o_code').forEach(function (wrap) {
+    var pre = wrap.querySelector('pre');
+    if (!pre) return;
+    var knop = document.createElement('button');
+    knop.type = 'button';
+    knop.className = 'o_copy';
+    knop.textContent = 'Kopiëren';
+    wrap.appendChild(knop);
+    knop.addEventListener('click', function () {
+      var tekst = pre.innerText;
+      function gelukt() {
+        knop.textContent = 'Gekopieerd';
+        knop.classList.add('done');
+        setTimeout(function () {
+          knop.textContent = 'Kopiëren';
+          knop.classList.remove('done');
+        }, 1500);
+      }
+      function terugval() {
+        var hulp = document.createElement('textarea');
+        hulp.value = tekst;
+        hulp.style.position = 'fixed';
+        hulp.style.opacity = '0';
+        document.body.appendChild(hulp);
+        hulp.select();
+        try { document.execCommand('copy'); gelukt(); } catch (e) { knop.textContent = 'Mislukt'; }
+        document.body.removeChild(hulp);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(tekst).then(gelukt, terugval);
+      } else {
+        terugval();
+      }
+    });
+  });
+})();
+</script>
+</body></html>

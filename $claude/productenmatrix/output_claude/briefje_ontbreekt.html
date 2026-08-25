@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAB — Ontbrekend briefje uitzoeken</title>
+<style>
+  :root {
+    --fg: #1d2433;
+    --muted: #5b6478;
+    --accent: #875a7b;          /* Odoo purple */
+    --accent-soft: #f3e8ee;
+    --warn-bg: #fff7e6;
+    --warn-border: #f0c36d;
+    --note-bg: #eef4fb;
+    --note-border: #b8d0eb;
+    --ok-bg: #edf7ee;
+    --ok-border: #9dcda3;
+    --rule: #e3e6ed;
+    --code-bg: #f4f5f7;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+    color: var(--fg);
+    background: #fff;
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    min-height: 100vh;
+  }
+
+  aside.toc {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 1.4rem 1.2rem 2rem;
+    border-right: 1px solid var(--rule);
+    background: #fafbfd;
+    font-size: 14px;
+  }
+  aside.toc h2 {
+    margin: 0 0 .6rem 0;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+  }
+  aside.toc ol { list-style: none; padding: 0; margin: 0; }
+  aside.toc ol ol {
+    padding-left: 1rem;
+    margin: .2rem 0 .4rem;
+    border-left: 2px solid var(--rule);
+  }
+  aside.toc a {
+    display: block;
+    padding: .15rem .4rem;
+    color: var(--fg);
+    text-decoration: none;
+    border-radius: 4px;
+  }
+  aside.toc a:hover, aside.toc a:focus {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  aside.toc .actions {
+    margin-top: 1.2rem;
+    padding-top: .8rem;
+    border-top: 1px solid var(--rule);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  aside.toc .actions button {
+    font: inherit;
+    color: var(--accent);
+    background: transparent;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: .2rem .6rem;
+    cursor: pointer;
+  }
+  aside.toc .actions button:hover { background: var(--accent-soft); }
+  aside.toc .progress { margin-top: .6rem; font-variant-numeric: tabular-nums; }
+
+  main { padding: 2rem clamp(1rem, 4vw, 3rem) 5rem; max-width: 920px; }
+  h1 { font-size: 1.7rem; line-height: 1.25; margin: 0 0 .6rem; }
+  h2 {
+    margin-top: 2.4rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--rule);
+    font-size: 1.35rem;
+  }
+  h3 { margin-top: 1.8rem; font-size: 1.08rem; color: var(--accent); }
+  p { margin: .6rem 0; }
+  ul { padding-left: 1.2rem; margin: .4rem 0 1rem; }
+  ul.checklist { list-style: none; padding-left: 0; }
+  ul.checklist > li {
+    padding: .35rem 0 .35rem 1.9rem;
+    position: relative;
+    margin: .2rem 0;
+  }
+  ul.checklist > li > input[type=checkbox] {
+    position: absolute;
+    left: 0;
+    top: .55rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    cursor: pointer;
+  }
+  ul.checklist > li.done {
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-color: rgba(0,0,0,.3);
+  }
+  ul.checklist > li.done code { opacity: .7; }
+  ul.checklist ul { margin-top: .3rem; }
+
+  code {
+    background: var(--code-bg);
+    padding: .05em .35em;
+    border-radius: 4px;
+    font-size: .92em;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: .9rem 1rem;
+    overflow-x: auto;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  strong { color: #111; }
+
+  table.cfg {
+    border-collapse: collapse;
+    margin: 1rem 0;
+    width: 100%;
+    font-size: .95em;
+  }
+  table.cfg th, table.cfg td {
+    border: 1px solid var(--rule);
+    padding: .45rem .7rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  table.cfg th { background: #fafbfd; width: 34%; }
+
+  .callout {
+    border-left: 4px solid var(--note-border);
+    background: var(--note-bg);
+    padding: .7rem 1rem;
+    margin: 1rem 0;
+    border-radius: 4px;
+    font-size: .95em;
+  }
+  .callout.warn { background: var(--warn-bg); border-left-color: var(--warn-border); }
+  .callout.ok { background: var(--ok-bg); border-left-color: var(--ok-border); }
+  .callout p:first-child { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 2rem 0; }
+
+  @media (max-width: 800px) {
+    body { grid-template-columns: 1fr; }
+    aside.toc {
+      position: relative;
+      height: auto;
+      border-right: 0;
+      border-bottom: 1px solid var(--rule);
+    }
+  }
+  @media print {
+    body { display: block; }
+    aside.toc { display: none; }
+    main { max-width: none; padding: 0; }
+    h2 { break-before: page; }
+    ul.checklist > li.done { text-decoration: none; color: inherit; }
+  }
+
+  /* Kopieerknop op elk codeblok. */
+  .o_code { position: relative; }
+  .o_code > button.o_copy {
+    position: absolute; top: .5rem; right: .5rem;
+    font: inherit; font-size: 12px; line-height: 1;
+    padding: .3rem .6rem; cursor: pointer;
+    color: var(--accent); background: #fff;
+    border: 1px solid var(--rule); border-radius: 4px;
+    opacity: .55; transition: opacity .15s;
+  }
+  .o_code:hover > button.o_copy { opacity: 1; }
+  .o_code > button.o_copy:hover { background: var(--accent-soft); }
+  .o_code > button.o_copy.done { color: #198754; border-color: #9dcda3; opacity: 1; }
+  .o_code > pre { margin-top: 0; }
+  @media print { .o_code > button.o_copy { display: none; } }
+</style>
+</head>
+<body>
+
+<aside class="toc">
+  <h2>Inhoud</h2>
+  <ol>
+    <li><a href="#s1">1. De vier oorzaken</a></li>
+    <li><a href="#s2">2. De serveractie</a></li>
+    <li><a href="#s3">3. Het antwoord lezen</a></li>
+    <li><a href="#s4">4. Als het de enkele orderlijn is</a></li>
+  </ol>
+  <div class="actions">
+    <div class="progress" id="progress">— / — afgevinkt</div>
+    <p style="margin-top:.6rem">
+      <button id="clear-state" type="button">Alle vinkjes wissen</button>
+    </p>
+    <p style="margin-top:.6rem;font-size:11px">
+      Vinkjes worden enkel in deze browser bewaard.
+    </p>
+  </div>
+</aside>
+
+<main>
+<h1>Ontbrekend briefje uitzoeken</h1>
+
+<div class="callout">
+<p><strong>Wat dit is.</strong> Je selecteerde zes pickbonnen en kreeg vijf briefjes. Deze
+serveractie loopt de vier redenen af waarom een klant van de Productenmatrix kan wegvallen, en zegt
+welke het is.</p>
+</div>
+
+<h2 id="s1">1. De vier mogelijke oorzaken</h2>
+<ol>
+  <li><strong>Geen verkooporder aan de pickbon.</strong> Het raster komt uit de orderlijnen, niet
+  uit de bon. Zonder order valt er niets te tekenen.</li>
+  <li><strong>&ldquo;Variantrasters afdrukken&rdquo; staat uit op het order.</strong> Een standaard
+  Odoo-vinkje op de verkooporder; staat het uit, dan slaat het rapport dat order over.</li>
+  <li><strong>Maar &eacute;&eacute;n orderlijn voor dat hoofdproduct.</strong> Dit is de meest
+  waarschijnlijke. Het rapport maakt pas een raster vanaf twee lijnen &mdash; bestelt de klant van
+  53212 Mantel maar &eacute;&eacute;n maat, dan verdwijnt hij volledig van de afdruk.</li>
+  <li><strong>Niets gepickt.</strong> Sinds de aanpassing van gisteren tonen de briefjes de
+  aantallen van de bon zelf. Staat alles op nul, dan blijft er niets over om af te drukken.</li>
+</ol>
+
+<h2 id="s2">2. De serveractie</h2>
+<p>Instellingen &rarr; Technisch &rarr; Serveracties &rarr; Nieuw.</p>
+<table class="cfg">
+<tr><th>Naam</th><td>* Ontbrekend briefje uitzoeken</td></tr>
+<tr><th>Model</th><td>Serveractie (<code>ir.actions.server</code>)</td></tr>
+<tr><th>Type</th><td>Python-code uitvoeren</td></tr>
+</table>
+<p>Zet bovenaan de code het verkooporder van de klant die ontbreekt &mdash; voor Textilhaus
+Kaulmann is dat <code>S01829</code>. De actie zoekt zelf de bijhorende pickbon(nen).</p>
+<pre><code># Vul hier het verkooporder in van de klant die ontbreekt.
+ORDER = &#x27;S01829&#x27;
+
+regels = []
+order = env[&#x27;sale.order&#x27;].search([(&#x27;name&#x27;, &#x27;=&#x27;, ORDER)], limit=1)
+if not order:
+    raise UserError(&quot;Verkooporder %s niet gevonden.&quot; % ORDER)
+regels.append(&quot;ORDER %s | klant=%s | rasters afdrukken=%s&quot; % (
+    order.name, order.partner_id.display_name, order.report_grids))
+
+# 1. Welke pickbonnen horen bij dit order?
+bonnen = order.picking_ids.filtered(
+    lambda b: b.picking_type_id == b.picking_type_id.warehouse_id.pick_type_id)
+if not bonnen:
+    regels.append(&quot;1. GEEN pickbon voor dit order -- dan valt er ook niets af te drukken.&quot;)
+for bon in bonnen:
+    regels.append(&quot;1. %s | status=%s&quot; % (bon.name, bon.state))
+
+# 2. Hoeveel orderlijnen per hoofdproduct? Bij een enkele lijn valt het blok weg.
+lijnen = order.order_line.filtered(&#x27;is_configurable_product&#x27;)
+per_tmpl = {}
+for lijn in lijnen:
+    per_tmpl.setdefault(lijn.product_template_id, 0)
+    per_tmpl[lijn.product_template_id] += 1
+if not per_tmpl:
+    regels.append(&quot;2. Geen enkele configureerbare orderlijn (product zonder varianten?)&quot;)
+for tmpl in per_tmpl:
+    regels.append(&quot;2. %s: %d orderlijn(en)%s&quot; % (
+        tmpl.display_name, per_tmpl[tmpl],
+        &quot;  &lt;-- TE WEINIG, blok valt weg&quot; if per_tmpl[tmpl] &lt;= 1 else &quot;&quot;))
+
+# 3. Wat staat er op de bon zelf? Enkel wat gepickt is, komt op het briefje.
+for bon in bonnen:
+    gepickt = 0
+    for move in bon.move_ids:
+        if move.state != &#x27;cancel&#x27;:
+            gepickt += move.quantity
+    regels.append(&quot;3. %s: totaal gepickt = %s&quot; % (bon.name, gepickt))
+
+# 4. En wat levert het rapport uiteindelijk op?
+for bon in bonnen:
+    blokken = bon._get_matrix_blocks()
+    regels.append(&quot;4. %s: %d blok(ken) %s&quot; % (
+        bon.name, len(blokken), [b[&#x27;grid&#x27;][&#x27;header&#x27;][0][&#x27;name&#x27;] for b in blokken]))
+
+log(&quot;\n&quot;.join(regels))</code></pre>
+<ul class="checklist">
+    <li><input type="checkbox" id="c1"> Serveractie aangemaakt, <code>ORDER</code> op het juiste verkooporder gezet.</li>
+    <li><input type="checkbox" id="c2"> Op <strong>Uitvoeren</strong> geklikt en het resultaat gelezen in Instellingen &rarr; Technisch &rarr; <strong>Logboek</strong>.</li>
+    <li><input type="checkbox" id="c3"> Serveractie verwijderd.</li>
+</ul>
+
+<h2 id="s3">3. Het antwoord lezen</h2>
+<table class="cfg">
+<tr><th>Wat je ziet</th><th>Wat het betekent</th></tr>
+<tr><td><code>1. GEEN pickbon voor dit order</code></td>
+    <td>Er is geen pickbon aangemaakt voor dit order. Dan is er niets om af te drukken en zit het
+    probleem eerder in de levering.</td></tr>
+<tr><td><code>rasters afdrukken = False</code></td>
+    <td>Zet het vinkje aan op het verkooporder en druk opnieuw af. Klaar.</td></tr>
+<tr><td><code>1 orderlijn(en) &lt;-- TE WEINIG</code></td>
+    <td>De verwachte oorzaak. De klant bestelde van dat hoofdproduct maar &eacute;&eacute;n
+    maat/kleur. Zie hieronder.</td></tr>
+<tr><td><code>3. totaal gepickt = 0</code></td>
+    <td>Er is niets gepickt, dus er valt niets af te drukken.</td></tr>
+<tr><td><code>4. 1 blok(ken) [...]</code> terwijl er wel gepickt is</td>
+    <td>Het rapport m&aacute;&aacute;kt wel degelijk een blok. Dan zit het probleem in de afdruk
+    zelf en niet in de gegevens &mdash; stuur me de uitvoer door.</td></tr>
+</table>
+
+<h2 id="s4">4. Als het de enkele orderlijn is</h2>
+<p>Dan is het geen fout maar een keuze die indertijd in de module gemaakt is: een raster van
+&eacute;&eacute;n cel werd als zinloos beschouwd. Dat is te herzien &mdash; het briefje toont dan
+gewoon een tabel met &eacute;&eacute;n maat erin, wat voor het magazijn nog altijd bruikbaar is,
+want het draagt de klantnaam en het ordernummer.</p>
+<p>Het is wel een codewijziging, dus ze komt mee met de volgende uitrol. Zeg maar of je dat wil,
+dan pas ik het aan.</p>
+</main>
+
+<script>
+(function () {
+  var STORE_KEY = 'bab-ontbrekend-briefje-v1';
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) {}
+
+  var boxes = document.querySelectorAll('ul.checklist > li > input[type=checkbox]');
+  function updateProgress() {
+    var done = 0;
+    boxes.forEach(function (b) { if (b.checked) done++; });
+    var el = document.getElementById('progress');
+    if (el) el.textContent = done + ' / ' + boxes.length + ' afgevinkt';
+  }
+
+  boxes.forEach(function (b) {
+    if (saved[b.id]) b.checked = true;
+    b.parentNode.classList.toggle('done', b.checked);
+    b.addEventListener('change', function () {
+      saved[b.id] = b.checked;
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(saved)); } catch (e) {}
+      b.parentNode.classList.toggle('done', b.checked);
+      updateProgress();
+    });
+  });
+  updateProgress();
+
+  var clearBtn = document.getElementById('clear-state');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function () {
+      if (!confirm('Alle vinkjes op deze pagina wissen?')) return;
+      boxes.forEach(function (b) {
+        b.checked = false;
+        b.parentNode.classList.remove('done');
+      });
+      saved = {};
+      try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+      updateProgress();
+    });
+  }
+})();
+</script>
+<script>
+(function () {
+  document.querySelectorAll('pre').forEach(function (pre) {
+    if (pre.parentNode.classList.contains('o_code')) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'o_code';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+    var knop = document.createElement('button');
+    knop.type = 'button';
+    knop.className = 'o_copy';
+    knop.textContent = 'Kopiëren';
+    wrap.appendChild(knop);
+    knop.addEventListener('click', function () {
+      var tekst = pre.innerText;
+      function gelukt() {
+        knop.textContent = 'Gekopieerd';
+        knop.classList.add('done');
+        setTimeout(function () {
+          knop.textContent = 'Kopiëren';
+          knop.classList.remove('done');
+        }, 1500);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(tekst).then(gelukt, terugval);
+      } else {
+        terugval();
+      }
+      function terugval() {
+        var hulp = document.createElement('textarea');
+        hulp.value = tekst;
+        hulp.style.position = 'fixed';
+        hulp.style.opacity = '0';
+        document.body.appendChild(hulp);
+        hulp.select();
+        try { document.execCommand('copy'); gelukt(); } catch (e) { knop.textContent = 'Mislukt'; }
+        document.body.removeChild(hulp);
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

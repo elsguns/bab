@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Babimex — Vasa-artikelen zonder de route "Aanvullen per order"</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1c1c1c; --muted: #5b5b5b; --line: #dcdcdc;
+    --accent: #8a1538; --soft: #f6f2f3; --warn: #fdf3e3; --warnline: #e0a94a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17181a; --fg: #e9e6e3; --muted: #a5a19c; --line: #34363a;
+      --accent: #e8879f; --soft: #232326; --warn: #2c2519; --warnline: #b98b3c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17181a; --fg: #e9e6e3; --muted: #a5a19c; --line: #34363a;
+    --accent: #e8879f; --soft: #232326; --warn: #2c2519; --warnline: #b98b3c;
+  }
+  body {
+    background: var(--bg); color: var(--fg); margin: 0 auto; padding: 2.5rem 1.5rem 5rem;
+    max-width: 52rem; line-height: 1.6;
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  h1 { font-size: 1.7rem; line-height: 1.25; margin: 0 0 .3rem; }
+  h2 { font-size: 1.15rem; margin: 2.4rem 0 .6rem; padding-bottom: .3rem;
+        border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 1rem; margin: 1.6rem 0 .4rem; }
+  .lead { color: var(--muted); margin: 0 0 2rem; font-size: .95rem; }
+  p, li { font-size: .95rem; }
+  .kpis { display: grid; gap: .8rem; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+           margin: 1.2rem 0 .5rem; }
+  .kpi { background: var(--soft); border: 1px solid var(--line); border-radius: .5rem;
+          padding: .8rem .9rem; }
+  .kpi b { display: block; font-size: 1.5rem; line-height: 1.2; color: var(--accent); }
+  .kpi span { font-size: .8rem; color: var(--muted); }
+  .note { background: var(--warn); border-left: 4px solid var(--warnline);
+           padding: .8rem 1rem; border-radius: 0 .4rem .4rem 0; margin: 1.2rem 0; }
+  .scroll { overflow-x: auto; margin: 1rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+  th, td { border-bottom: 1px solid var(--line); padding: .4rem .6rem; text-align: left;
+            vertical-align: top; }
+  th { background: var(--soft); font-weight: 600; white-space: nowrap; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  td.ref { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  tfoot td { font-weight: 600; border-top: 2px solid var(--accent); border-bottom: none; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line);
+            color: var(--muted); font-size: .82rem; }
+</style>
+</head>
+<body>
+
+<h1>Vasa-artikelen zonder de route "Aanvullen per order"</h1>
+<p class="lead">Analyse van de productinstellingen van Vasa International en de gevolgen
+voor de bestellingen bij Textil Karntner — Babimex, Odoo 18.</p>
+
+<h2>1. Waar het over gaat</h2>
+<p>Op een artikel kan de route <em>Aanvullen per order (MTO)</em> staan. Die route zorgt ervoor
+dat Odoo bij het bevestigen van een verkooporder automatisch een inkooporder klaarzet bij de
+leverancier van dat artikel. Staat de route er niet op, dan gebeurt er niets automatisch:
+het artikel moet dan uit voorraad komen of manueel besteld worden.</p>
+<p>Bij Vasa International staat die route slechts op een deel van het assortiment.</p>
+
+<div class="kpis">
+  <div class="kpi"><b>500</b><span>actieve artikelen bij Vasa International</span></div>
+  <div class="kpi"><b>215</b><span>mét de route Aanvullen per order</span></div>
+  <div class="kpi"><b>285</b><span>zónder die route</span></div>
+</div>
+
+<p>De 215 artikelen met de route zijn allemaal in januari 2026 aangemaakt. Alles wat sindsdien
+is toegevoegd (52 artikelen tussen februari en juni 2026) kreeg de route nooit. Bij Babimex zelf
+gebruikt geen enkel artikel deze route — daar is dat ook zo bedoeld.</p>
+
+<h2>2. Welke artikelen het zijn</h2>
+<p>De 285 artikelen zonder de route zitten verspreid over de merken; het is dus geen volledige
+categorie die vergeten is. De volledige lijst zit in het bijgevoegde Excel-bestand
+(tabblad <em>Vasa zonder MTO</em>).</p>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Categorie</th><th class="num">Artikelen</th>
+  <th class="num">Mét route</th><th class="num">Zónder route</th></tr></thead>
+  <tbody>
+<tr><td>M.X.O.</td><td class=num>192</td><td class=num>75</td><td class=num>117</td></tr>
+<tr><td>Gabriella K.</td><td class=num>84</td><td class=num>34</td><td class=num>50</td></tr>
+<tr><td>Marinello</td><td class=num>52</td><td class=num>10</td><td class=num>42</td></tr>
+<tr><td>Rumbl Royal</td><td class=num>38</td><td class=num>0</td><td class=num>38</td></tr>
+<tr><td>MXO men</td><td class=num>51</td><td class=num>27</td><td class=num>24</td></tr>
+<tr><td>Rumbl</td><td class=num>10</td><td class=num>0</td><td class=num>10</td></tr>
+<tr><td>Zero2Three</td><td class=num>2</td><td class=num>0</td><td class=num>2</td></tr>
+<tr><td>Birds</td><td class=num>2</td><td class=num>0</td><td class=num>2</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Twee zaken vallen daarbij op:</p>
+<ul>
+  <li>De categorieën <em>M.X.O. neu</em>, <em>Marinello neu</em>, <em>MXO Outerwear</em> en
+      <em>Cashmere-Feeling</em> zijn volledig correct ingesteld.</li>
+  <li>Van de 285 artikelen zonder route hebben er <strong>233</strong> Textil Karntner als
+      leverancier ingevuld, maar <strong>52</strong> hebben helemaal geen leverancier op het
+      artikel staan. Bij die laatste zou ook mét de route nog niets besteld worden — Odoo weet
+      dan immers niet bij wie.</li>
+</ul>
+
+<h2>3. Wat er ondertussen verkocht is</h2>
+<p>Die artikelen zijn wel degelijk verkocht:</p>
+
+<div class="kpis">
+  <div class="kpi"><b>123</b><span>bevestigde verkooporders</span></div>
+  <div class="kpi"><b>6.548</b><span>orderlijnen</span></div>
+  <div class="kpi"><b>11.001</b><span>verkochte stuks</span></div>
+</div>
+
+<p>Er is daarnaast wel degelijk ingekocht bij Textil Karntner: 7 bevestigde inkooporders met
+samen 6.067 lijnen. Die bestellingen zijn manueel of in bulk geplaatst, niet automatisch via de
+verkooporders. Het merendeel van de verkopen is daardoor gewoon opgevangen — het probleem is dus
+niet dat er niets besteld werd, maar dat de dekking op de bestellingen manueel bewaakt moet
+worden.</p>
+
+<h2>4. Het gat vandaag</h2>
+<p>Wat op dit moment nog geleverd moet worden aan klanten, tegenover wat er in voorraad ligt of
+nog binnenkomt van Textil Karntner:</p>
+
+<div class="kpis">
+  <div class="kpi"><b>306</b><span>stuks nog te leveren aan klanten</span></div>
+  <div class="kpi"><b>0</b><span>stuks daarvan op voorraad</span></div>
+  <div class="kpi"><b>267</b><span>stuks openstaand in bestelling</span></div>
+  <div class="kpi"><b>49</b><span>stuks nergens gedekt</span></div>
+</div>
+
+<div class="note">
+  <strong>49 stuks over 44 maten/kleuren</strong> zijn verkocht aan een klant,
+  liggen niet in voorraad en staan bij geen enkele leverancier in bestelling. Die stuks kunnen
+  vandaag dus niet geleverd worden zonder bijbestelling.
+</div>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Besteld op</th><th>Verkooporder</th><th>Klant</th>
+  <th>Referentie</th><th>Artikel</th><th class="num">Stuks</th></tr></thead>
+  <tbody>
+<tr><td>22/01/2026</td><td class=ref>S01271</td><td>Black and White Fashion</td><td class=ref>32261-59-XXL</td><td>32261 Top</td><td class=num>1</td></tr>
+<tr><td>23/01/2026</td><td class=ref>S01288</td><td>Chez Yo</td><td class=ref>31271-62-38</td><td>31271 Pullover</td><td class=num>1</td></tr>
+<tr><td>23/01/2026</td><td class=ref>S01288</td><td>Chez Yo</td><td class=ref>31271-62-40</td><td>31271 Pullover</td><td class=num>1</td></tr>
+<tr><td>23/01/2026</td><td class=ref>S01288</td><td>Chez Yo</td><td class=ref>31271-62-42</td><td>31271 Pullover</td><td class=num>1</td></tr>
+<tr><td>23/01/2026</td><td class=ref>S01288</td><td>Chez Yo</td><td class=ref>31976-10-38</td><td>31976 T-shirt 3/4 mouwen</td><td class=num>1</td></tr>
+<tr><td>23/01/2026</td><td class=ref>S01288</td><td>Chez Yo</td><td class=ref>31976-10-40</td><td>31976 T-shirt 3/4 mouwen</td><td class=num>2</td></tr>
+<tr><td>23/01/2026</td><td class=ref>S01288</td><td>Chez Yo</td><td class=ref>31976-10-42</td><td>31976 T-shirt 3/4 mouwen</td><td class=num>1</td></tr>
+<tr><td>23/01/2026</td><td class=ref>S01288</td><td>Chez Yo</td><td class=ref>31976-10-44</td><td>31976 T-shirt 3/4 mouwen</td><td class=num>2</td></tr>
+<tr><td>23/01/2026</td><td class=ref>S01288</td><td>Chez Yo</td><td class=ref>31976-10-46</td><td>31976 T-shirt 3/4 mouwen</td><td class=num>2</td></tr>
+<tr><td>23/01/2026</td><td class=ref>S01288</td><td>Chez Yo</td><td class=ref>31976-10-48</td><td>31976 T-shirt 3/4 mouwen</td><td class=num>1</td></tr>
+<tr><td>23/01/2026</td><td class=ref>S01287</td><td>Schumacher-Pesch</td><td class=ref>38900-67-L</td><td>38900 Broek</td><td class=num>1</td></tr>
+<tr><td>23/01/2026</td><td class=ref>S01287</td><td>Schumacher-Pesch</td><td class=ref>38900-67-XL</td><td>38900 Broek</td><td class=num>1</td></tr>
+<tr><td>26/01/2026</td><td class=ref>S01337</td><td>Stock Americain</td><td class=ref>41108-69-3XL</td><td>41108 Polo</td><td class=num>1</td></tr>
+<tr><td>23/02/2026</td><td class=ref>S01680</td><td>Klanten bol.com</td><td class=ref>24599--128</td><td>24599 Jurk</td><td class=num>1</td></tr>
+<tr><td>26/02/2026</td><td class=ref>S01836</td><td>Klanten bol.com</td><td class=ref>24221-152/158-</td><td>24221 Rok</td><td class=num>1</td></tr>
+<tr><td>02/03/2026</td><td class=ref>S01893</td><td>Klanten bol.com</td><td class=ref>24597-116/122</td><td>24597 rok</td><td class=num>1</td></tr>
+<tr><td>02/03/2026</td><td class=ref>S01893</td><td>Klanten bol.com</td><td class=ref>24597-128/134</td><td>24597 rok</td><td class=num>1</td></tr>
+<tr><td>02/03/2026</td><td class=ref>S01895</td><td>Klanten bol.com</td><td class=ref>55218-34-128</td><td>55218 Bolero vestje</td><td class=num>1</td></tr>
+<tr><td>03/03/2026</td><td class=ref>S01920</td><td>Klanten bol.com</td><td class=ref>24190-164/170</td><td>24190 Top set</td><td class=num>1</td></tr>
+<tr><td>04/03/2026</td><td class=ref>S01942</td><td>Klanten bol.com</td><td class=ref>04632-128/134</td><td>04632 Bomber</td><td class=num>1</td></tr>
+<tr><td>05/03/2026</td><td class=ref>S01954</td><td>Klanten bol.com</td><td class=ref>24154-140/146</td><td>24154 Blazer</td><td class=num>1</td></tr>
+<tr><td>05/03/2026</td><td class=ref>S01970</td><td>Klanten bol.com</td><td class=ref>24177-0-152/158</td><td>24177 legging</td><td class=num>1</td></tr>
+<tr><td>09/03/2026</td><td class=ref>S02021</td><td>Klanten bol.com</td><td class=ref>04585-one size-</td><td>04585 Vlinderdas</td><td class=num>1</td></tr>
+<tr><td>12/03/2026</td><td class=ref>S02078, S02480, S02552</td><td>Klanten bol.com</td><td class=ref>24548--one size</td><td>24548 Strik</td><td class=num>3</td></tr>
+<tr><td>12/03/2026</td><td class=ref>S02077</td><td>Klanten bol.com</td><td class=ref>24614-31-128</td><td>24614 Jurk roze</td><td class=num>1</td></tr>
+<tr><td>18/03/2026</td><td class=ref>S02142</td><td>Klanten bol.com</td><td class=ref>24324--164/170</td><td>24324 Bomber</td><td class=num>1</td></tr>
+<tr><td>26/03/2026</td><td class=ref>S02243</td><td>Klanten bol.com</td><td class=ref>24133-12-164/170</td><td>24133 Rok</td><td class=num>1</td></tr>
+<tr><td>01/04/2026</td><td class=ref>S02347</td><td>Klanten bol.com</td><td class=ref>24167-10-128/134</td><td>24167 Rok</td><td class=num>1</td></tr>
+<tr><td>01/04/2026</td><td class=ref>S02347</td><td>Klanten bol.com</td><td class=ref>24598-11-128/134</td><td>24598 Rok</td><td class=num>1</td></tr>
+<tr><td>07/04/2026</td><td class=ref>S02408</td><td>Klanten bol.com</td><td class=ref>24660-094-110</td><td>24660 Jurk</td><td class=num>1</td></tr>
+<tr><td>08/04/2026</td><td class=ref>S02427</td><td>Klanten bol.com</td><td class=ref>24136-10-104</td><td>24136 Jurk</td><td class=num>1</td></tr>
+<tr><td>08/04/2026</td><td class=ref>S02428</td><td>Klanten bol.com</td><td class=ref>24311-10-152/158</td><td>24311 Swimshort</td><td class=num>1</td></tr>
+<tr><td>08/04/2026</td><td class=ref>S02427</td><td>Klanten bol.com</td><td class=ref>24614-31-104</td><td>24614 Jurk roze</td><td class=num>1</td></tr>
+<tr><td>09/04/2026</td><td class=ref>S02441</td><td>Klanten bol.com</td><td class=ref>04586-70-152</td><td>04586 Blazer</td><td class=num>1</td></tr>
+<tr><td>09/04/2026</td><td class=ref>S02440</td><td>Klanten bol.com</td><td class=ref>24388-13-104/110</td><td>24388 Rok </td><td class=num>1</td></tr>
+<tr><td>13/04/2026</td><td class=ref>S02483</td><td>Klanten bol.com</td><td class=ref>04596-21-164/170</td><td>04596 t-shirt</td><td class=num>1</td></tr>
+<tr><td>13/04/2026</td><td class=ref>S02481</td><td>Klanten bol.com</td><td class=ref>24154-164/170</td><td>24154 Blazer</td><td class=num>1</td></tr>
+<tr><td>20/04/2026</td><td class=ref>S02553</td><td>Klanten bol.com</td><td class=ref>55218-34-140</td><td>55218 Bolero vestje</td><td class=num>1</td></tr>
+<tr><td>24/04/2026</td><td class=ref>S02644</td><td>Klanten bol.com</td><td class=ref>24132-12-164</td><td>24132 Jurk</td><td class=num>1</td></tr>
+<tr><td>28/04/2026</td><td class=ref>S02685</td><td>Klanten bol.com</td><td class=ref>24557-53-152</td><td>24557 Gilet</td><td class=num>1</td></tr>
+<tr><td>18/05/2026</td><td class=ref>S02907</td><td>Klanten bol.com</td><td class=ref>24311-10-128/134</td><td>24311 Swimshort</td><td class=num>1</td></tr>
+<tr><td>27/05/2026</td><td class=ref>S03034</td><td>Klanten bol.com</td><td class=ref>04655-0-152/158</td><td>04655 T-shirt</td><td class=num>1</td></tr>
+<tr><td>27/05/2026</td><td class=ref>S03035</td><td>Klanten bol.com</td><td class=ref>24597-152/158</td><td>24597 rok</td><td class=num>1</td></tr>
+<tr><td>08/06/2026</td><td class=ref>S03172</td><td>Klanten bol.com</td><td class=ref>24166-10-134</td><td>24166 Jurk</td><td class=num>1</td></tr>
+  </tbody>
+  <tfoot><tr><td colspan="5">Totaal</td><td class="num">49</td></tr></tfoot>
+</table>
+</div>
+
+<h2>5. Voorstel</h2>
+<ol>
+  <li><strong>Route aanzetten</strong> op de 233 artikelen die Textil Karntner al als leverancier
+      hebben. Vanaf dan zet elke nieuwe verkooporder zijn eigen inkoopaanvraag klaar, net zoals
+      bij de 215 artikelen die correct staan.</li>
+  <li><strong>Leverancier invullen</strong> op de 52 artikelen die er geen hebben, en daarna ook
+      daar de route aanzetten.</li>
+  <li><strong>De 49 openstaande stuks hierboven</strong> alsnog bestellen bij Textil
+      Karntner, of de betrokken klanten verwittigen. Het aanzetten van de route lost enkel de
+      toekomst op — bestaande verkooporders worden er niet met terugwerkende kracht door
+      aangevuld.</li>
+  <li><strong>Bij nieuwe artikelen</strong> de route en de leverancier meteen mee invullen. Wie
+      geregeld artikelen aanmaakt, kan dit het eenvoudigst opvangen door van een bestaand,
+      correct ingesteld artikel te vertrekken en dat te dupliceren.</li>
+</ol>
+
+<footer>
+  Analyse op de Babimex-databank, toestand 18 juni 2026. Alle aantallen zijn uit de databank
+  gehaald; de volledige artikellijst en de detaillijst per maat zitten in het Excel-bestand
+  <em>vasa_zonder_mto.xlsx</em>.
+</footer>
+</body>
+</html>

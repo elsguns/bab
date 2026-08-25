@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Traagheid nakijken in Odoo — werkwijze</title>
+<style>
+  :root {
+    --fg: #1d2433; --muted: #5b6478; --accent: #875a7b; --accent-soft: #f3e8ee;
+    --warn-bg: #fff7e6; --warn-border: #f0c36d; --note-bg: #eef4fb; --note-border: #b8d0eb;
+    --ok-bg: #edf7ee; --ok-border: #9ecfa4; --rule: #e3e6ed; --code-bg: #f4f5f7;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--fg); background: #fff;
+    display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: 100vh;
+  }
+  aside.toc {
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
+    padding: 1.4rem 1.2rem 2rem; border-right: 1px solid var(--rule);
+    background: #fafbfd; font-size: 14px;
+  }
+  aside.toc h2 { margin: 0 0 .6rem 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  aside.toc ol { list-style: none; padding: 0; margin: 0; }
+  aside.toc ol ol { padding-left: 1rem; margin: .2rem 0 .4rem; border-left: 2px solid var(--rule); }
+  aside.toc a { display: block; padding: .15rem .4rem; color: var(--fg); text-decoration: none; border-radius: 4px; }
+  aside.toc a:hover, aside.toc a:focus { background: var(--accent-soft); color: var(--accent); }
+  aside.toc .actions { margin-top: 1.2rem; padding-top: .8rem; border-top: 1px solid var(--rule); font-size: 12px; color: var(--muted); }
+  aside.toc .actions button { font: inherit; color: var(--accent); background: transparent; border: 1px solid var(--accent); border-radius: 4px; padding: .2rem .6rem; cursor: pointer; }
+  aside.toc .actions button:hover { background: var(--accent-soft); }
+  aside.toc .progress { margin-top: .6rem; font-variant-numeric: tabular-nums; }
+
+  main { padding: 2rem clamp(1rem, 4vw, 3rem) 5rem; max-width: 920px; }
+  h1 { font-size: 1.7rem; line-height: 1.25; margin: 0 0 .6rem; }
+  h2 { margin-top: 2.4rem; padding-top: 1rem; border-top: 1px solid var(--rule); font-size: 1.35rem; }
+  h3 { margin-top: 1.8rem; font-size: 1.08rem; color: var(--accent); }
+  p { margin: .6rem 0; }
+  ul { padding-left: 1.2rem; margin: .4rem 0 1rem; }
+  ul.checklist { list-style: none; padding-left: 0; }
+  ul.checklist > li { padding: .35rem 0 .35rem 1.9rem; position: relative; margin: .2rem 0; }
+  ul.checklist > li > input[type=checkbox] { position: absolute; left: 0; top: .55rem; width: 1.1rem; height: 1.1rem; cursor: pointer; }
+  ul.checklist > li.done { color: var(--muted); text-decoration: line-through; text-decoration-color: rgba(0,0,0,.3); }
+  ul.checklist > li.done code { opacity: .7; }
+
+  code { background: var(--code-bg); padding: .05em .35em; border-radius: 4px; font-size: .92em; font-family: "SF Mono", Menlo, Consolas, monospace; }
+  strong { color: #111; }
+
+  .codewrap { position: relative; margin: .8rem 0 1.2rem; }
+  .codewrap pre { background: var(--code-bg); border: 1px solid var(--rule); border-radius: 6px; padding: .9rem 1rem; overflow-x: auto; margin: 0; font: 13.5px/1.5 "SF Mono", Menlo, Consolas, monospace; }
+  .codewrap button.copy { position: absolute; top: .5rem; right: .5rem; font: 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--accent); background: #fff; border: 1px solid var(--accent); border-radius: 4px; padding: .3rem .6rem; cursor: pointer; }
+  .codewrap button.copy:hover { background: var(--accent-soft); }
+  .codewrap button.copy.ok { color: #2c6e35; border-color: var(--ok-border); background: var(--ok-bg); }
+
+  table { border-collapse: collapse; margin: 1rem 0; font-size: .95em; width: 100%; }
+  th, td { border: 1px solid var(--rule); padding: .4rem .6rem; text-align: left; }
+  th { background: #fafbfd; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .callout { border-left: 4px solid var(--note-border); background: var(--note-bg); padding: .7rem 1rem; margin: 1rem 0; border-radius: 4px; font-size: .95em; }
+  .callout.warn { background: var(--warn-bg); border-left-color: var(--warn-border); }
+  .callout.ok { background: var(--ok-bg); border-left-color: var(--ok-border); }
+  .callout p:first-child { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  @media (max-width: 800px) {
+    body { grid-template-columns: 1fr; }
+    aside.toc { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--rule); }
+  }
+  @media print {
+    body { display: block; }
+    aside.toc { display: none; }
+    main { max-width: none; padding: 0; }
+    .codewrap button.copy { display: none; }
+    ul.checklist > li.done { text-decoration: none; color: inherit; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="toc">
+  <h2>Inhoud</h2>
+  <ol>
+    <li><a href="#s0">0. De volgorde</a></li>
+    <li><a href="#s1">1. Welke handeling is traag?</a></li>
+    <li><a href="#s2">2. Netwerktabblad: vuurt er iets?</a></li>
+    <li><a href="#s3">3. De profiler</a>
+      <ol>
+        <li><a href="#s3a">3a. Aanzetten</a></li>
+        <li><a href="#s3b">3b. Uitlezen</a></li>
+      </ol>
+    </li>
+    <li><a href="#s4">4. Server of database?</a></li>
+    <li><a href="#s5">5. Per veld wegen</a></li>
+    <li><a href="#s6">6. Valkuilen bij het meten</a></li>
+    <li><a href="#s7">7. Verdachten in Odoo</a></li>
+  </ol>
+  <div class="actions">
+    <div class="progress" id="progress">— / — afgevinkt</div>
+    <p style="margin-top:.6rem"><button id="clear-state" type="button">Alle vinkjes wissen</button></p>
+  </div>
+</aside>
+
+<main>
+  <h1>Traagheid nakijken in Odoo — werkwijze</h1>
+
+  <p>Opgeschreven na het onderzoek naar de trage ontvangsten bij BAB, waarin drie hypotheses
+  sneuvelden bij meting voordat de profiler het antwoord gaf. De rode draad: <strong>meet eerst,
+  vermoed daarna.</strong></p>
+
+  <h2 id="s0">0. De volgorde</h2>
+
+  <p>In deze volgorde, en niet anders. Elke stap sluit een hele categorie oorzaken uit, en elke
+  overgeslagen stap kost een dag aan de verkeerde kant.</p>
+
+  <ol>
+    <li>Vraag <strong>welke handeling</strong> traag is.</li>
+    <li>Kijk in het <strong>netwerktabblad</strong> of er überhaupt iets naar de server gaat.</li>
+    <li>Zet de <strong>profiler</strong> aan en laat de server zichzelf opmeten.</li>
+    <li>Splits <strong>SQL van Python</strong>.</li>
+    <li>Weeg de kandidaten <strong>één voor één</strong>.</li>
+  </ol>
+
+  <h2 id="s1">1. Welke handeling is traag?</h2>
+
+  <p>"Het scherm is traag" is geen diagnose. Vraag door tot je één handeling hebt.</p>
+
+  <ul class="checklist">
+    <li><input type="checkbox" id="c-1-1"> Het <strong>openen</strong> van het scherm?</li>
+    <li><input type="checkbox" id="c-1-2"> Het <strong>invullen</strong> van een veld, per regel?</li>
+    <li><input type="checkbox" id="c-1-3"> Het <strong>opslaan</strong>?</li>
+    <li><input type="checkbox" id="c-1-4"> Het klikken op een <strong>knop</strong> (Bevestigen, Valideren)?</li>
+    <li><input type="checkbox" id="c-1-5"> Vraag ook <strong>op welk record</strong>: aantal regels, en of het in
+      een batch zit. Traagheid schaalt bijna altijd met de omvang van het record.</li>
+  </ul>
+
+  <div class="callout warn">
+    <p>Dit is de stap die het vaakst wordt overgeslagen, met de grootste kosten. Bij BAB werd
+    "trage ontvangsten" gelezen als "trage validatie". Er is drie dagen gemeten en geoptimaliseerd
+    aan het valideren — met echte winst — terwijl de klacht over het invullen ging.</p>
+  </div>
+
+  <h2 id="s2">2. Netwerktabblad: vuurt er iets?</h2>
+
+  <ul class="checklist">
+    <li><input type="checkbox" id="c-2-1"> F12 → <strong>Network</strong>. <strong>Wis het
+      filterveld</strong> en de lijst.</li>
+    <li><input type="checkbox" id="c-2-2"> Doe de trage handeling één keer.</li>
+    <li><input type="checkbox" id="c-2-3"> Lees af: welke oproep, en hoe lang.</li>
+  </ul>
+
+  <div class="callout warn">
+    <p><strong>Controleer het filterveld.</strong> Staat daar nog iets in van een vorige keer, dan
+    lijkt de lijst leeg terwijl er requests zijn. Kijk naar de teller linksonder: staat er
+    <code>0 / 4 requests</code>, dan zijn er vier oproepen en filter je ze alleen weg.</p>
+  </div>
+
+  <p>Wat je eruit haalt:</p>
+
+  <table>
+    <tr><th>Waarneming</th><th>Betekenis</th></tr>
+    <tr><td>Geen enkele oproep</td><td>De browser tekent zelf. Kijk naar het aantal rijen en kolommen, niet naar de server.</td></tr>
+    <tr><td>Oproep naar <code>call_kw/&lt;model&gt;/&lt;methode&gt;</code></td><td>Server. Ga door naar de profiler.</td></tr>
+    <tr><td>Lange duur, klein antwoord</td><td>De server werkt en stuurt niets terug: de kost zit in wat hij onderweg doet, niet in wat je krijgt.</td></tr>
+    <tr><td>Afwisselend snel en traag</td><td>Twee verschillende oproepen per handeling. Onderscheid ze op naam.</td></tr>
+  </table>
+
+  <h2 id="s3">3. De profiler</h2>
+
+  <h3 id="s3a">3a. Aanzetten</h3>
+
+  <ul class="checklist">
+    <li><input type="checkbox" id="c-3-1"> Ontwikkelaarsmodus aan.</li>
+    <li><input type="checkbox" id="c-3-2"> Debug-menu (insect-icoon) → <strong>Profilering
+      inschakelen</strong>, met <strong>Record SQL</strong> en <strong>Record traceringen</strong>
+      aan. Qweb mag uit, dat gaat over rapportsjablonen.</li>
+    <li><input type="checkbox" id="c-3-3"> Doe de trage handeling <strong>één keer</strong> en
+      zet de profiler daarna meteen weer uit. Elke request wordt apart opgenomen; hoe minder
+      ruis, hoe makkelijker de dure eruit springt.</li>
+  </ul>
+
+  <div class="callout">
+    <p>Verschijnt het menu-item niet, dan staat profilering nog dicht. Het wordt vrijgegeven door
+    de systeemparameter <code>base.profiling_enabled_until</code> op een tijdstip in de toekomst
+    te zetten. Zet die via de ORM (of het scherm Systeemparameters), niet met rauwe SQL —
+    <code>get_param</code> zit achter een cache en ziet een SQL-wijziging niet.</p>
+  </div>
+
+  <h3 id="s3b">3b. Uitlezen</h3>
+
+  <p>De opnames komen in het model <code>ir.profile</code>. In de interface staan ze onder
+  Instellingen → Technisch → Profilering. Rechtstreeks uit de database lezen gaat sneller:</p>
+
+  <div class="codewrap"><pre>select id, name, create_date, entry_count, duration
+from ir_profile
+order by duration desc nulls last
+limit 10;</pre></div>
+
+  <p><code>name</code> is de route, dus je ziet meteen welk model en welke methode. Vergelijk de
+  dure met de goedkope: als beide bij dezelfde handeling horen, weet je welke van de twee je
+  moet aanpakken.</p>
+
+  <h2 id="s4">4. Server of database?</h2>
+
+  <p>Tel de SQL-tijd op en zet die naast de totale duur. Dat scheidt twee heel verschillende
+  problemen.</p>
+
+  <div class="codewrap"><pre>python3 - &lt;&lt;'PY'
+import json, psycopg2
+cn = psycopg2.connect("dbname=JOUW_DB")
+cur = cn.cursor()
+cur.execute("select sql from ir_profile where id = %s", (PROFIEL_ID,))
+sql = json.loads(cur.fetchone()[0])
+print("%s queries, samen %.0f ms" % (len(sql), sum(q['time'] for q in sql) * 1000))
+for q in sorted(sql, key=lambda x: -x['time'])[:8]:
+    print("%7.0f ms  %s" % (q['time'] * 1000, ' '.join(q['query'].split())[:130]))
+PY</pre></div>
+
+  <table>
+    <tr><th>Verhouding</th><th>Richting</th></tr>
+    <tr><td>Veel SQL-tijd, weinig queries</td><td>Ontbrekende index, of een query over te veel rijen.</td></tr>
+    <tr><td>Veel queries, elk snel</td><td>N+1: een lus die per record de database aanspreekt.</td></tr>
+    <tr><td>Weinig SQL, veel tijd</td><td>Python. Ga naar de traces.</td></tr>
+  </table>
+
+  <p>Voor de traces: die zitten in <code>traces_async</code>, een lijst van stackmonsters. Tel per
+  stack welke functies erin voorkomen, dan heb je een ruwe vlamgrafiek.</p>
+
+  <div class="codewrap"><pre>python3 - &lt;&lt;'PY'
+import json, collections, psycopg2
+cn = psycopg2.connect("dbname=JOUW_DB")
+cur = cn.cursor()
+cur.execute("select traces_async from ir_profile where id = %s", (PROFIEL_ID,))
+d = json.loads(cur.fetchone()[0])
+bevat = collections.Counter()
+for s in d:
+    gezien = set()
+    for fr in s.get('stack') or []:
+        k = '%s %s' % (fr[0].split('/')[-1], fr[2])
+        if k not in gezien:
+            gezien.add(k)
+            bevat[k] += 1
+for k, c in bevat.most_common(25):
+    print('%5.1f%%  %s' % (100 * c / len(d), k))
+PY</pre></div>
+
+  <p>Lees dit als "komt voor in X% van de monsters", dus cumulatief: een functie die 20% haalt,
+  is samen met alles wat zij aanroept goed voor ongeveer een vijfde van de tijd.</p>
+
+  <h2 id="s5">5. Per veld wegen</h2>
+
+  <p>Een profiel wijst een richting aan, geen bedrag. Wil je weten wat iets <em>werkelijk</em>
+  kost, laat het dan weg en meet opnieuw. Bij een trage <code>onchange</code> hoef je daarvoor de
+  weergave niet aan te passen: bouw de oproep zelf op en varieer de veldenlijst.</p>
+
+  <div class="codewrap"><pre>from odoo import Command
+import time
+
+record = env['MODEL'].browse(ID)
+waarden = {'id': record.id, 'O2M_VELD': [Command.link(i) for i in record.O2M_VELD.ids]}
+
+def meet(velden, label):
+    spec = {'O2M_VELD': {'fields': {v: {} for v in velden}}}
+    tijden = []
+    for _ in range(3):
+        env.invalidate_all()
+        t0 = time.time()
+        record.onchange(waarden, ['O2M_VELD'], spec)
+        tijden.append((time.time() - t0) * 1000)
+        env.cr.rollback()
+    tijden.sort()
+    print('%-40s %7.0f ms' % (label, tijden[1]))
+    return tijden[1]</pre></div>
+
+  <p>Draai dat met de volledige lijst, en daarna telkens met één veld eruit. Wat de mediaan niet
+  meetbaar verlaagt, is geen kandidaat — hoe verdacht het er ook uitziet.</p>
+
+  <h2 id="s6">6. Valkuilen bij het meten</h2>
+
+  <ul>
+    <li><strong>cProfile vertekent.</strong> De overhead kan een verschil van 20% volledig
+      wegdrukken. Bij BAB leek "in een batch" niets uit te maken (37,6 tegen 38,0 ms per regel) —
+      zonder profiler klopte het verschil wél. Gebruik cProfile om te <em>zoeken</em>, en een kale
+      klok om te <em>vergelijken</em>.</li>
+    <li><strong>Cumulatieve tijd dubbeltelt.</strong> Tel je per compute de tijd inclusief geneste
+      computes, dan komt dezelfde tijd meermaals voor. Een toewijzing van "49%" bleek na echte
+      meting 18% te zijn.</li>
+    <li><strong><code>get_param</code> overleeft een rollback.</strong> De waarde zit achter een
+      cache die door <code>cr.rollback()</code> niet wordt gewist, en een <code>set_param</code>
+      naar een waarde die al in de database staat is een lege schrijfactie zonder
+      cache-invalidatie. Meet elk scenario in een eigen sessie, of roep
+      <code>env.registry.clear_cache()</code> na elke wissel.</li>
+    <li><strong>Zet altijd een controleronde achteraan.</strong> Herhaal het uitgangspunt als
+      laatste meting. Wijkt die af van de eerste, dan lekt er state en zijn de tussenliggende
+      cijfers waardeloos.</li>
+    <li><strong>Vergelijk op hetzelfde record.</strong> Draai alles op één record met een
+      <code>rollback</code> ertussen, of op verse kopieën — niet op twee verschillende records.</li>
+  </ul>
+
+  <h2 id="s7">7. Verdachten in Odoo</h2>
+
+  <p>Wat in de praktijk het vaakst bovenkomt, met de vraag die je erover moet stellen.</p>
+
+  <table>
+    <tr><th>Verdachte</th><th>Waaraan je het herkent</th></tr>
+    <tr>
+      <td><strong>onchange over een grote one2many</strong></td>
+      <td>De server neemt <em>alle</em> regels, niet de zichtbare. Kost = regels x berekende
+        kolommen. Herkenbaar aan een <code>fetch</code> met een enorme <code>IN</code>-lijst
+        rechtstreeks vanuit <code>onchange</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>Opgeslagen berekend veld dat over een niet-opgeslagen o2m lust</strong></td>
+      <td>Elke herberekening bouwt die o2m eerst opnieuw op. Ga via de opgeslagen relatie en
+        aggregeer met <code>_read_group</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>Opgeslagen berekend veld dat van een niet-doorzoekbaar veld afhangt</strong></td>
+      <td>Odoo kan niet bepalen wat herrekend moet worden en valt terug op brute kracht. Let op
+        <code>Non-stored field ... cannot be searched</code> in het log.</td>
+    </tr>
+    <tr>
+      <td><strong>Trackingberichten per regel</strong></td>
+      <td>Eén chatterbericht per verwerkte regel. Zichtbaar als veel
+        <code>message_post</code> in de traces.</td>
+    </tr>
+    <tr>
+      <td><strong>Kolommen die niemand ziet</strong></td>
+      <td>Een <code>column_invisible</code> met een dynamische uitdrukking blijft opgevraagd, en
+        een veld waarnaar een knop in zijn <code>invisible</code> verwijst wordt door Odoo terug
+        toegevoegd. Onzichtbaar is niet gratis.</td>
+    </tr>
+  </table>
+
+  <div class="callout ok">
+    <p>Uitgewerkt voorbeeld van deze werkwijze, met alle cijfers: <code>overzicht.md</code> in
+    deze map en het dagboek in <code>$claude/status.md</code>.</p>
+  </div>
+</main>
+
+<script>
+(function () {
+  var STORE_KEY = 'bab-traagheid-nakijken-v1';
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) {}
+  var boxes = document.querySelectorAll('ul.checklist > li > input[type=checkbox]');
+  function updateProgress() {
+    var done = 0;
+    boxes.forEach(function (b) { if (b.checked) done++; });
+    var el = document.getElementById('progress');
+    if (el) el.textContent = done + ' / ' + boxes.length + ' afgevinkt';
+  }
+  boxes.forEach(function (b) {
+    if (saved[b.id]) b.checked = true;
+    b.parentNode.classList.toggle('done', b.checked);
+    b.addEventListener('change', function () {
+      saved[b.id] = b.checked;
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(saved)); } catch (e) {}
+      b.parentNode.classList.toggle('done', b.checked);
+      updateProgress();
+    });
+  });
+  updateProgress();
+  var clearBtn = document.getElementById('clear-state');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function () {
+      if (!confirm('Alle vinkjes op deze pagina wissen?')) return;
+      boxes.forEach(function (b) { b.checked = false; b.parentNode.classList.remove('done'); });
+      saved = {};
+      try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+      updateProgress();
+    });
+  }
+  document.querySelectorAll('.codewrap').forEach(function (wrap) {
+    var pre = wrap.querySelector('pre');
+    if (!pre) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy';
+    btn.textContent = 'Kopieer';
+    btn.addEventListener('click', function () {
+      var tekst = pre.textContent;
+      function gelukt() {
+        btn.textContent = 'Gekopieerd';
+        btn.classList.add('ok');
+        setTimeout(function () { btn.textContent = 'Kopieer'; btn.classList.remove('ok'); }, 1600);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(tekst).then(gelukt, function () {});
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = tekst;
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); gelukt(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+    wrap.appendChild(btn);
+  });
+})();
+</script>
+</body>
+</html>

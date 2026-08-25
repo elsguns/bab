@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAB — Diagnose: meer gereserveerd dan besteld in de productenmatrix</title>
+<style>
+  :root {
+    --fg: #1d2433;
+    --muted: #5b6478;
+    --accent: #875a7b;
+    --accent-soft: #f3e8ee;
+    --warn-bg: #fff7e6;
+    --warn-border: #f0c36d;
+    --note-bg: #eef4fb;
+    --note-border: #b8d0eb;
+    --ok-bg: #edf7ee;
+    --ok-border: #9dcda3;
+    --rule: #e3e6ed;
+    --code-bg: #f4f5f7;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+    color: var(--fg);
+    background: #fff;
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    min-height: 100vh;
+  }
+
+  aside.toc {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 1.4rem 1.2rem 2rem;
+    border-right: 1px solid var(--rule);
+    background: #fafbfd;
+    font-size: 14px;
+  }
+  aside.toc h2 {
+    margin: 0 0 .6rem 0;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+  }
+  aside.toc ol { list-style: none; padding: 0; margin: 0; }
+  aside.toc ol ol {
+    padding-left: 1rem;
+    margin: .2rem 0 .4rem;
+    border-left: 2px solid var(--rule);
+  }
+  aside.toc a {
+    display: block;
+    padding: .15rem .4rem;
+    color: var(--fg);
+    text-decoration: none;
+    border-radius: 4px;
+  }
+  aside.toc a:hover, aside.toc a:focus { background: var(--accent-soft); color: var(--accent); }
+  aside.toc .actions {
+    margin-top: 1.2rem;
+    padding-top: .8rem;
+    border-top: 1px solid var(--rule);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  aside.toc .actions button {
+    font: inherit;
+    color: var(--accent);
+    background: transparent;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: .2rem .6rem;
+    cursor: pointer;
+  }
+  aside.toc .actions button:hover { background: var(--accent-soft); }
+  aside.toc .progress { margin-top: .6rem; font-variant-numeric: tabular-nums; }
+
+  main { padding: 2rem clamp(1rem, 4vw, 3rem) 5rem; max-width: 920px; }
+  h1 { font-size: 1.7rem; line-height: 1.25; margin: 0 0 .6rem; }
+  h2 {
+    margin-top: 2.4rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--rule);
+    font-size: 1.35rem;
+  }
+  h3 { margin-top: 1.8rem; font-size: 1.08rem; color: var(--accent); }
+  p { margin: .6rem 0; }
+  ul { padding-left: 1.2rem; margin: .4rem 0 1rem; }
+  ul.checklist { list-style: none; padding-left: 0; }
+  ul.checklist > li { padding: .35rem 0 .35rem 1.9rem; position: relative; margin: .2rem 0; }
+  ul.checklist > li > input[type=checkbox] {
+    position: absolute;
+    left: 0;
+    top: .55rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    cursor: pointer;
+  }
+  ul.checklist > li.done {
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-color: rgba(0,0,0,.3);
+  }
+  ul.checklist > li.done code { opacity: .7; }
+
+  code {
+    background: var(--code-bg);
+    padding: .05em .35em;
+    border-radius: 4px;
+    font-size: .92em;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: .9rem 1rem;
+    overflow-x: auto;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  strong { color: #111; }
+  .file {
+    display: inline-block;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 4px;
+    padding: .1em .5em;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: .88em;
+  }
+  .step {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    width: 1.6em;
+    height: 1.6em;
+    line-height: 1.6em;
+    text-align: center;
+    font-size: .8em;
+    vertical-align: 2px;
+    margin-right: .4em;
+  }
+
+  table.cfg { border-collapse: collapse; margin: 1rem 0; width: 100%; font-size: .95em; }
+  table.cfg th, table.cfg td {
+    border: 1px solid var(--rule);
+    padding: .45rem .7rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  table.cfg th { background: #fafbfd; width: 34%; }
+
+  .callout {
+    border-left: 4px solid var(--note-border);
+    background: var(--note-bg);
+    padding: .7rem 1rem;
+    margin: 1rem 0;
+    border-radius: 4px;
+    font-size: .95em;
+  }
+  .callout.warn { background: var(--warn-bg); border-left-color: var(--warn-border); }
+  .callout.ok { background: var(--ok-bg); border-left-color: var(--ok-border); }
+  .callout p:first-child { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 2rem 0; }
+
+  @media (max-width: 800px) {
+    body { grid-template-columns: 1fr; }
+    aside.toc { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--rule); }
+  }
+  @media print {
+    body { display: block; }
+    aside.toc { display: none; }
+    main { max-width: none; padding: 0; }
+    h2 { break-before: page; }
+    ul.checklist > li.done { text-decoration: none; color: inherit; }
+  }
+
+  /* Kopieerknop op elk codeblok. */
+  .o_code { position: relative; }
+  .o_code > button.o_copy {
+    position: absolute; top: .5rem; right: .5rem;
+    font: inherit; font-size: 12px; line-height: 1;
+    padding: .3rem .6rem; cursor: pointer;
+    color: var(--accent); background: #fff;
+    border: 1px solid var(--rule); border-radius: 4px;
+    opacity: .55; transition: opacity .15s;
+  }
+  .o_code:hover > button.o_copy { opacity: 1; }
+  .o_code > button.o_copy:hover { background: var(--accent-soft); }
+  .o_code > button.o_copy.done { color: #198754; border-color: #9dcda3; opacity: 1; }
+  .o_code > pre { margin-top: 0; }
+  @media print { .o_code > button.o_copy { display: none; } }
+</style>
+</head>
+<body>
+
+<aside class="toc">
+  <h2>Inhoud</h2>
+  <ol>
+    <li><a href="#s0">Waarover het gaat</a></li>
+    <li><a href="#s1">1. Serveractie aanmaken</a>
+      <ol>
+        <li><a href="#s1a">1a. De velden</a></li>
+        <li><a href="#s1b">1b. De code</a></li>
+      </ol>
+    </li>
+    <li><a href="#s2">2. Uitvoeren op de bon</a></li>
+    <li><a href="#s3">3. Bestand doorsturen</a></li>
+    <li><a href="#s4">4. Opruimen</a></li>
+    <li><a href="#s5">Wat er in het bestand staat</a></li>
+    <li><a href="#s6">Als er iets misloopt</a></li>
+  </ol>
+  <div class="actions">
+    <div class="progress" id="progress">— / — afgevinkt</div>
+    <p style="margin-top:.6rem">
+      <button id="clear-state" type="button">Alle vinkjes wissen</button>
+    </p>
+    <p style="margin-top:.6rem;font-size:11px">
+      Vinkjes worden enkel in deze browser bewaard.
+    </p>
+  </div>
+</aside>
+
+<main>
+  <h1>Diagnose: meer gereserveerd dan besteld op de productenmatrix</h1>
+
+  <p>Op <strong>VAS/PICK/00008</strong> toont de <em>Productenmatrix met reservaties per kleur
+  en klant</em> bij Volders, maat M, <code>b=2 / r=3</code>: meer gereserveerd dan besteld.
+  Deze serveractie schrijft alle onderliggende cijfers weg in een tekstbestand, zodat we kunnen
+  zien wáár die 3ᵈᵉ eenheid vandaan komt.</p>
+
+  <div class="callout ok">
+    <p><strong>De actie wijzigt niets.</strong> Ze leest bonnen, verplaatsingen en orderlijnen,
+    en maakt één bijlage aan met de uitvoer. Geen enkel veld wordt weggeschreven, geen enkele
+    reservatie wordt aangeraakt. Ze mag dus gerust op productie draaien.</p>
+  </div>
+
+  <h2 id="s0">Waarover het gaat</h2>
+
+  <p>Het rapport haalt de twee getallen in een cel uit <strong>twee verschillende bronnen</strong>:</p>
+
+  <table class="cfg">
+    <tr>
+      <th><code>b</code> — besteld</th>
+      <td>De som van de verkooporderlijnen, van de orders die het rapport via de bon terugvindt
+        (het veld <em>Verkooporder</em> op de overboeking).</td>
+    </tr>
+    <tr>
+      <th><code>r</code> — gereserveerd</th>
+      <td>De som van <em>elke</em> verplaatsing op de bon die aan een verkooporderlijn hangt.</td>
+    </tr>
+  </table>
+
+  <p>Die twee bronnen kunnen uit elkaar lopen. De uitvoer van de actie zet ze naast elkaar,
+  zodat meteen zichtbaar is welk van deze twee scenario's speelt:</p>
+
+  <ul>
+    <li><strong>Het order zegt echt 2.</strong> Op de bon staat 3 gevraagd omdat de lijn daar
+      handmatig verhoogd is, of omdat het order nadien verlaagd werd. Dan klopt het rapport en
+      loopt het order zelf niet gelijk met de bon.</li>
+    <li><strong>Een tweede order levert dat derde stuk.</strong> De verplaatsing zit wel op de bon,
+      maar het order erachter wordt door het rapport niet meegeteld bij "besteld". Dan zit de fout
+      in het rapport en pas ik de module aan.</li>
+  </ul>
+
+  <h2 id="s1">1. De serveractie aanmaken</h2>
+
+  <ul class="checklist">
+    <li><input type="checkbox" id="c-1-0"><strong>Ontwikkelaarsmodus</strong> aanzetten
+      (Instellingen → onderaan → <em>Activeer de ontwikkelaarsmodus</em>).</li>
+    <li><input type="checkbox" id="c-1-1"> Ga naar <strong>Instellingen → Technisch → Acties →
+      Serveracties</strong> en klik <strong>Nieuw</strong>.</li>
+  </ul>
+
+  <h3 id="s1a">1a. De velden</h3>
+
+  <ul class="checklist">
+    <li><input type="checkbox" id="c-1-2"> Vul in:
+      <table class="cfg">
+        <tr><th>Actienaam</th>
+            <td><code>* Diagnose productenmatrix (reservaties)</code><br>
+                <em>De asterisk vooraan markeert dit als een eigen actie, geen standaard-Odoo.</em></td></tr>
+        <tr><th>Model</th><td><code>Overboeking</code> (<code>stock.picking</code>)</td></tr>
+        <tr><th>Type</th><td><code>Python-code uitvoeren</code></td></tr>
+        <tr><th>Beschikbaar in het actiemenu</th>
+            <td>Aanvinken, en bij <em>Beschikbare weergaven</em> minstens
+                <strong>Lijstweergave</strong> selecteren.</td></tr>
+      </table>
+    </li>
+  </ul>
+
+  <h3 id="s1b">1b. De code</h3>
+
+  <ul class="checklist">
+    <li><input type="checkbox" id="c-1-3"> Plak dit in het veld <strong>Python-code</strong>
+      (kopieerknop rechtsboven het codeblok):
+<pre># Diagnose van de "Productenmatrix met reservaties per kleur en klant".
+# Selecteer dezelfde bon(nen) als waarvoor je het rapport afdrukt en draai deze
+# actie via het Actie-menu. Er wordt niets aan de gegevens gewijzigd: de actie
+# leest enkel en levert een tekstbestand af dat je kan doorsturen.
+
+if not records:
+    raise UserError('Selecteer eerst de bon(nen) waarvoor je het rapport afdrukt.')
+
+uit = []
+uit.append('=== PRODUCTENMATRIX DIAGNOSE ===')
+uit.append('database: %s | bedrijf: %s | gebruiker: %s' % (
+    env.cr.dbname, env.company.name, env.user.name))
+
+# 1. De geselecteerde bonnen. sale_id is de enige bron die het rapport
+#    gebruikt om "besteld" op te halen wanneer de OCA-groepeermodule ontbreekt.
+uit.append('')
+uit.append('--- 1. Geselecteerde bonnen ---')
+for p in records:
+    uit.append('%s | %s | staat=%s | sale_id=%s | origin=%s | bedrijf=%s' % (
+        p.name, p.picking_type_id.display_name, p.state,
+        p.sale_id.name or '-', p.origin or '-', p.company_id.name))
+uit.append("veld sale_ids aanwezig: %s" % ('sale_ids' in records._fields))
+
+# 2. De twee ordersets naast elkaar. "besteld" komt uit de eerste,
+#    "gereserveerd" uit de tweede. Staat er rechts een order dat links
+#    ontbreekt, dan telt het rapport de reservatie wel en het bestelde niet.
+orders_rapport = env['sale.order']
+for p in records:
+    orders_rapport |= p._get_picking_orders()
+orders_moves = env['sale.order']
+for m in records.move_ids:
+    if m.sale_line_id:
+        orders_moves |= m.sale_line_id.order_id
+uit.append('')
+uit.append('--- 2. Orders ---')
+uit.append('via de bon (bron van "besteld")      : %s' % (
+    ', '.join(orders_rapport.mapped('name')) or '-'))
+uit.append('via de moves (bron van "gereserveerd"): %s' % (
+    ', '.join(orders_moves.mapped('name')) or '-'))
+uit.append('enkel rechts (= gat in het rapport)  : %s' % (
+    ', '.join((orders_moves - orders_rapport).mapped('name')) or 'geen'))
+
+# 3. Exact de cellen die het rapport rood kleurt, uit de rapportcode zelf.
+uit.append('')
+uit.append('--- 3. Cellen waar besteld != gereserveerd ---')
+tmpl_ids = []
+for blok in records._get_customer_matrix_blocks():
+    for rij in blok['rows']:
+        i = 0
+        for cel in rij['cells']:
+            if cel['ordered'] != cel['reserved']:
+                uit.append('%s | %s | %s | maat %s : besteld=%s gereserveerd=%s' % (
+                    blok['template'].display_name, blok['colour_name'],
+                    rij['customer'].display_name, blok['sizes'][i]['name'],
+                    cel['ordered'], cel['reserved']))
+                if blok['template'].id not in tmpl_ids:
+                    tmpl_ids.append(blok['template'].id)
+            i += 1
+if not tmpl_ids:
+    uit.append('geen enkele afwijkende cel — hieronder staan dan alle producten')
+    for m in records.move_ids:
+        if m.product_id.product_tmpl_id.id not in tmpl_ids:
+            tmpl_ids.append(m.product_id.product_tmpl_id.id)
+
+# 4. De moves op de geselecteerde bonnen, beperkt tot de hoofdproducten uit 3.
+uit.append('')
+uit.append('--- 4. Moves op de geselecteerde bonnen ---')
+for m in records.move_ids:
+    if m.product_id.product_tmpl_id.id not in tmpl_ids:
+        continue
+    lijn = m.sale_line_id
+    uit.append('%s | %s | vraag=%s res=%s staat=%s | SO-lijn=%s order=%s klant=%s' % (
+        m.picking_id.name, m.product_id.default_code or m.product_id.display_name,
+        m.product_uom_qty, m.quantity, m.state,
+        lijn.id or '-', lijn.order_id.name or '-',
+        lijn.order_id.partner_id.display_name or '-'))
+
+# 5. Alle moves van diezelfde orderlijnen, ook die op andere bonnen. Zo zie je
+#    of dezelfde orderlijn over meerdere stappen of bonnen gereserveerd staat.
+sale_lines = records.move_ids.sale_line_id
+uit.append('')
+uit.append('--- 5. Alle moves van diezelfde orderlijnen ---')
+for m in env['stock.move'].search([('sale_line_id', 'in', sale_lines.ids)]):
+    if m.product_id.product_tmpl_id.id not in tmpl_ids:
+        continue
+    uit.append('%s | %s | %s | vraag=%s res=%s staat=%s | SO-lijn=%s' % (
+        m.picking_id.name or 'geen bon',
+        m.picking_id.picking_type_id.display_name or '-',
+        m.product_id.default_code or m.product_id.display_name,
+        m.product_uom_qty, m.quantity, m.state, m.sale_line_id.id))
+
+# 6. De orderlijnen zelf: dit is wat het rapport als "besteld" optelt.
+uit.append('')
+uit.append('--- 6. Orderlijnen van alle betrokken orders ---')
+for order in (orders_rapport | orders_moves):
+    for lijn in order.order_line:
+        if lijn.product_id.product_tmpl_id.id not in tmpl_ids:
+            continue
+        uit.append('%s | lijn=%s | %s | besteld=%s geleverd=%s | klant=%s | combo=%s | type=%s' % (
+            order.name, lijn.id,
+            lijn.product_id.default_code or lijn.product_id.display_name,
+            lijn.product_uom_qty, lijn.qty_delivered,
+            order.partner_id.display_name, bool(lijn.combo_item_id),
+            lijn.display_type or 'gewone lijn'))
+
+# Aflevering als tekstbestand: een venster zou de lange uitvoer afkappen en is
+# lastig te selecteren, een bijlage kan je gewoon doorsturen.
+tekst = '\n'.join(uit)
+bijlage = env['ir.attachment'].create({
+    'name': 'productenmatrix_diagnose.txt',
+    'type': 'binary',
+    'datas': b64encode(tekst.encode('utf-8')),
+    'mimetype': 'text/plain',
+})
+action = {
+    'type': 'ir.actions.act_url',
+    'url': '/web/content/%s?download=true' % bijlage.id,
+    'target': 'self',
+}</pre>
+    </li>
+    <li><input type="checkbox" id="c-1-4"><strong>Opslaan.</strong> Odoo controleert de code al
+      bij het bewaren; als ze zonder klacht opslaat, draait ze straks ook.</li>
+  </ul>
+
+  <h2 id="s2">2. Uitvoeren op de bon</h2>
+
+  <div class="callout warn">
+    <p>Selecteer <strong>exact dezelfde bon(nen)</strong> als waarvoor je het rapport afdrukte.
+    Print je de matrix voor drie bonnen tegelijk, selecteer dan ook alle drie — anders vergelijken
+    we andere cijfers dan die op je PDF.</p>
+  </div>
+
+  <ul class="checklist">
+    <li><input type="checkbox" id="c-2-1"> Ga naar <strong>Voorraad → Bewerkingen →
+      Overboekingen</strong> (lijstweergave) en zoek <code>VAS/PICK/00008</code>.</li>
+    <li><input type="checkbox" id="c-2-2"> Vink de bon aan met het <strong>selectievakje links</strong>
+      in de lijst (niet de bon openen — de actie moet vanuit de lijst komen).</li>
+    <li><input type="checkbox" id="c-2-3"> Klik bovenaan op <strong>Actie ⚙️ →
+      <code>* Diagnose productenmatrix (reservaties)</code></strong>.</li>
+    <li><input type="checkbox" id="c-2-4"> Je browser downloadt
+      <span class="file">productenmatrix_diagnose.txt</span>.</li>
+  </ul>
+
+  <div class="callout">
+    <p>Staat de actie niet in het menu? Vernieuw de lijstweergave (F5) — Odoo bouwt het actiemenu
+    op bij het laden van de pagina.</p>
+  </div>
+
+  <h2 id="s3">3. Bestand doorsturen</h2>
+
+  <ul class="checklist">
+    <li><input type="checkbox" id="c-3-1"> Stuur <span class="file">productenmatrix_diagnose.txt</span>
+      door, samen met de PDF van de matrix die je ernaast legt.</li>
+    <li><input type="checkbox" id="c-3-2"> Handig maar niet nodig: ook een schermafdruk van
+      verkooporder <strong>S03694</strong> ter hoogte van de M-lijn.</li>
+  </ul>
+
+  <h2 id="s4">4. Opruimen</h2>
+
+  <ul class="checklist">
+    <li><input type="checkbox" id="c-4-1"> Als we klaar zijn: <strong>Instellingen → Technisch →
+      Acties → Serveracties</strong>, zoek op <code>* Diagnose</code> en verwijder de actie.</li>
+    <li><input type="checkbox" id="c-4-2"> De aangemaakte bijlagen mag je laten staan (paar kB) of
+      wissen via <strong>Instellingen → Technisch → Bijlagen</strong>, filter op
+      <code>productenmatrix_diagnose</code>.</li>
+  </ul>
+
+  <h2 id="s5">Wat er in het bestand staat</h2>
+
+  <p>Zes blokken. Je hoeft ze niet zelf te lezen, maar voor de volledigheid:</p>
+
+  <table class="cfg">
+    <tr><th>1. Geselecteerde bonnen</th>
+        <td>Welke bonnen je aanvinkte, hun soort, staat en gekoppeld verkooporder.</td></tr>
+    <tr><th>2. Orders</th>
+        <td>De ordersets achter <code>b</code> en achter <code>r</code>, naast elkaar. Staat er bij
+          "enkel rechts" een order, dan is het rapport fout en weet ik meteen wat te fixen.</td></tr>
+    <tr><th>3. Afwijkende cellen</th>
+        <td>Elke cel waar besteld ≠ gereserveerd, berekend door de rapportcode zelf — dus exact de
+          rode cellen op je PDF.</td></tr>
+    <tr><th>4. Moves op de bon</th>
+        <td>Per verplaatsing: gevraagd, gereserveerd, staat, en de orderlijn + klant erachter.</td></tr>
+    <tr><th>5. Alle moves van die orderlijnen</th>
+        <td>Ook die op andere bonnen, zodat dubbeltellingen over de pick- en leverstap zichtbaar
+          worden.</td></tr>
+    <tr><th>6. Orderlijnen</th>
+        <td>Het bestelde aantal per orderlijn — precies wat het rapport optelt tot <code>b</code>.</td></tr>
+  </table>
+
+  <h2 id="s6">Als er iets misloopt</h2>
+
+  <table class="cfg">
+    <tr><th>"Selecteer eerst de bon(nen)…"</th>
+        <td>Je draaide de actie zonder selectie. Vink de bon aan in de lijst en probeer opnieuw.</td></tr>
+    <tr><th>De actie staat niet in het Actie-menu</th>
+        <td><em>Beschikbaar in het actiemenu</em> staat niet aan, of de weergave <em>Lijst</em> is
+          niet geselecteerd. Vul aan, sla op en vernieuw de pagina.</td></tr>
+    <tr><th>Foutmelding bij het opslaan van de code</th>
+        <td>Er ging iets mis bij het plakken (inspringing). Gebruik de kopieerknop op het codeblok
+          in plaats van met de muis te selecteren.</td></tr>
+    <tr><th>Er wordt niets gedownload</th>
+        <td>Je browser blokkeert de download. Kijk in de adresbalk naar een geblokkeerd-pop-up-icoon,
+          of open de bijlage via Instellingen → Technisch → Bijlagen.</td></tr>
+  </table>
+
+  <div class="callout">
+    <p><strong>Getest.</strong> De actie is lokaal aangemaakt en uitgevoerd op een kopie van de
+    BAB-database (bab18-20260618) en levert daar het verwachte tekstbestand af.</p>
+  </div>
+</main>
+
+<script>
+(function () {
+  var STORE_KEY = 'bab-diagnose-productenmatrix-v1';
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) {}
+
+  var boxes = document.querySelectorAll('ul.checklist > li > input[type=checkbox]');
+  function updateProgress() {
+    var done = 0;
+    boxes.forEach(function (b) { if (b.checked) done++; });
+    var el = document.getElementById('progress');
+    if (el) el.textContent = done + ' / ' + boxes.length + ' afgevinkt';
+  }
+
+  boxes.forEach(function (b) {
+    if (saved[b.id]) b.checked = true;
+    b.parentNode.classList.toggle('done', b.checked);
+    b.addEventListener('change', function () {
+      saved[b.id] = b.checked;
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(saved)); } catch (e) {}
+      b.parentNode.classList.toggle('done', b.checked);
+      updateProgress();
+    });
+  });
+  updateProgress();
+
+  var clearBtn = document.getElementById('clear-state');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function () {
+      if (!confirm('Alle vinkjes op deze pagina wissen?')) return;
+      boxes.forEach(function (b) {
+        b.checked = false;
+        b.parentNode.classList.remove('done');
+      });
+      saved = {};
+      try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+      updateProgress();
+    });
+  }
+})();
+</script>
+<script>
+(function () {
+  document.querySelectorAll('pre').forEach(function (pre) {
+    if (pre.parentNode.classList.contains('o_code')) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'o_code';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+    var knop = document.createElement('button');
+    knop.type = 'button';
+    knop.className = 'o_copy';
+    knop.textContent = 'Kopiëren';
+    wrap.appendChild(knop);
+    knop.addEventListener('click', function () {
+      var tekst = pre.innerText;
+      function gelukt() {
+        knop.textContent = 'Gekopieerd';
+        knop.classList.add('done');
+        setTimeout(function () {
+          knop.textContent = 'Kopiëren';
+          knop.classList.remove('done');
+        }, 1500);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(tekst).then(gelukt, terugval);
+      } else {
+        terugval();
+      }
+      function terugval() {
+        var hulp = document.createElement('textarea');
+        hulp.value = tekst;
+        hulp.style.position = 'fixed';
+        hulp.style.opacity = '0';
+        document.body.appendChild(hulp);
+        hulp.select();
+        try { document.execCommand('copy'); gelukt(); } catch (e) { knop.textContent = 'Mislukt'; }
+        document.body.removeChild(hulp);
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAB — Bewerkingssoort "Pick retour" voor Vasa International</title>
+<style>
+  :root {
+    --fg: #1d2433;
+    --muted: #5b6478;
+    --accent: #875a7b;          /* Odoo purple */
+    --accent-soft: #f3e8ee;
+    --warn-bg: #fff7e6;
+    --warn-border: #f0c36d;
+    --note-bg: #eef4fb;
+    --note-border: #b8d0eb;
+    --ok-bg: #edf7ee;
+    --ok-border: #9dcda3;
+    --rule: #e3e6ed;
+    --code-bg: #f4f5f7;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+    color: var(--fg);
+    background: #fff;
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    min-height: 100vh;
+  }
+
+  aside.toc {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 1.4rem 1.2rem 2rem;
+    border-right: 1px solid var(--rule);
+    background: #fafbfd;
+    font-size: 14px;
+  }
+  aside.toc h2 {
+    margin: 0 0 .6rem 0;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+  }
+  aside.toc ol { list-style: none; padding: 0; margin: 0; }
+  aside.toc ol ol {
+    padding-left: 1rem;
+    margin: .2rem 0 .4rem;
+    border-left: 2px solid var(--rule);
+  }
+  aside.toc a {
+    display: block;
+    padding: .15rem .4rem;
+    color: var(--fg);
+    text-decoration: none;
+    border-radius: 4px;
+  }
+  aside.toc a:hover, aside.toc a:focus {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  aside.toc .actions {
+    margin-top: 1.2rem;
+    padding-top: .8rem;
+    border-top: 1px solid var(--rule);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  aside.toc .actions button {
+    font: inherit;
+    color: var(--accent);
+    background: transparent;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: .2rem .6rem;
+    cursor: pointer;
+  }
+  aside.toc .actions button:hover { background: var(--accent-soft); }
+  aside.toc .progress { margin-top: .6rem; font-variant-numeric: tabular-nums; }
+
+  main { padding: 2rem clamp(1rem, 4vw, 3rem) 5rem; max-width: 920px; }
+  h1 { font-size: 1.7rem; line-height: 1.25; margin: 0 0 .6rem; }
+  h2 {
+    margin-top: 2.4rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--rule);
+    font-size: 1.35rem;
+  }
+  h3 { margin-top: 1.8rem; font-size: 1.08rem; color: var(--accent); }
+  p { margin: .6rem 0; }
+  ul { padding-left: 1.2rem; margin: .4rem 0 1rem; }
+  ul.checklist { list-style: none; padding-left: 0; }
+  ul.checklist > li {
+    padding: .35rem 0 .35rem 1.9rem;
+    position: relative;
+    margin: .2rem 0;
+  }
+  ul.checklist > li > input[type=checkbox] {
+    position: absolute;
+    left: 0;
+    top: .55rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    cursor: pointer;
+  }
+  ul.checklist > li.done {
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-color: rgba(0,0,0,.3);
+  }
+  ul.checklist > li.done code { opacity: .7; }
+  ul.checklist ul { margin-top: .3rem; }
+
+  code {
+    background: var(--code-bg);
+    padding: .05em .35em;
+    border-radius: 4px;
+    font-size: .92em;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: .9rem 1rem;
+    overflow-x: auto;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  strong { color: #111; }
+
+  table.cfg {
+    border-collapse: collapse;
+    margin: 1rem 0;
+    width: 100%;
+    font-size: .95em;
+  }
+  table.cfg th, table.cfg td {
+    border: 1px solid var(--rule);
+    padding: .45rem .7rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  table.cfg th { background: #fafbfd; width: 34%; }
+  table.cfg td.val { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .92em; }
+
+  .callout {
+    border-left: 4px solid var(--note-border);
+    background: var(--note-bg);
+    padding: .7rem 1rem;
+    margin: 1rem 0;
+    border-radius: 4px;
+    font-size: .95em;
+  }
+  .callout.warn { background: var(--warn-bg); border-left-color: var(--warn-border); }
+  .callout.ok { background: var(--ok-bg); border-left-color: var(--ok-border); }
+  .callout p:first-child { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 2rem 0; }
+
+  @media (max-width: 800px) {
+    body { grid-template-columns: 1fr; }
+    aside.toc {
+      position: relative;
+      height: auto;
+      border-right: 0;
+      border-bottom: 1px solid var(--rule);
+    }
+  }
+  @media print {
+    body { display: block; }
+    aside.toc { display: none; }
+    main { max-width: none; padding: 0; }
+    h2 { break-before: page; }
+    ul.checklist > li.done { text-decoration: none; color: inherit; }
+  }
+
+  /* Kopieerknop op elk codeblok. */
+  .o_code { position: relative; }
+  .o_code > button.o_copy {
+    position: absolute; top: .5rem; right: .5rem;
+    font: inherit; font-size: 12px; line-height: 1;
+    padding: .3rem .6rem; cursor: pointer;
+    color: var(--accent); background: #fff;
+    border: 1px solid var(--rule); border-radius: 4px;
+    opacity: .55; transition: opacity .15s;
+  }
+  .o_code:hover > button.o_copy { opacity: 1; }
+  .o_code > button.o_copy:hover { background: var(--accent-soft); }
+  .o_code > button.o_copy.done { color: #198754; border-color: #9dcda3; opacity: 1; }
+  .o_code > pre { margin-top: 0; }
+  @media print { .o_code > button.o_copy { display: none; } }
+</style>
+</head>
+<body>
+
+<aside class="toc">
+  <h2>Inhoud</h2>
+  <ol>
+    <li><a href="#s1">1. Wat er misliep</a>
+      <ol>
+        <li><a href="#s1a">1a. De tijdlijn</a></li>
+        <li><a href="#s1b">1b. Waarom de bon omkeert</a></li>
+      </ol>
+    </li>
+    <li><a href="#s2">2. Wat we opzetten</a></li>
+    <li><a href="#s3">3. De bewerkingssoort aanmaken</a>
+      <ol>
+        <li><a href="#s3a">3a. Velden</a></li>
+        <li><a href="#s3b">3b. Wat je uit laat staan</a></li>
+      </ol>
+    </li>
+    <li><a href="#s4">4. Koppelen aan Picken</a></li>
+    <li><a href="#s5">5. Testen</a></li>
+    <li><a href="#s6">6. Wat dit niet oplost</a></li>
+    <li><a href="#s7">7. Werkwijze voor het magazijn</a></li>
+    <li><a href="#s8">8. Nog open op de drie testorders</a></li>
+  </ol>
+  <div class="actions">
+    <div class="progress" id="progress">— / — afgevinkt</div>
+    <p style="margin-top:.6rem">
+      <button id="clear-state" type="button">Alle vinkjes wissen</button>
+    </p>
+    <p style="margin-top:.6rem;font-size:11px">
+      Vinkjes worden enkel in deze browser bewaard.
+    </p>
+  </div>
+</aside>
+
+<main>
+  <h1>Bewerkingssoort "Pick retour" voor Vasa International</h1>
+
+  <div class="callout">
+    <p><strong>Wat dit is.</strong> Een instelling die je volledig via de Odoo-interface opzet,
+    zonder codewijziging. Ze zorgt ervoor dat de teruggavebonnen die Odoo zelf aanmaakt niet
+    langer als gewoon pickwerk in de lijst van Customer service belanden. Duurt vijf minuten,
+    en er verandert niets aan bestaande bonnen of aan de voorraad.</p>
+  </div>
+
+  <h2 id="s1">1. Wat er misliep</h2>
+
+  <p>Op 10 augustus heeft Customer service voor drie orders twee pickbonnen na elkaar
+  gevalideerd die elkaar opheffen: eerst <code>VAS/PICK/00008</code>
+  (<strong>VAS/Uitgaand → VAS/Voorraad</strong>, 14 stuks terug het rek in), daarna
+  <code>VAS/PICK/00009</code> (<strong>VAS/Voorraad → VAS/Uitgaand</strong>, 13 stuks er weer
+  uit). Hetzelfde bij <code>00010</code>/<code>00011</code> en <code>00013</code>/<code>00014</code>.</p>
+
+  <p>De voorraad klopt — er is niets verdwenen en niets negatief geworden. Wat het gekost heeft,
+  is magazijnwerk: dezelfde broeken zijn teruggelegd en meteen opnieuw uitgehaald.</p>
+
+  <h3 id="s1a">1a. De tijdlijn</h3>
+
+  <table class="cfg">
+    <tr><th>06-08 08:46</th><td>S03694 bevestigd → <code>VAS/PICK/00001</code> (6 lijnen, 14 st) + backorder <code>VAS/PICK/00005</code> (224 lijnen)</td></tr>
+    <tr><th>06-08 11:24</th><td><code>PICK/00001</code> gevalideerd → 14 st naar VAS/Uitgaand, en <code>VAS/OUT/00264</code> aangemaakt</td></tr>
+    <tr><th>06-08 12:39-12:43</th><td>de grote backorders geannuleerd</td></tr>
+    <tr><th>06-08 <strong>12:51:27</strong></th><td>de vraag op <code>OUT/00264</code> lijn per lijn <strong>op 0</strong> gezet → bon annuleert, én in diezelfde schrijfbewerking ontstaat <code>VAS/PICK/00008</code></td></tr>
+    <tr><th>06-08 12:52-12:53</th><td>aantallen opnieuw ingegeven → <code>VAS/PICK/00009</code> (13 st)</td></tr>
+    <tr><th>07-08 07:52</th><td>de planner zet <code>PICK/00008</code> van Wachtend op Gereed → hij verschijnt in de Picken-lijst</td></tr>
+    <tr><th>10-08 09:13</th><td>Customer service valideert <code>00008</code> én <code>00009</code> na elkaar</td></tr>
+  </table>
+
+  <p>Het bewijs dat het één handeling was: het tijdstip van wijziging van <code>OUT/00264</code>
+  is <code>12:51:27.553898</code>, en het tijdstip van aanmaak van <code>PICK/00008</code> is
+  exact diezelfde microseconde. Idem voor de twee andere orders.</p>
+
+  <h3 id="s1b">1b. Waarom de bon omkeert</h3>
+
+  <p>Zet je de vraag lager dan wat er al aangevoerd is, dan maakt Odoo een verplaatsing met
+  <strong>negatieve vraag</strong>. In <code>stock.move._action_confirm()</code>
+  (<code>stock/models/stock_move.py</code>, regel 1574 in v18) wordt zo'n lijn omgezet in een
+  teruggave:</p>
+
+<pre><code>move.location_id, move.location_dest_id, move.location_final_id = \
+    move.location_dest_id, move.location_id, move.location_id
+...
+if move.picking_type_id.return_picking_type_id:
+    move.picking_type_id = move.picking_type_id.return_picking_type_id
+# We are returning some products, we must take them in the source location
+move.procure_method = 'make_to_stock'</code></pre>
+
+  <p>Bron en bestemming wisselen, en de bewerkingssoort wordt enkel vervangen <strong>als er een
+  retourtype ingesteld is</strong>. Op <em>Picken</em> stond dat leeg — dus bleef het "Picken",
+  met een gewoon <code>VAS/PICK/…</code>-nummer in dezelfde reeks. Voor Customer service was zo'n
+  bon niet van echt pickwerk te onderscheiden.</p>
+
+  <h2 id="s2">2. Wat we opzetten</h2>
+
+  <p>Eén nieuwe bewerkingssoort, en één veld op <em>Picken</em> dat ernaar wijst. Vanaf dan
+  krijgen deze compensatiebonnen een eigen naam (<code>VAS/PICKRET/00001</code>) en een eigen
+  lijst.</p>
+
+  <div class="callout warn">
+    <p><strong>Niet doen:</strong> het retourtype op de bestaande soort <em>Interne
+    overdrachten</em> laten staan en dáár de locaties en het voorvoegsel aanpassen. Die soort is
+    bedoeld voor gewone interne verplaatsingen (<code>VAS/INT/…</code>); als je haar ombouwt tot
+    teruggavesoort, verbouw je iets wat een andere functie heeft.</p>
+  </div>
+
+  <h2 id="s3">3. De bewerkingssoort aanmaken</h2>
+
+  <p><strong>Voorraad → Configuratie → Bewerkingssoorten → Nieuw</strong>.</p>
+
+  <h3 id="s3a">3a. Velden</h3>
+
+  <table class="cfg">
+    <tr><th>Bewerkingssoort (titel bovenaan)</th><td class="val">Pick retour</td></tr>
+    <tr><th>Soort bewerking</th><td class="val">Interne overdracht</td></tr>
+    <tr><th>Reeks voorvoegsel</th><td class="val">PICKRET</td></tr>
+    <tr><th>Bedrijf</th><td class="val">Vasa International</td></tr>
+    <tr><th>Magazijn</th><td class="val">Vasa International</td></tr>
+    <tr><th>Retourtype</th><td class="val">Vasa International: Picken</td></tr>
+    <tr><th>Bronlocatie</th><td class="val">VAS/Uitgaand</td></tr>
+    <tr><th>Bestemmingslocatie</th><td class="val">VAS/Voorraad</td></tr>
+  </table>
+
+  <p>Het veld <em>Reeks voorvoegsel</em> staat bovenaan, onder <em>Referentie reeks</em>. Het
+  magazijnvoorvoegsel <code>VAS/</code> komt automatisch mee — dat hoef je er niet bij te typen.
+  De waarde om in te vullen:</p>
+
+<pre><code>PICKRET</code></pre>
+
+  <p><em>Bronlocatie</em> en <em>Bestemmingslocatie</em> vind je verderop in het blok
+  <strong>LOCATIES</strong>. Ze zijn de spiegel van Picken.</p>
+
+  <ul class="checklist">
+    <li><input type="checkbox" id="c1"><label for="c1"> Nieuwe bewerkingssoort aangemaakt met bovenstaande velden</label></li>
+    <li><input type="checkbox" id="c2"><label for="c2"> Gecontroleerd dat het magazijn op <em>Vasa International</em> staat — anders krijgt de reeks het verkeerde voorvoegsel</label></li>
+  </ul>
+
+  <div class="callout">
+    <p><strong>Waarom die locaties er minder toe doen dan je zou denken.</strong> De richting van
+    een automatisch gegenereerde teruggavebon komt niet van deze defaults, maar van de
+    verplaatsingslijnen zelf: <code>stock.move._get_new_picking_values()</code> neemt
+    <code>location_id</code> en <code>location_dest_id</code> over van de moves, en die zijn door
+    de code hierboven al omgewisseld. De defaults gelden voor bonnen die iemand met de hand
+    aanmaakt, en voor de kop van het formulier. Zet ze dus gespiegeld — anders leest zo'n bon
+    tegenstrijdig — maar een verkeerde default stuurt de voorraad niet de foute kant op.</p>
+  </div>
+
+  <h3 id="s3b">3b. Wat je uit laat staan</h3>
+
+  <p>Op <em>Picken</em> staat <strong>Automatische batches</strong> aan, met groeperen per
+  Contact. Laat dat op de nieuwe soort <strong>uit</strong>: een teruggavebon hoort niet mee in
+  een pickbatch te rollen.</p>
+
+  <ul class="checklist">
+    <li><input type="checkbox" id="c3"><label for="c3"> Automatische batches staat uit op <em>Pick retour</em></label></li>
+    <li><input type="checkbox" id="c4"><label for="c4"> Verzendlabels genereren staat uit</label></li>
+  </ul>
+
+  <h2 id="s4">4. Koppelen aan Picken</h2>
+
+  <p>Open <strong>Vasa International: Picken</strong> en zet <em>Retourtype</em> om van
+  <em>Interne overdrachten</em> naar <em>Pick retour</em>. Zonder die koppeling verandert er
+  niets — dat ene veld is precies de regel die <code>PICK/00008</code> in de Picken-reeks liet
+  belanden.</p>
+
+  <ul class="checklist">
+    <li><input type="checkbox" id="c5"><label for="c5"> Retourtype op <em>Picken</em> wijst naar <em>Pick retour</em></label></li>
+    <li><input type="checkbox" id="c6"><label for="c6"> Op <em>Picken</em> verder <strong>niets</strong> gewijzigd: voorvoegsel blijft <code>PICK</code>, locaties blijven VAS/Voorraad → VAS/Uitgaand</label></li>
+    <li><input type="checkbox" id="c7"><label for="c7"> Op <em>Interne overdrachten</em> is niets veranderd (blijft <code>INT</code>, VAS/Voorraad → VAS/Voorraad)</label></li>
+  </ul>
+
+  <h2 id="s5">5. Testen</h2>
+
+  <p>Zonder productie te vervuilen, en zonder een order aan te raken:</p>
+
+  <ul class="checklist">
+    <li><input type="checkbox" id="c8"><label for="c8"> Open een willekeurige <strong>afgewerkte</strong> pickbon (status Gereed) en klik op <strong>Retour</strong></label></li>
+    <li><input type="checkbox" id="c9"><label for="c9"> Vul bij één lijn een aantal in en bevestig — de nieuwe bon moet <code>VAS/PICKRET/00001</code> heten, met <strong>VAS/Uitgaand → VAS/Voorraad</strong> in de kop</label></li>
+    <li><input type="checkbox" id="c10"><label for="c10"> <strong>Annuleer</strong> die testbon meteen (knop Annuleren) — niet valideren, anders verplaats je echt goederen</label></li>
+  </ul>
+
+  <div class="callout ok">
+    <p><strong>Geslaagd als</strong> de bon <code>VAS/PICKRET/…</code> heet en niet meer in de
+    lijst <em>Picken</em> verschijnt maar onder <em>Pick retour</em>. Dan zal ook de automatische
+    variant — die uit een verlaagde vraag ontstaat — daar terechtkomen.</p>
+  </div>
+
+  <h2 id="s6">6. Wat dit niet oplost</h2>
+
+  <ul>
+    <li><strong>Bestaande bonnen hernoemen zichzelf niet.</strong> <code>VAS/PICK/00008</code>,
+    <code>00010</code> en <code>00013</code> zijn gevalideerd en blijven staan zoals ze zijn.</li>
+    <li><strong>De teruggavebon blijft ontstaan.</strong> Dit is een naamgevings- en
+    zichtbaarheidsfix, geen preventie: verlaag je de vraag op een al gepickte levering, dan maakt
+    Odoo nog altijd een bon om de goederen terug te leggen. Dat is ook correct — ze staan
+    fysiek in de uitgaande zone en moeten ergens naartoe.</li>
+    <li><strong>Het dubbele magazijnwerk blijft.</strong> Daarvoor is de werkwijze in §7 nodig,
+    niet een instelling.</li>
+  </ul>
+
+  <h2 id="s7">7. Werkwijze voor het magazijn</h2>
+
+  <p>Wil je een order nog aanpassen nadat de pickbon gevalideerd is, dan lopen de goederen hoe
+  dan ook heen en weer. De volgorde die dat vermijdt:</p>
+
+  <table class="cfg">
+    <tr><th>Pickbon nog niet gevalideerd</th><td>Pas het aantal aan <strong>op de pickbon</strong>, vóór je valideert. Er is nog niets verplaatst, dus er valt niets terug te leggen.</td></tr>
+    <tr><th>Pickbon al gevalideerd, levering nog niet</th><td>De goederen staan in VAS/Uitgaand. Verlaag je de vraag, dan komt er een <code>VAS/PICKRET</code>-bon. Valideer die pas als de goederen ook echt teruggelegd worden — en kijk eerst of er intussen geen nieuwe pickbon voor dezelfde artikelen openstaat.</td></tr>
+    <tr><th>Beide gevalideerd</th><td>Enkel een retour kan dat nog terugdraaien. Zie de bestaande gids <em>Corrigeren van uitleveringen</em>.</td></tr>
+  </table>
+
+  <div class="callout warn">
+    <p><strong>De valkuil die op 10 augustus toesloeg:</strong> een teruggavebon en een nieuwe
+    pickbon voor grotendeels dezelfde artikelen stonden allebei klaar. Ze na elkaar valideren
+    laat het magazijn 14 stuks terugleggen en er 13 opnieuw uithalen. Staan er twee bonnen voor
+    hetzelfde order in tegengestelde richting, vraag dan eerst na wat de bedoeling is.</p>
+  </div>
+
+  <h2 id="s8">8. Nog open op de drie testorders</h2>
+
+  <p>Los van deze instelling — twee dingen die uit de analyse van S03694/95/96 kwamen en nog een
+  antwoord vragen:</p>
+
+  <ul class="checklist">
+    <li><input type="checkbox" id="c11"><label for="c11"> <strong>S03694, maat M ging van 3 naar 2.</strong> De eerste pick had er 3, de tweede 2, en de levering staat op 2. Bij de andere twee orders zijn de aantallen ongewijzigd gebleven. Bewust, of een tikfout bij het opnieuw ingeven?</label></li>
+    <li><input type="checkbox" id="c12"><label for="c12"> <strong>De geannuleerde backorders</strong> — 224, 305 en 297 lijnen op respectievelijk S03694, S03695 en S03696. Die orders hebben nu enkel nog een leveringsbon voor de lijnen die op 6 augustus gepickt zijn; voor de rest staat er geen enkele open bon meer. Is daar nog een levering voor nodig?</label></li>
+  </ul>
+
+  <p style="margin-top:2rem;color:var(--muted);font-size:.9em">
+    De onderzoeksactie waarmee bovenstaande tijdlijn gereconstrueerd is, staat in
+    <code>$claude/pickketen/output_claude/pickketen_loggen.py</code> — een leesactie, ze mag opnieuw draaien.
+  </p>
+
+</main>
+
+<script>
+(function () {
+  var STORE_KEY = 'bab-pick-retour-v1';
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) {}
+
+  var boxes = document.querySelectorAll('ul.checklist > li > input[type=checkbox]');
+  function updateProgress() {
+    var done = 0;
+    boxes.forEach(function (b) { if (b.checked) done++; });
+    var el = document.getElementById('progress');
+    if (el) el.textContent = done + ' / ' + boxes.length + ' afgevinkt';
+  }
+
+  boxes.forEach(function (b) {
+    if (saved[b.id]) b.checked = true;
+    b.parentNode.classList.toggle('done', b.checked);
+    b.addEventListener('change', function () {
+      saved[b.id] = b.checked;
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(saved)); } catch (e) {}
+      b.parentNode.classList.toggle('done', b.checked);
+      updateProgress();
+    });
+  });
+  updateProgress();
+
+  var clearBtn = document.getElementById('clear-state');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function () {
+      if (!confirm('Alle vinkjes op deze pagina wissen?')) return;
+      boxes.forEach(function (b) {
+        b.checked = false;
+        b.parentNode.classList.remove('done');
+      });
+      saved = {};
+      try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+      updateProgress();
+    });
+  }
+})();
+</script>
+<script>
+(function () {
+  document.querySelectorAll('pre').forEach(function (pre) {
+    if (pre.parentNode.classList.contains('o_code')) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'o_code';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+    var knop = document.createElement('button');
+    knop.type = 'button';
+    knop.className = 'o_copy';
+    knop.textContent = 'Kopiëren';
+    wrap.appendChild(knop);
+    knop.addEventListener('click', function () {
+      var tekst = pre.innerText;
+      function gelukt() {
+        knop.textContent = 'Gekopieerd';
+        knop.classList.add('done');
+        setTimeout(function () {
+          knop.textContent = 'Kopiëren';
+          knop.classList.remove('done');
+        }, 1500);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(tekst).then(gelukt, terugval);
+      } else {
+        terugval();
+      }
+      function terugval() {
+        var hulp = document.createElement('textarea');
+        hulp.value = tekst;
+        hulp.style.position = 'fixed';
+        hulp.style.opacity = '0';
+        document.body.appendChild(hulp);
+        hulp.select();
+        try { document.execCommand('copy'); gelukt(); } catch (e) { knop.textContent = 'Mislukt'; }
+        document.body.removeChild(hulp);
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

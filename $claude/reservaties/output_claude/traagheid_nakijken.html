@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAB — Traagheid en verbindingsverlies nakijken</title>
+<style>
+  :root {
+    --fg: #1d2433;
+    --muted: #5b6478;
+    --accent: #875a7b;          /* Odoo purple */
+    --accent-soft: #f3e8ee;
+    --warn-bg: #fff7e6;
+    --warn-border: #f0c36d;
+    --note-bg: #eef4fb;
+    --note-border: #b8d0eb;
+    --ok-bg: #edf7ee;
+    --ok-border: #9dcda3;
+    --rule: #e3e6ed;
+    --code-bg: #f4f5f7;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+    color: var(--fg);
+    background: #fff;
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    min-height: 100vh;
+  }
+
+  aside.toc {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 1.4rem 1.2rem 2rem;
+    border-right: 1px solid var(--rule);
+    background: #fafbfd;
+    font-size: 14px;
+  }
+  aside.toc h2 {
+    margin: 0 0 .6rem 0;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+  }
+  aside.toc ol { list-style: none; padding: 0; margin: 0; }
+  aside.toc ol ol {
+    padding-left: 1rem;
+    margin: .2rem 0 .4rem;
+    border-left: 2px solid var(--rule);
+  }
+  aside.toc a {
+    display: block;
+    padding: .15rem .4rem;
+    color: var(--fg);
+    text-decoration: none;
+    border-radius: 4px;
+  }
+  aside.toc a:hover, aside.toc a:focus {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  aside.toc .actions {
+    margin-top: 1.2rem;
+    padding-top: .8rem;
+    border-top: 1px solid var(--rule);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  aside.toc .actions button {
+    font: inherit;
+    color: var(--accent);
+    background: transparent;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: .2rem .6rem;
+    cursor: pointer;
+  }
+  aside.toc .actions button:hover { background: var(--accent-soft); }
+  aside.toc .progress { margin-top: .6rem; font-variant-numeric: tabular-nums; }
+
+  main { padding: 2rem clamp(1rem, 4vw, 3rem) 5rem; max-width: 920px; }
+  h1 { font-size: 1.7rem; line-height: 1.25; margin: 0 0 .6rem; }
+  h2 {
+    margin-top: 2.4rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--rule);
+    font-size: 1.35rem;
+  }
+  h3 { margin-top: 1.8rem; font-size: 1.08rem; color: var(--accent); }
+  p { margin: .6rem 0; }
+  ul { padding-left: 1.2rem; margin: .4rem 0 1rem; }
+  ul.checklist { list-style: none; padding-left: 0; }
+  ul.checklist > li {
+    padding: .35rem 0 .35rem 1.9rem;
+    position: relative;
+    margin: .2rem 0;
+  }
+  ul.checklist > li > input[type=checkbox] {
+    position: absolute;
+    left: 0;
+    top: .55rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    cursor: pointer;
+  }
+  ul.checklist > li.done {
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-color: rgba(0,0,0,.3);
+  }
+  ul.checklist > li.done code { opacity: .7; }
+  ul.checklist ul { margin-top: .3rem; }
+
+  code {
+    background: var(--code-bg);
+    padding: .05em .35em;
+    border-radius: 4px;
+    font-size: .92em;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: .9rem 1rem;
+    overflow-x: auto;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  strong { color: #111; }
+
+  table.cfg {
+    border-collapse: collapse;
+    margin: 1rem 0;
+    width: 100%;
+    font-size: .95em;
+  }
+  table.cfg th, table.cfg td {
+    border: 1px solid var(--rule);
+    padding: .45rem .7rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  table.cfg th { background: #fafbfd; width: 34%; }
+
+  .callout {
+    border-left: 4px solid var(--note-border);
+    background: var(--note-bg);
+    padding: .7rem 1rem;
+    margin: 1rem 0;
+    border-radius: 4px;
+    font-size: .95em;
+  }
+  .callout.warn { background: var(--warn-bg); border-left-color: var(--warn-border); }
+  .callout.ok { background: var(--ok-bg); border-left-color: var(--ok-border); }
+  .callout p:first-child { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 2rem 0; }
+
+  @media (max-width: 800px) {
+    body { grid-template-columns: 1fr; }
+    aside.toc {
+      position: relative;
+      height: auto;
+      border-right: 0;
+      border-bottom: 1px solid var(--rule);
+    }
+  }
+  @media print {
+    body { display: block; }
+    aside.toc { display: none; }
+    main { max-width: none; padding: 0; }
+    h2 { break-before: page; }
+    ul.checklist > li.done { text-decoration: none; color: inherit; }
+  }
+
+  /* Kopieerknop op elk codeblok. */
+  .o_code { position: relative; }
+  .o_code > button.o_copy {
+    position: absolute; top: .5rem; right: .5rem;
+    font: inherit; font-size: 12px; line-height: 1;
+    padding: .3rem .6rem; cursor: pointer;
+    color: var(--accent); background: #fff;
+    border: 1px solid var(--rule); border-radius: 4px;
+    opacity: .55; transition: opacity .15s;
+  }
+  .o_code:hover > button.o_copy { opacity: 1; }
+  .o_code > button.o_copy:hover { background: var(--accent-soft); }
+  .o_code > button.o_copy.done { color: #198754; border-color: #9dcda3; opacity: 1; }
+  .o_code > pre { margin-top: 0; }
+  @media print { .o_code > button.o_copy { display: none; } }
+</style>
+</head>
+<body>
+
+<aside class="toc">
+  <h2>Inhoud</h2>
+  <ol>
+    <li><a href="#s1">1. Eerst de server</a></li>
+    <li><a href="#s2">2. Het tijdelijke veld stilzetten</a></li>
+    <li><a href="#s3">3. Lees het logboek</a></li>
+    <li><a href="#s5">5. Weergave terugzetten</a></li>
+    <li><a href="#s6">6. Berekening terugzetten</a></li>
+  </ol>
+  <div class="actions">
+    <div class="progress" id="progress">— / — afgevinkt</div>
+    <p style="margin-top:.6rem">
+      <button id="clear-state" type="button">Alle vinkjes wissen</button>
+    </p>
+    <p style="margin-top:.6rem;font-size:11px">
+      Vinkjes worden enkel in deze browser bewaard.
+    </p>
+  </div>
+</aside>
+
+<main>
+<h1>Traagheid en verbindingsverlies nakijken</h1>
+
+<div class="callout">
+<p><strong>Wat dit is.</strong> Een korte zoektocht in twee stappen: eerst uitsluiten dat het
+aan de server ligt, dan uitsluiten dat het aan het tijdelijke veld
+<code>x_ontvangst_lijnen</code> ligt. Je kan alles terugdraaien.</p>
+</div>
+
+<h2 id="s1">1. Eerst de server</h2>
+<p><em>Verbinding verbroken</em> komt niet van een veld dat traag rekent. Dat betekent dat je
+browser de server even niet bereikt: een herstart, een build, of werkprocessen die vollopen.
+Begin daar, want dat verklaart de twee klachten samen en het scheelt zoeken.</p>
+<ul class="checklist">
+    <li><input type="checkbox" id="c1"> Open je <strong>odoo.sh-dashboard</strong> en kijk bij de productiebranch of er een build of herstart bezig is. Zolang die loopt: traag laden en verbindingsverlies zijn dan normaal, en het gaat vanzelf over.</li>
+    <li><input type="checkbox" id="c2"> Ga naar <strong>Logs</strong> en kijk of je verzoeken ziet die seconden duren, of meldingen over een afgebroken werkproces.</li>
+</ul>
+<div class="callout warn">
+<p><strong>De twee kunnen wel samenhangen.</strong> Een verzoek dat lang genoeg duurt, wordt door
+odoo.sh afgebroken; ondertussen staan de andere in de wachtrij. Dat voelt aan als &ldquo;alles
+traag&rdquo; plus verbindingsverlies. Zie je zulke lange verzoeken in de logs, ga dan verder met
+stap 2.</p>
+</div>
+
+<h2 id="s2">2. Het tijdelijke veld stilzetten</h2>
+<p>Deze actie zet de berekening van <code>x_ontvangst_lijnen</code> op een lege waarde. Het veld
+blijft bestaan en de weergave van het reservatierapport blijft werken &mdash; de <code>o</code>
+toont dan even niets &mdash; maar er wordt niets meer opgezocht.</p>
+<p>Instellingen &rarr; Technisch &rarr; Serveracties &rarr; Nieuw.</p>
+<table class="cfg">
+<tr><th>Naam</th><td>* Traagheid nakijken</td></tr>
+<tr><th>Model</th><td>Serveractie (<code>ir.actions.server</code>)</td></tr>
+<tr><th>Type</th><td>Python-code uitvoeren</td></tr>
+</table>
+<pre><code>regels = []
+
+veld = env[&#x27;ir.model.fields&#x27;].search([(&#x27;model&#x27;, &#x27;=&#x27;, &#x27;stock.move&#x27;),
+                                      (&#x27;name&#x27;, &#x27;=&#x27;, &#x27;x_ontvangst_lijnen&#x27;)])
+if not veld:
+    regels.append(&quot;Het veld bestaat niet (meer) -- dan is het de oorzaak niet.&quot;)
+else:
+    # Noodrem: de berekening geeft voortaan een lege waarde terug, dus er wordt
+    # niets meer opgezocht. Het veld blijft bestaan zodat het rapport blijft werken.
+    veld.compute = &quot;for record in self:\n    record[&#x27;x_ontvangst_lijnen&#x27;] = &#x27;&#x27;&quot;
+    regels.append(&quot;Berekening stilgezet. Het veld geeft nu overal een lege waarde.&quot;)
+
+    # Komt het veld voor in een weergave? Dan wordt het berekend telkens zo&#x27;n
+    # scherm opent, en niet enkel wanneer jij de kolom aanzet.
+    weergaven = env[&#x27;ir.ui.view&#x27;].search([(&#x27;arch_db&#x27;, &#x27;like&#x27;, &#x27;x_ontvangst_lijnen&#x27;)])
+    if weergaven:
+        for weergave in weergaven:
+            regels.append(&quot;STAAT IN WEERGAVE: %s (%s, model %s)&quot; % (
+                weergave.name, weergave.type, weergave.model))
+    else:
+        regels.append(&quot;Komt in geen enkele weergave voor.&quot;)
+
+    # Hoeveel aankooplijnen moest de berekening doorlopen? Dat is de kost.
+    aantal = env[&#x27;purchase.order.line&#x27;].search_count([(&#x27;state&#x27;, &#x27;in&#x27;, (&#x27;purchase&#x27;, &#x27;done&#x27;))])
+    regels.append(&quot;Bevestigde aankooplijnen in de databank: %d&quot; % aantal)
+
+log(&quot;\n&quot;.join(regels))</code></pre>
+<ul class="checklist">
+    <li><input type="checkbox" id="c3"> Serveractie aangemaakt, op <strong>Uitvoeren</strong> geklikt.</li>
+    <li><input type="checkbox" id="c4"> Probeer nu opnieuw het scherm dat traag was. Vlot het? Dan is het veld de oorzaak. Blijft het traag, dan ligt het elders &mdash; ga terug naar stap 1.</li>
+    <li><input type="checkbox" id="c5"> Serveractie verwijderd.</li>
+</ul>
+
+<h2 id="s3">3. Lees wat er in het logboek staat</h2>
+<p>Instellingen &rarr; Technisch &rarr; <strong>Logboek</strong>.</p>
+<ul>
+  <li><strong>&ldquo;Komt in geen enkele weergave voor&rdquo;</strong> &mdash; dan wordt het veld
+  enkel berekend in het rapport en in jouw persoonlijke kolominstelling van Verplaatsingen. Dat
+  weegt licht; de traagheid komt dan vermoedelijk niet van hier.</li>
+  <li><strong>&ldquo;STAAT IN WEERGAVE: &hellip;&rdquo;</strong> &mdash; dat is de verdachte. Staat
+  het veld in een weergave van <code>stock.move</code>, dan wordt het berekend telkens je een
+  scherm met verplaatsingen opent, inclusief het tabblad <em>Bewerkingen</em> van een overboeking.
+  Bij een Vasa-levering met honderden lijnen is dat zwaar genoeg om een werkproces te doen
+  struikelen. Haal het veld daar dan uit.</li>
+  <li><strong>Het aantal aankooplijnen</strong> zegt hoeveel de berekening moest doorlopen. Op de
+  junikopie waren dat er ruim 10.000 en kostte een lijst van 80 verplaatsingen zo'n 40 ms.</li>
+</ul>
+<ul class="checklist">
+    <li><input type="checkbox" id="c6"> Zet de kolom <em>Ontvangstlijnen van de aanvoer</em> uit in Voorraad &rarr; Rapportage &rarr; Verplaatsingen als je ze niet meer nodig hebt. Dat is een persoonlijke instelling, dus enkel voor jou.</li>
+</ul>
+
+<h2 id="s5">5. Weergave terugzetten na het verwijderen van het veld</h2>
+<div class="callout warn">
+<p><strong>Doe dit meteen.</strong> Is het veld <code>x_ontvangst_lijnen</code> verwijderd terwijl
+de aangepaste weergave nog in de databank staat, dan verwijst die naar een veld dat niet meer
+bestaat en <strong>crasht het reservatierapport bij het afdrukken</strong>.</p>
+</div>
+<p>Instellingen &rarr; Technisch &rarr; Gebruikersinterface &rarr; <strong>Weergaven</strong>, zoek
+op <code>report_reservation_matrix</code>, en vervang de volledige inhoud van <em>Architectuur</em>
+door onderstaande tekst. Dat is de originele versie uit de module, zonder de tussenoplossing.</p>
+<ul class="checklist">
+    <li><input type="checkbox" id="c8"> Je taal staat op <strong>Engels</strong> (zie de gids <em>reservatie_o_lijn</em>, stap 2) &mdash; anders maak je een Nederlandse variant naast de Engelse.</li>
+    <li><input type="checkbox" id="c9"> Architectuur vervangen en opgeslagen.</li>
+    <li><input type="checkbox" id="c10"> Rapport afgedrukt om te controleren dat het weer werkt. De <code>o</code> toont dan opnieuw enkel de laatste ontvangst &mdash; dat is het oude gedrag, tot de module uitgerold is.</li>
+</ul>
+<pre><code>&lt;t t-name=&quot;bab_stock_delivery.report_reservation_matrix&quot;&gt;
+        &lt;!-- web.basic_layout drops the company external header/footer; it already
+             includes web.html_container, so it is the only wrapper needed. --&gt;
+        &lt;t t-call=&quot;web.basic_layout&quot;&gt;
+            &lt;div class=&quot;page&quot;&gt;
+                &lt;style&gt;
+                    table.o_reservation_grid { border-collapse: collapse; table-layout: fixed; width: 100%; }
+                    table.o_reservation_grid th,
+                    table.o_reservation_grid td { border: 0.3mm solid #000 !important; padding: 0.8mm 1.6mm; }
+                    table.o_reservation_grid th { font-weight: bold; text-align: center; }
+                    /* Colour column takes the slack; size columns are narrow now the
+                       three figures are stacked vertically (one per line). */
+                    table.o_reservation_grid th:first-child,
+                    table.o_reservation_grid td:first-child { text-align: left; }
+                    table.o_reservation_grid th:not(:first-child),
+                    table.o_reservation_grid td:not(:first-child) { width: 16mm; text-align: center; vertical-align: top; }
+                    /* Keep the size label (e.g. 50/56) on a single line. */
+                    table.o_reservation_grid th:not(:first-child) { white-space: nowrap; }
+                    /* r/s/i guide column: its own narrow column, sitting just before
+                       the first size column, letters right against that border. Its
+                       LEFT border (between Kleur and the guide) is dropped so r/s/i
+                       reads as a bare guide; the line after it (before the first size
+                       column) stays. */
+                    table.o_reservation_grid th.o_res_guide,
+                    table.o_reservation_grid td.o_res_guide { width: 6mm !important; text-align: right; border-left: none !important; }
+                    table.o_reservation_grid th:first-child,
+                    table.o_reservation_grid td:first-child { border-right: none !important; }
+                    .o_reservation_block { page-break-inside: avoid; margin-bottom: 6mm; }
+                    /* The three stacked cell figures, one per line. Reserved stays
+                       the default black; shortage red, surplus green, incoming blue.
+                       Each line reserves a fixed sign slot and a right-aligned number
+                       slot, so the digits line up and the +/- hangs in front of them. */
+                    .o_res_line { line-height: 1.15; white-space: nowrap; }
+                    .o_res_sign { display: inline-block; width: 2mm; text-align: right; }
+                    .o_res_val  { display: inline-block; min-width: 4mm; text-align: right; }
+                    .o_res_shortage { color: #dc3545; }
+                    .o_res_surplus  { color: #198754; }
+                    .o_res_received,
+                    .o_res_incoming { color: #0d6efd; }
+                    /* r/s/i guide letters + legend markers, black. */
+                    .o_res_lbl { color: #000; font-weight: bold; }
+                    /* Legend explaining the r/s/i labels, once at the top. */
+                    .o_res_legend { font-size: 9pt; margin-bottom: 4mm; }
+                &lt;/style&gt;
+
+                &lt;p class=&quot;o_res_legend&quot;&gt;
+                    &lt;span class=&quot;o_res_lbl&quot;&gt;o&lt;/span&gt; = &lt;span class=&quot;o_res_received&quot;&gt;ontvangen (van de aanvoer)&lt;/span&gt; &amp;#160;·&amp;#160;
+                    &lt;span class=&quot;o_res_lbl&quot;&gt;r&lt;/span&gt; = gereserveerd &amp;#160;·&amp;#160;
+                    &lt;span class=&quot;o_res_lbl&quot;&gt;s&lt;/span&gt; = &lt;span class=&quot;o_res_surplus&quot;&gt;+overschot (vrije voorraad)&lt;/span&gt; / &lt;span class=&quot;o_res_shortage&quot;&gt;−tekort&lt;/span&gt; &amp;#160;·&amp;#160;
+                    &lt;span class=&quot;o_res_lbl&quot;&gt;i&lt;/span&gt; = &lt;span class=&quot;o_res_incoming&quot;&gt;inkomend&lt;/span&gt;
+                &lt;/p&gt;
+
+                &lt;t t-if=&quot;not blocks&quot;&gt;
+                    &lt;p&gt;Geen gereserveerde productvarianten in de selectie.&lt;/p&gt;
+                &lt;/t&gt;
+
+                &lt;!-- One grid per hoofdproduct, already sorted by product. --&gt;
+                &lt;div t-foreach=&quot;blocks&quot; t-as=&quot;block&quot; class=&quot;o_reservation_block&quot;&gt;
+                    &lt;h4 class=&quot;mb-2&quot;&gt;&lt;span t-out=&quot;block[&#x27;template&#x27;].display_name&quot;&gt;Hoofdproduct&lt;/span&gt;&lt;/h4&gt;
+                    &lt;table class=&quot;o_reservation_grid table table-sm&quot;&gt;
+                        &lt;thead&gt;
+                            &lt;tr&gt;
+                                &lt;th&gt;Kleur&lt;/th&gt;
+                                &lt;!-- Narrow guide column carrying the r/s/i letters, just
+                                     before the first size column. --&gt;
+                                &lt;th class=&quot;o_res_guide&quot;/&gt;
+                                &lt;th t-foreach=&quot;block[&#x27;sizes&#x27;]&quot; t-as=&quot;size&quot; t-out=&quot;size[&#x27;name&#x27;]&quot;&gt;Maat&lt;/th&gt;
+                            &lt;/tr&gt;
+                        &lt;/thead&gt;
+                        &lt;tbody&gt;
+                            &lt;tr t-foreach=&quot;block[&#x27;rows&#x27;]&quot; t-as=&quot;row&quot;&gt;
+                                &lt;td&gt;&lt;span t-out=&quot;row[&#x27;colour_name&#x27;]&quot;&gt;Kleur&lt;/span&gt;&lt;/td&gt;
+                                &lt;!-- r/s/i guide, one letter per stacked line, black, on
+                                     the same three baselines as every size cell. --&gt;
+                                &lt;td class=&quot;o_res_guide&quot;&gt;
+                                    &lt;div class=&quot;o_res_line o_res_lbl&quot;&gt;o&lt;/div&gt;
+                                    &lt;div class=&quot;o_res_line o_res_lbl&quot;&gt;r&lt;/div&gt;
+                                    &lt;div class=&quot;o_res_line o_res_lbl&quot;&gt;s&lt;/div&gt;
+                                    &lt;div class=&quot;o_res_line o_res_lbl&quot;&gt;i&lt;/div&gt;
+                                &lt;/td&gt;
+                                &lt;!-- Each populated cell stacks its four figures, one per
+                                     line, digits right-aligned with a fixed sign slot so
+                                     they never shift: received so far of the supply behind
+                                     these transfers (o, black, no sign); reserved (r,
+                                     black, no sign); then a
+                                     single shortage/surplus figure (s): a red -tekort when
+                                     the demand is not fully reserved, otherwise a green
+                                     +overschot (+0 when exactly reserved, no free stock);
+                                     then incoming (i, blue, no sign since it is always +).
+                                     An empty (unordered) combination stays blank. --&gt;
+                                &lt;td t-foreach=&quot;row[&#x27;cells&#x27;]&quot; t-as=&quot;cell&quot;&gt;
+                                    &lt;t t-if=&quot;cell&quot;&gt;
+                                        &lt;!-- Every zero is left blank; the line itself stays so the four
+                                             r/s/i baselines still line up across all cells. --&gt;
+                                        &lt;div class=&quot;o_res_line&quot;&gt;
+                                            &lt;span class=&quot;o_res_sign&quot;/&gt;&lt;span class=&quot;o_res_val o_res_received&quot; t-if=&quot;cell[&#x27;received&#x27;]&quot; t-out=&quot;cell[&#x27;received&#x27;]&quot; t-options=&#x27;{&quot;widget&quot;: &quot;integer&quot;}&#x27;/&gt;
+                                        &lt;/div&gt;
+                                        &lt;div class=&quot;o_res_line&quot;&gt;
+                                            &lt;span class=&quot;o_res_sign&quot;/&gt;&lt;span class=&quot;o_res_val&quot; t-if=&quot;cell[&#x27;reserved&#x27;]&quot; t-out=&quot;cell[&#x27;reserved&#x27;]&quot; t-options=&#x27;{&quot;widget&quot;: &quot;integer&quot;}&#x27;/&gt;
+                                        &lt;/div&gt;
+                                        &lt;div class=&quot;o_res_line&quot;&gt;
+                                            &lt;t t-if=&quot;cell[&#x27;shortage&#x27;]&quot;&gt;
+                                                &lt;span class=&quot;o_res_sign o_res_shortage&quot;&gt;−&lt;/span&gt;&lt;span class=&quot;o_res_val o_res_shortage&quot; t-out=&quot;cell[&#x27;shortage&#x27;]&quot; t-options=&#x27;{&quot;widget&quot;: &quot;integer&quot;}&#x27;/&gt;
+                                            &lt;/t&gt;
+                                            &lt;t t-elif=&quot;cell[&#x27;surplus&#x27;]&quot;&gt;
+                                                &lt;span class=&quot;o_res_sign o_res_surplus&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;o_res_val o_res_surplus&quot; t-out=&quot;cell[&#x27;surplus&#x27;]&quot; t-options=&#x27;{&quot;widget&quot;: &quot;integer&quot;}&#x27;/&gt;
+                                            &lt;/t&gt;
+                                        &lt;/div&gt;
+                                        &lt;div class=&quot;o_res_line&quot;&gt;
+                                            &lt;span class=&quot;o_res_sign&quot;/&gt;&lt;span class=&quot;o_res_val o_res_incoming&quot; t-if=&quot;cell[&#x27;incoming&#x27;]&quot; t-out=&quot;cell[&#x27;incoming&#x27;]&quot; t-options=&#x27;{&quot;widget&quot;: &quot;integer&quot;}&#x27;/&gt;
+                                        &lt;/div&gt;
+                                    &lt;/t&gt;
+                                &lt;/td&gt;
+                            &lt;/tr&gt;
+                        &lt;/tbody&gt;
+                    &lt;/table&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+        &lt;/t&gt;
+    &lt;/t&gt;</code></pre>
+
+<h2 id="s6">6. Berekening terugzetten</h2>
+<p>Was het veld niet de oorzaak, zet de berekening dan terug: neem het codeblok uit
+<em>reservatie_o_lijn.html</em>, sectie 3b, en plak het terug in het veld
+<code>x_ontvangst_lijnen</code>.</p>
+<ul class="checklist">
+    <li><input type="checkbox" id="c7"> Berekening teruggezet en het rapport opnieuw afgedrukt om te controleren dat de <code>o</code> weer gevuld is.</li>
+</ul>
+</main>
+
+<script>
+(function () {
+  var STORE_KEY = 'bab-traagheid-nakijken-v1';
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) {}
+
+  var boxes = document.querySelectorAll('ul.checklist > li > input[type=checkbox]');
+  function updateProgress() {
+    var done = 0;
+    boxes.forEach(function (b) { if (b.checked) done++; });
+    var el = document.getElementById('progress');
+    if (el) el.textContent = done + ' / ' + boxes.length + ' afgevinkt';
+  }
+
+  boxes.forEach(function (b) {
+    if (saved[b.id]) b.checked = true;
+    b.parentNode.classList.toggle('done', b.checked);
+    b.addEventListener('change', function () {
+      saved[b.id] = b.checked;
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(saved)); } catch (e) {}
+      b.parentNode.classList.toggle('done', b.checked);
+      updateProgress();
+    });
+  });
+  updateProgress();
+
+  var clearBtn = document.getElementById('clear-state');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function () {
+      if (!confirm('Alle vinkjes op deze pagina wissen?')) return;
+      boxes.forEach(function (b) {
+        b.checked = false;
+        b.parentNode.classList.remove('done');
+      });
+      saved = {};
+      try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+      updateProgress();
+    });
+  }
+})();
+</script>
+<script>
+(function () {
+  document.querySelectorAll('pre').forEach(function (pre) {
+    if (pre.parentNode.classList.contains('o_code')) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'o_code';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+    var knop = document.createElement('button');
+    knop.type = 'button';
+    knop.className = 'o_copy';
+    knop.textContent = 'Kopiëren';
+    wrap.appendChild(knop);
+    knop.addEventListener('click', function () {
+      var tekst = pre.innerText;
+      function gelukt() {
+        knop.textContent = 'Gekopieerd';
+        knop.classList.add('done');
+        setTimeout(function () {
+          knop.textContent = 'Kopiëren';
+          knop.classList.remove('done');
+        }, 1500);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(tekst).then(gelukt, terugval);
+      } else {
+        terugval();
+      }
+      function terugval() {
+        var hulp = document.createElement('textarea');
+        hulp.value = tekst;
+        hulp.style.position = 'fixed';
+        hulp.style.opacity = '0';
+        document.body.appendChild(hulp);
+        hulp.select();
+        try { document.execCommand('copy'); gelukt(); } catch (e) { knop.textContent = 'Mislukt'; }
+        document.body.removeChild(hulp);
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

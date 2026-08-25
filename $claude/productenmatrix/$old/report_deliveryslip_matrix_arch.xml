@@ -1,0 +1,180 @@
+<t t-name="bab_stock_delivery.report_deliveryslip_matrix">
+        <t t-call="web.basic_layout">
+            <!-- Zero the report wrappers' vertical spacing so block 1 starts at the very
+                 top of the sheet; otherwise a ~6mm offset pushes the thirds down and the
+                 last block spills onto a second page. -->
+            <style>
+                .o_body_html, #wrapwrap, main, .article { margin-top: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; }
+                /* Explicit borders in a real mm width: Bootstrap's table-bordered draws
+                   ~1px (sub-pixel at 96dpi with smart-shrinking off) lines that poppler
+                   (GNOME Document Viewer/Evince) drops while Chrome's PDFium still shows
+                   them. A defined 0.3mm border renders in every PDF viewer. */
+                table.o_product_variant_grid { border-collapse: collapse; }
+                table.o_product_variant_grid th,
+                table.o_product_variant_grid td { border: 0.3mm solid #000 !important; }
+                /* Default look: roomy cells for the common case (up to ~10 colour rows),
+                   which keeps the matrix readable in a 99mm strip. */
+                .o_matrix_block { font-size: 10pt; line-height: 1.25; }
+                .o_matrix_head { margin-bottom: 1.5mm !important; }
+                table.o_product_variant_grid th,
+                table.o_product_variant_grid td { padding: 0.9mm 1.8mm; }
+                /* Auto-shrink: a product with many colours (&gt;10 rows) would overflow the
+                   99mm strip at the roomy size, so such blocks fall back to a smaller font
+                   and tighter padding to fit (handles the rare 13-20 colour products).
+                   Set on the block via o_matrix_block_compact, see the foreach below. */
+                .o_matrix_block_compact { font-size: 8pt; line-height: 1.1; }
+                .o_matrix_block_compact table.o_product_variant_grid th,
+                .o_matrix_block_compact table.o_product_variant_grid td { padding: 0.15mm 1.2mm; }
+                /* Equal, fixed-width size columns wide enough for the widest value
+                   (164/170); the product-name column absorbs the remaining width, so
+                   the size columns stay the same width across every product. All
+                   header cells bold; product name left-aligned, size headers centered. */
+                table.o_product_variant_grid { table-layout: fixed; width: 100%; }
+                table.o_product_variant_grid th { font-weight: bold; }
+                table.o_product_variant_grid th:first-child { text-align: left; }
+                table.o_product_variant_grid th:not(:first-child),
+                table.o_product_variant_grid td:not(:first-child) { width: 13mm; }
+                table.o_product_variant_grid th:not(:first-child) { text-align: center; }
+            </style>
+            <!-- One continuous stream of blocks across ALL selected deliveries, sorted by
+                 hoofdproduct (see stock.picking._get_matrix_blocks): a bulk print groups
+                 the matrices per product instead of per customer/delivery. Blocks pack
+                 three to a page regardless of which delivery they belong to. -->
+            <t t-set="blocks" t-value="docs._get_matrix_blocks()"/>
+            <!-- First pass: put THIS transfer's quantities on every grid and work out which
+                 blocks still have something to print. Nothing is rendered here; the pass
+                 only fills block['rows'] / block['total_qty'] (see the comments below). -->
+            <t t-foreach="blocks" t-as="block">
+                <t t-set="picking" t-value="block['picking']"/>
+                <t t-set="grid" t-value="block['grid']"/>
+                <!-- The grid skeleton and its quantities come from the SALES ORDER, so it
+                     always shows everything that was ordered. A partially processed
+                     delivery route (e.g. a pick validated with a backorder) leaves part of
+                     the order behind in an earlier step, and those quantities are not on
+                     THIS transfer. The slip must only list what this transfer actually
+                     carries, so the ordered quantities are overwritten with the quantity
+                     of this picking's own moves.
+
+                     move.quantity (not product_uom_qty) is the deciding figure: on a
+                     chained pick -> out route the outgoing move keeps the FULL demand when
+                     the pick is partially validated (the pick backorder points at the same
+                     destination move), while move.quantity holds what really arrived and
+                     is reserved here. Summed per variant, since one transfer can carry
+                     several moves of the same variant (grouped orders).
+
+                     The moves are keyed exactly like the matrix cells, i.e. by the sorted
+                     (no_variant + template) attribute values of their SALES ORDER LINE (see
+                     stock.picking._line_has_ptavs). Keying on the move's variant alone is not
+                     enough: a no_variant attribute (BAB uses "Kwaliteit/materiaal") is part of
+                     the cell key but never lands on the variant, so those keys would never
+                     match. -->
+                <t t-set="picked_qty" t-value="{g[0]: sum(g[1].mapped('quantity')) for g in picking.move_ids.filtered(lambda m: m.state != 'cancel').grouped(lambda m: tuple(sorted(m.sale_line_id.product_no_variant_attribute_value_ids.ids + m.sale_line_id.product_template_attribute_value_ids.ids))).items()}"/>
+                <!-- Overlay onto the grid: every quantity cell (label cells carry no
+                     'ptav_ids') gets this transfer's quantity for that size/colour combo,
+                     0 when the combination is not on this transfer at all. -->
+                <t t-set="cells" t-value="[cell for row in grid['matrix'] for cell in row if 'ptav_ids' in cell]"/>
+                <t t-set="overlay" t-value="[cell.update({'qty': picked_qty.get(tuple(cell['ptav_ids']), 0)}) for cell in cells]"/>
+                <!-- Only rows (colours) with something on this transfer are printed, and a
+                     grid where nothing at all is on this transfer is skipped entirely,
+                     mirroring the all-zero-row drop that _get_combined_matrixes does on the
+                     ordered quantities. -->
+                <t t-set="keep" t-value="block.update({'rows': [row for row in grid['matrix'] if any([cell.get('qty') for cell in row])], 'total_qty': sum([cell['qty'] for cell in cells])})"/>
+            </t>
+            <!-- Only blocks that still carry something are printed. -->
+            <t t-set="blocks" t-value="[block for block in blocks if block['rows']]"/>
+            <!-- Recompute the "first block of a new hoofdproduct" flag on the REMAINING
+                 blocks: _get_matrix_blocks set it on the unfiltered list, so a dropped first
+                 block would take its group's page break along. Only a bulk print (several
+                 deliveries at once, len(docs) > 1) breaks pages per hoofdproduct. -->
+            <t t-set="names" t-value="[block['grid']['header'][0]['name'] for block in blocks]"/>
+            <t t-set="flag" t-value="[blocks[i].update({'new_product': len(docs) > 1 and i > 0 and names[i] != names[i - 1]}) for i in range(len(blocks))]"/>
+            <t t-foreach="blocks" t-as="block">
+                <t t-set="picking" t-value="block['picking']"/>
+                <t t-set="grid" t-value="block['grid']"/>
+                <t t-set="rows" t-value="block['rows']"/>
+                <t t-set="total_qty" t-value="block['total_qty']"/>
+                <!-- One physical third of the A4 (297/3); the sheet is cut at 99mm and
+                     198mm into three equal strips. Padding keeps content off the cut
+                     lines; never split a block across pages. Start a fresh page on each
+                     new hoofdproduct (but not before the very first block). Blocks with
+                     more than 10 colour rows get the compact style so they still fit. -->
+                <div t-attf-class="o_matrix_block{{ ' o_matrix_block_compact' if len(rows) > 10 else '' }}"
+                     t-attf-style="height: 99mm; box-sizing: border-box; padding: 8mm 0 6mm; overflow: hidden; page-break-inside: avoid;{{ ' page-break-before: always;' if (block['new_product'] and not block_first) else '' }}">
+                    <!-- Customer + Order heading, repeated per block (= per matrix). -->
+                    <!-- stock_location replaces the former "Customer" caption: bold heading above the
+                         row, no square brackets, only when it carries a value. -->
+                    <strong t-if="picking.partner_id and picking.partner_id.stock_location"
+                            t-out="picking.partner_id.stock_location">200</strong>
+                    <div class="o_matrix_head row mb-3">
+                        <!-- Customer name in the left half of the slip, order (+ transfer) in the right
+                             half so both sit on the same line. -->
+                        <div t-if="picking.partner_id" class="col-6 mw-100" name="div_customer">
+                            <span t-out="picking.partner_id.name">Customer 1</span>
+                        </div>
+                        <!-- Picking name dropped as a big title; shown in parentheses after the order.
+                             A grouped delivery can carry dozens of source orders; a long list would make
+                             this heading taller than the 99mm block and overlap the next slip, so the
+                             order list is capped and truncated with "..." (the picking name always stays
+                             visible after it). -->
+                        <div t-if="picking.origin" class="col-6 mw-100" name="div_origin">
+                            <!-- picking.origin is the space-joined source order names (merged by
+                                 stock_picking_group_by_partner_by_carrier); show at most origin_cap. -->
+                            <t t-set="origins" t-value="(picking.origin or '').split()"/>
+                            <t t-set="origin_cap" t-value="12"/>
+                            <div class="m-0">
+                                <span t-out="' '.join(origins[:origin_cap])">S0001</span><t t-if="len(origins) &gt; origin_cap"> ...</t>
+                                <span> (<span t-out="picking.name">WH/OUT/0001</span>)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Single matrix table for this grid (mirrors product_matrix.matrix). -->
+                    <table class="o_view_grid o_product_variant_grid table table-sm table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th t-foreach="grid['header']" t-as="column_header" class="o_grid_title_header">
+                                    <!-- Hoofdproduct name (first header cell) shown larger than the rest. -->
+                                    <span t-esc="column_header['name']" t-attf-style="{{ 'font-size: 1.4em;' if column_header_first else '' }}">Column name</span>
+                                    <!-- After the hoofdproduct name (first header cell) the total quantity
+                                         on this transfer for this grid, separated by two (non-breaking)
+                                         spaces and shown muted and smaller between brackets with "stuks",
+                                         e.g. (18 stuks). -->
+                                    <t t-if="column_header_first"><span>&#160;&#160;</span><small class="text-muted">(<span t-esc="total_qty" t-options='{"widget": "integer"}'>0</span> stuks)</small></t>
+                                    <t t-call="product_matrix.extra_price">
+                                        <t t-set="price" t-value="column_header.get('price', False)"/>
+                                    </t>
+                                </th>
+                                <!-- Extra rightmost column with the per-row total (sum of the
+                                     row's quantities across all size columns). -->
+                                <th class="o_grid_title_header">Totaal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="rows" t-as="row">
+                                <!-- Row total = sum of the row's quantities (the label
+                                     cell carries no 'qty', so it contributes 0). -->
+                                <t t-set="row_total" t-value="sum([cell.get('qty', 0) for cell in row])"/>
+                                <td t-foreach="row" t-as="cell" t-if="cell.get('name', False)" class="text-start">
+                                    <strong t-esc="cell['name']">Cell name</strong>
+                                    <t t-call="product_matrix.extra_price">
+                                        <t t-set="price" t-value="cell.get('price', False)"/>
+                                    </t>
+                                </td>
+                                <td t-else="" class="text-end">
+                                    <!-- Quantities as whole numbers on the report; a 0 (nothing of that
+                                         size/colour combo on this transfer) is left blank rather than
+                                         printing "0", so the matrix only shows the cells that are
+                                         actually being shipped. -->
+                                    <span t-if="cell.get('qty')" t-out="cell.get('qty', 0)" t-options='{"widget": "integer"}'
+                                          class="o_grid_cell_container"/>
+                                </td>
+                                <!-- Rightmost Totaal cell: the row's total, bold, blank when zero. -->
+                                <td class="text-end">
+                                    <strong t-if="row_total" t-out="row_total" t-options='{"widget": "integer"}'/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </t>

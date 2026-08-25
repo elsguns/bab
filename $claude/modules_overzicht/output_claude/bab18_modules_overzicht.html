@@ -1,0 +1,92 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAB — module-overzicht (bab18-20260315)</title>
+<style>
+:root{--fg:#1d2433;--muted:#5b6478;--accent:#875a7b;--accent-soft:#f3e8ee;
+--rule:#e3e6ed;--code-bg:#f4f5f7;--core:#eef4fb;--core-bd:#b8d0eb;
+--extra:#f3e8ee;--extra-bd:#cba9bf;--miss:#fdecea;--miss-bd:#f0b3ac;--uninst:#fff7e6;--uninst-bd:#f0c36d;}
+*,*::before,*::after{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+color:var(--fg);background:#fff;display:grid;grid-template-columns:300px minmax(0,1fr);min-height:100vh;}
+aside.toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;padding:1.4rem 1.2rem 2rem;
+border-right:1px solid var(--rule);background:#fafbfd;font-size:14px;}
+aside.toc h2{margin:0 0 .6rem;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+aside.toc ol{list-style:none;padding:0;margin:0;}
+aside.toc a{display:block;padding:.2rem .4rem;color:var(--fg);text-decoration:none;border-radius:4px;}
+aside.toc a:hover{background:var(--accent-soft);color:var(--accent);}
+.toc-badge{display:inline-block;background:var(--accent);color:#fff;border-radius:999px;padding:0 .55em;
+font-size:11px;margin-left:.35em;vertical-align:1px;}
+main{padding:2rem 2.4rem 4rem;max-width:1100px;}
+h1{margin:0 0 .3rem;font-size:26px;}
+.sub{color:var(--muted);margin:0 0 1.4rem;}
+h2.repo{margin:2.2rem 0 .4rem;padding-bottom:.3rem;border-bottom:2px solid var(--accent);color:var(--accent);font-size:20px;}
+h2.repo .cnt{color:var(--muted);font-size:14px;font-weight:normal;}
+.repo-desc{color:var(--muted);margin:.2rem 0 1rem;font-size:14px;}
+table{border-collapse:collapse;width:100%;margin:.4rem 0 1rem;font-size:14px;}
+th,td{text-align:left;vertical-align:top;padding:.5rem .6rem;border-bottom:1px solid var(--rule);}
+th{background:#fafbfd;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+td.name{font-weight:600;white-space:nowrap;}
+td.name .tech{display:block;font-weight:400;color:var(--muted);font-size:12px;font-family:ui-monospace,Menlo,Consolas,monospace;}
+.ver{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:var(--muted);white-space:nowrap;}
+.chip{display:inline-block;border-radius:5px;padding:.05em .45em;margin:.1em .2em .1em 0;font-size:12px;
+font-family:ui-monospace,Menlo,Consolas,monospace;text-decoration:none;border:1px solid;}
+.chip-core{background:var(--core);border-color:var(--core-bd);color:#274b73;}
+.chip-extra{background:var(--extra);border-color:var(--extra-bd);color:#6d3b5e;font-weight:600;}
+.chip-missing{background:var(--miss);border-color:var(--miss-bd);color:#9c2a1c;}
+.chip-uninst{background:var(--uninst);border-color:var(--uninst-bd);color:#7a5b14;}
+.reqby{font-size:12.5px;color:var(--muted);}
+.reqby .chip{margin-top:.15em;}
+.legend{background:#fafbfd;border:1px solid var(--rule);border-radius:8px;padding:.8rem 1rem;margin:1rem 0 1.6rem;font-size:13px;}
+.legend .chip{vertical-align:1px;}
+.note{background:var(--core);border:1px solid var(--core-bd);border-radius:8px;padding:.8rem 1rem;margin:1rem 0;font-size:13.5px;}
+code{background:var(--code-bg);padding:.05em .35em;border-radius:4px;font-size:13px;}
+</style></head><body>
+<aside class="toc"><h2>Repositories</h2><ol>
+<li><a href="#repo-bab">Babimex — custom (project dir)<span class="toc-badge">5</span></a></li>
+<li><a href="#repo-studio">Studio (generated in DB)<span class="toc-badge">1</span></a></li>
+<li><a href="#repo-oca">OCA — community<span class="toc-badge">6</span></a></li>
+<li><a href="#repo-oca-osa">OCA — osadmin forks (oca-osa)<span class="toc-badge">2</span></a></li>
+<li><a href="#repo-tpa-osa">TPA — osadmin (tpa-osa)<span class="toc-badge">1</span></a></li>
+</ol><h2 style="margin-top:1.4rem">Info</h2><ol><li><a href="#info">DB &amp; legenda</a></li></ol></aside>
+<main>
+<h1>BAB — module-overzicht</h1>
+<p class="sub">Database <code>bab18-20260315</code> · Odoo 18.0 · 225 geïnstalleerde modules totaal — hieronder de <strong>15 maatwerk/derde-partij modules</strong>. Odoo Enterprise (78) en community-core (132) zijn weggelaten. · gegenereerd 2026-06-13</p>
+<div class="legend" id="info"><strong>Legenda afhankelijkheden:</strong>&nbsp;
+<span class="chip chip-core">base</span> community-core dep &nbsp;·&nbsp;
+<span class="chip chip-extra">extra-module</span> dep op een andere extra module (klikbaar) &nbsp;·&nbsp;
+<span class="chip chip-missing">ontbreekt</span> dep niet geïnstalleerd &nbsp;·&nbsp;
+<span class="chip chip-uninst">module · uninstalled</span> dependent staat (nog) niet geïnstalleerd<br>
+De kolom <em>Vereist door</em> toont welke geïnstalleerde modules deze module als dependency hebben
+(reverse-deps). Zo zie je bv. waarom een "kale" technische module toch nodig is.</div>
+<h2 class="repo" id="repo-bab">Babimex — custom (project dir) <span class="cnt">— 5 modules</span></h2>
+<table><thead><tr><th>Module</th><th>Versie</th><th>Auteur</th><th>Hangt af van</th><th>Vereist door</th></tr></thead><tbody>
+<tr id="mod-babimex_custom"><td class="name">Babimex Custom<span class="tech">babimex_custom</span></td><td class="ver">18.0.1.0.7</td><td>Mainframe Monkey</td><td><span class="chip chip-core" title="sale">+1 core</span></td><td class="reqby"><span class="reqby">—</span></td></tr>
+<tr id="mod-babimex_website_sale"><td class="name">Babimex Website Sales<span class="tech">babimex_website_sale</span></td><td class="ver">18.0.2.0.1</td><td>Mainframe Monkey</td><td><span class="chip chip-core" title="website_sale">+1 core</span></td><td class="reqby"><span class="reqby">—</span></td></tr>
+<tr id="mod-mail_debrand"><td class="name">Mail Debrand<span class="tech">mail_debrand</span></td><td class="ver">18.0.1.0.1</td><td>Tecnativa, ForgeFlow, Onestein, Sodexis,</td><td><span class="chip chip-core" title="mail">+1 core</span></td><td class="reqby"><span class="reqby">—</span></td></tr>
+<tr id="mod-product_brand"><td class="name">Product Brand Manager<span class="tech">product_brand</span></td><td class="ver">18.0.1.0.0</td><td>NetAndCo, Akretion, Prisnet Telecommunic</td><td><span class="chip chip-core" title="sale">+1 core</span></td><td class="reqby"><span class="reqby">—</span></td></tr>
+<tr id="mod-website_odoo_debranding"><td class="name">Remove Odoo Branding from Website<span class="tech">website_odoo_debranding</span></td><td class="ver">18.0.1.0.0</td><td>Tecnativa, Odoo Community Association (O</td><td><span class="chip chip-core" title="website">+1 core</span></td><td class="reqby"><span class="reqby">—</span></td></tr>
+</tbody></table>
+<h2 class="repo" id="repo-studio">Studio (generated in DB) <span class="cnt">— 1 modules</span></h2>
+<table><thead><tr><th>Module</th><th>Versie</th><th>Auteur</th><th>Hangt af van</th><th>Vereist door</th></tr></thead><tbody>
+<tr id="mod-studio_customization"><td class="name">Studio customizations<span class="tech">studio_customization</span></td><td class="ver"></td><td>Babimex</td><td><span class="chip chip-core" title="web_studio">+1 core</span></td><td class="reqby"><span class="reqby">—</span></td></tr>
+</tbody></table>
+<h2 class="repo" id="repo-oca">OCA — community <span class="cnt">— 6 modules</span></h2>
+<table><thead><tr><th>Module</th><th>Versie</th><th>Auteur</th><th>Hangt af van</th><th>Vereist door</th></tr></thead><tbody>
+<tr id="mod-account_invoice_section_sale_order"><td class="name">Acccount Invoice Section Sale Order<span class="tech">account_invoice_section_sale_order</span></td><td class="ver">18.0.1.0.0</td><td>Camptocamp, Odoo Community Association (</td><td><span class="chip chip-core" title="account, sale">+2 core</span></td><td class="reqby"><span class="reqby">—</span></td></tr>
+<tr id="mod-delivery_procurement_group_carrier"><td class="name">Delivery Procurement Group Carrier<span class="tech">delivery_procurement_group_carrier</span></td><td class="ver">18.0.1.0.3</td><td>Camptocamp, BCIM, MT Software, Odoo Comm</td><td><span class="chip chip-core" title="sale_stock, stock_delivery">+2 core</span></td><td class="reqby"><span class="chip chip-uninst" title="uninstalled">stock_picking_group_by_partner_by_carrier · uninstalled</span></td></tr>
+<tr id="mod-product_state"><td class="name">Product State<span class="tech">product_state</span></td><td class="ver">18.0.1.0.0</td><td>ACSONE SA/NV, Odoo Community Association</td><td><span class="chip chip-core" title="product">+1 core</span></td><td class="reqby"><span class="reqby">—</span></td></tr>
+<tr id="mod-sale_packaging_default"><td class="name">Default packaging for sales<span class="tech">sale_packaging_default</span></td><td class="ver">18.0.1.0.0</td><td>Moduon, Odoo Community Association (OCA)</td><td><span class="chip chip-core" title="sale">+1 core</span></td><td class="reqby"><span class="reqby">—</span></td></tr>
+<tr id="mod-stock_picking_group_by_base"><td class="name">Stock Picking Group By Base<span class="tech">stock_picking_group_by_base</span></td><td class="ver">18.0.1.0.0</td><td>ACSONE SA/NV,Odoo Community Association </td><td><span class="chip chip-core" title="stock">+1 core</span></td><td class="reqby"><span class="chip chip-uninst" title="uninstalled">stock_picking_group_by_partner_by_carrier · uninstalled</span></td></tr>
+<tr id="mod-stock_warehouse_out_pull"><td class="name">Stock Warehouse Out Pull<span class="tech">stock_warehouse_out_pull</span></td><td class="ver">18.0.1.0.2</td><td>Camptocamp, Odoo Community Association (</td><td><span class="chip chip-core" title="stock">+1 core</span></td><td class="reqby"><span class="chip chip-uninst" title="uninstalled">stock_picking_group_by_partner_by_carrier · uninstalled</span></td></tr>
+</tbody></table>
+<h2 class="repo" id="repo-oca-osa">OCA — osadmin forks (oca-osa) <span class="cnt">— 2 modules</span></h2>
+<table><thead><tr><th>Module</th><th>Versie</th><th>Auteur</th><th>Hangt af van</th><th>Vereist door</th></tr></thead><tbody>
+<tr id="mod-product_variant_default_code"><td class="name">Product Variant Default Code<span class="tech">product_variant_default_code</span></td><td class="ver">18.0.1.0.0</td><td>AvancOSC, Shine IT, Tecnativa, Akretion,</td><td><span class="chip chip-core" title="product">+1 core</span></td><td class="reqby"><span class="reqby">—</span></td></tr>
+<tr id="mod-stock_quant_reservation_info"><td class="name">Stock Move Reservation Info<span class="tech">stock_quant_reservation_info</span></td><td class="ver">18.0.1.0.0</td><td>ForgeFlow, Odoo Community Association (O</td><td><span class="chip chip-core" title="stock">+1 core</span></td><td class="reqby"><span class="reqby">—</span></td></tr>
+</tbody></table>
+<h2 class="repo" id="repo-tpa-osa">TPA — osadmin (tpa-osa) <span class="cnt">— 1 modules</span></h2>
+<table><thead><tr><th>Module</th><th>Versie</th><th>Auteur</th><th>Hangt af van</th><th>Vereist door</th></tr></thead><tbody>
+<tr id="mod-gls_shipping_integration"><td class="name">GLS Odoo Shipping Integration<span class="tech">gls_shipping_integration</span></td><td class="ver">18.0.1.0</td><td>Vraja Technologies</td><td><span class="chip chip-core" title="delivery, stock, stock_delivery">+3 core</span></td><td class="reqby"><span class="reqby">—</span></td></tr>
+</tbody></table>
+</main></body></html>

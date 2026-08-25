@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAB — Forecast uit de ontvangstlijst (productie, Odoo 18)</title>
+<style>
+  :root {
+    --fg: #1d2433; --muted: #5b6478; --accent: #875a7b; --accent-soft: #f3e8ee;
+    --warn-bg: #fff7e6; --warn-border: #f0c36d; --note-bg: #eef4fb; --note-border: #b8d0eb;
+    --ok-bg: #edf7ee; --ok-border: #9ecfa4; --rule: #e3e6ed; --code-bg: #f4f5f7;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--fg); background: #fff;
+    display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: 100vh;
+  }
+  aside.toc {
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
+    padding: 1.4rem 1.2rem 2rem; border-right: 1px solid var(--rule);
+    background: #fafbfd; font-size: 14px;
+  }
+  aside.toc h2 {
+    margin: 0 0 .6rem 0; font-size: 12px; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--muted);
+  }
+  aside.toc ol { list-style: none; padding: 0; margin: 0; }
+  aside.toc ol ol { padding-left: 1rem; margin: .2rem 0 .4rem; border-left: 2px solid var(--rule); }
+  aside.toc a { display: block; padding: .15rem .4rem; color: var(--fg); text-decoration: none; border-radius: 4px; }
+  aside.toc a:hover, aside.toc a:focus { background: var(--accent-soft); color: var(--accent); }
+  aside.toc .actions { margin-top: 1.2rem; padding-top: .8rem; border-top: 1px solid var(--rule); font-size: 12px; color: var(--muted); }
+  aside.toc .actions button {
+    font: inherit; color: var(--accent); background: transparent;
+    border: 1px solid var(--accent); border-radius: 4px; padding: .2rem .6rem; cursor: pointer;
+  }
+  aside.toc .actions button:hover { background: var(--accent-soft); }
+  aside.toc .progress { margin-top: .6rem; font-variant-numeric: tabular-nums; }
+
+  main { padding: 2rem clamp(1rem, 4vw, 3rem) 5rem; max-width: 920px; }
+  h1 { font-size: 1.7rem; line-height: 1.25; margin: 0 0 .6rem; }
+  h2 { margin-top: 2.4rem; padding-top: 1rem; border-top: 1px solid var(--rule); font-size: 1.35rem; }
+  h3 { margin-top: 1.8rem; font-size: 1.08rem; color: var(--accent); }
+  p { margin: .6rem 0; }
+  ul { padding-left: 1.2rem; margin: .4rem 0 1rem; }
+  ul.checklist { list-style: none; padding-left: 0; }
+  ul.checklist > li { padding: .35rem 0 .35rem 1.9rem; position: relative; margin: .2rem 0; }
+  ul.checklist > li > input[type=checkbox] { position: absolute; left: 0; top: .55rem; width: 1.1rem; height: 1.1rem; cursor: pointer; }
+  ul.checklist > li.done { color: var(--muted); text-decoration: line-through; text-decoration-color: rgba(0,0,0,.3); }
+  ul.checklist > li.done code { opacity: .7; }
+
+  code { background: var(--code-bg); padding: .05em .35em; border-radius: 4px; font-size: .92em; font-family: "SF Mono", Menlo, Consolas, monospace; }
+  strong { color: #111; }
+
+  .codewrap { position: relative; margin: .8rem 0 1.2rem; }
+  .codewrap pre {
+    background: var(--code-bg); border: 1px solid var(--rule); border-radius: 6px;
+    padding: .9rem 1rem; overflow-x: auto; margin: 0;
+    font: 13.5px/1.5 "SF Mono", Menlo, Consolas, monospace;
+  }
+  .codewrap button.copy {
+    position: absolute; top: .5rem; right: .5rem;
+    font: 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--accent); background: #fff; border: 1px solid var(--accent);
+    border-radius: 4px; padding: .3rem .6rem; cursor: pointer;
+  }
+  .codewrap button.copy:hover { background: var(--accent-soft); }
+  .codewrap button.copy.ok { color: #2c6e35; border-color: var(--ok-border); background: var(--ok-bg); }
+
+  table { border-collapse: collapse; margin: 1rem 0; font-size: .95em; width: 100%; }
+  th, td { border: 1px solid var(--rule); padding: .4rem .6rem; text-align: left; }
+  th { background: #fafbfd; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .callout { border-left: 4px solid var(--note-border); background: var(--note-bg); padding: .7rem 1rem; margin: 1rem 0; border-radius: 4px; font-size: .95em; }
+  .callout.warn { background: var(--warn-bg); border-left-color: var(--warn-border); }
+  .callout.ok { background: var(--ok-bg); border-left-color: var(--ok-border); }
+  .callout p:first-child { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  @media (max-width: 800px) {
+    body { grid-template-columns: 1fr; }
+    aside.toc { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--rule); }
+  }
+  @media print {
+    body { display: block; }
+    aside.toc { display: none; }
+    main { max-width: none; padding: 0; }
+    .codewrap button.copy { display: none; }
+    ul.checklist > li.done { text-decoration: none; color: inherit; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="toc">
+  <h2>Inhoud</h2>
+  <ol>
+    <li><a href="#s1">1. Wat je wint en wat het kost</a></li>
+    <li><a href="#s2">2. Vooraf</a></li>
+    <li><a href="#s3">3. De view aanmaken</a></li>
+    <li><a href="#s4">4. Controleren</a></li>
+    <li><a href="#s5">5. Terugdraaien</a></li>
+    <li><a href="#s6">6. Waar de grens ligt</a></li>
+    <li><a href="#s7">7. Naslag: hoe het zonder override was</a></li>
+  </ol>
+  <div class="actions">
+    <div class="progress" id="progress">— / — afgevinkt</div>
+    <p style="margin-top:.6rem"><button id="clear-state" type="button">Alle vinkjes wissen</button></p>
+    <p style="margin-top:.6rem;font-size:11px">Vinkjes worden alleen in deze browser bewaard.</p>
+  </div>
+</aside>
+
+<main>
+  <h1>Forecast uit de ontvangstlijst — productie, Odoo 18</h1>
+
+  <p>Bij elk aantal dat iemand invult op een ontvangst stuurt de webclient een
+  <code>onchange</code> naar de server, en die herrekent <strong>elk berekend veld uit de
+  lijst voor álle regels van de ontvangst</strong> — niet alleen de veertig op het scherm. Eén
+  veld weegt daarin zwaar: <code>forecast_availability</code>. Deze gids haalt dat uit de lijst.</p>
+
+  <h2 id="s1">1. Wat je wint en wat het kost</h2>
+
+  <p>Gemeten in de werkkopie op VAS/IN/00084 (2484 regels), de <code>onchange</code> die per
+  ingevuld aantal vuurt:</p>
+
+  <table>
+    <tr><th>Situatie</th><th>Duur</th><th>Queries</th></tr>
+    <tr><td>Nu</td><td class="num">2405 ms</td><td class="num">28</td></tr>
+    <tr><td><strong>Na deze aanpassing</strong></td><td class="num"><strong>1848 ms</strong></td><td class="num"><strong>15</strong></td></tr>
+  </table>
+
+  <p><strong>Ongeveer 560 ms per ingevuld getal, 23%.</strong> Geen enkel ander veld in die lijst
+  weegt meetbaar mee — dit is de enige die er is.</p>
+
+  <div class="callout warn">
+    <p><strong>De prijs: het grafiek-icoontje verliest zijn kleur.</strong> Tussen “Gevraagd” en
+    “Aantal” staat een klein staafdiagram dat de voorraadprognose van dat product opent. Dat zijn
+    in werkelijkheid <em>twee</em> knoppen: een blauwe en een rode, en welke je ziet hangt af van
+    <code>forecast_availability</code>. Na deze aanpassing blijft er één blauwe knop over die
+    hetzelfde doet. Je verliest dus de waarschuwingskleur bij een tekort, niet de knop zelf.</p>
+  </div>
+
+  <div class="callout">
+    <p><strong>Waarom niet gewoon de kolom verbergen?</strong> Die staat al op
+    <code>optional="hide"</code> én is <code>column_invisible</code> voor alles wat niet uitgaand
+    is — op ontvangsten zie je hem dus nooit. Hij wordt toch berekend, omdat de zichtbaarheid van
+    die twee knoppen ernaar verwijst. Odoo voegt het veld daarom zelf terug toe aan de weergave.
+    Pas als niets er meer naar verwijst, valt de berekening weg.</p>
+  </div>
+
+  <h2 id="s2">2. Vooraf</h2>
+
+  <ul class="checklist">
+    <li><input type="checkbox" id="c-2-1"> <strong>Ontwikkelaarsmodus</strong> aanzetten:
+      Instellingen → onderaan → Ontwikkelaarstools activeren.</li>
+    <li><input type="checkbox" id="c-2-2"> Een <strong>back-up</strong> nemen in odoo.sh
+      (tabblad Backups → Backup now).</li>
+    <li><input type="checkbox" id="c-2-3"> Doe dit op een <strong>rustig moment</strong>: een
+      nieuwe weergave maakt de view-cache ongeldig, dus de eerste paginalading erna is trager.</li>
+  </ul>
+
+  <div class="callout">
+    <p>Dit raakt <strong>alle</strong> overdrachten, niet alleen ontvangsten. Ook op leveringen
+    verdwijnt de kleurbepaling van dat icoontje. De prognosekolom zelf, die op leveringen wél
+    aanzetbaar is via het kolommenmenu, verdwijnt daar eveneens.</p>
+  </div>
+
+  <h2 id="s3">3. De view aanmaken</h2>
+
+  <ul class="checklist">
+    <li><input type="checkbox" id="c-3-1"> Ga naar <strong>Instellingen → Technisch →
+      Gebruikersinterface → Weergaven</strong> en klik <strong>Nieuw</strong>.</li>
+    <li><input type="checkbox" id="c-3-2"> Vul in:
+      <ul>
+        <li><strong>Naam</strong>: <code>stock.picking.form.geen.forecast.bab</code></li>
+        <li><strong>Type weergave</strong>: <code>Formulier</code></li>
+        <li><strong>Model</strong>: <code>stock.picking</code></li>
+        <li><strong>Overgenomen weergave</strong>: <code>stock.picking.form</code>
+          (externe id <code>stock.view_picking_form</code>)</li>
+        <li><strong>Prioriteit</strong>: <code>99</code></li>
+      </ul>
+    </li>
+    <li><input type="checkbox" id="c-3-3"> Plak dit in <strong>Architectuur</strong>:</li>
+  </ul>
+
+  <div class="codewrap"><pre>&lt;data&gt;
+  &lt;xpath expr="//button[@name='action_product_forecast_report']" position="replace"&gt;
+    &lt;button type="object" name="action_product_forecast_report" title="Forecast Report"
+            icon="fa-area-chart"
+            invisible="not product_id or product_uom_qty == 0 or parent.state in ('draft', 'done')"/&gt;
+  &lt;/xpath&gt;
+  &lt;xpath expr="//button[@name='action_product_forecast_report'][2]" position="replace"/&gt;
+  &lt;xpath expr="//field[@name='forecast_availability']" position="replace"/&gt;
+  &lt;xpath expr="//field[@name='forecast_expected_date']" position="replace"/&gt;
+&lt;/data&gt;</pre></div>
+
+  <ul class="checklist">
+    <li><input type="checkbox" id="c-3-4"> Opslaan. Odoo controleert de weergave meteen; komt er
+      geen foutmelding, dan hebben alle vier de xpaths hun doel gevonden.</li>
+  </ul>
+
+  <div class="callout warn">
+    <p><strong>De volgorde van de xpaths doet ertoe.</strong> De eerste vervangt de blauwe knop
+    door de versie zonder prognoseverwijzing; de tweede haalt de rode weg, die op dat moment de
+    tweede knop met die naam is. Draai je ze om, dan klopt de telling niet meer.</p>
+  </div>
+
+  <h2 id="s4">4. Controleren</h2>
+
+  <ul class="checklist">
+    <li><input type="checkbox" id="c-4-1"> Open een ontvangst met veel regels en <strong>herlaad
+      de pagina</strong> (F5).</li>
+    <li><input type="checkbox" id="c-4-2"> Het staafdiagram-icoontje staat er nog, tussen Gevraagd
+      en Aantal, en is nu altijd blauw. Klik erop: het prognoserapport van dat product moet
+      gewoon openen.</li>
+    <li><input type="checkbox" id="c-4-3"> Vul een aantal in. Op een ontvangst van een paar
+      honderd regels hoort de melding <em>Laden</em> rechtsonder niet meer te verschijnen; op een
+      ontvangst van duizenden regels wordt de wachttijd merkbaar korter maar blijft ze zichtbaar
+      — zie <a href="#s6">stap 6</a>.</li>
+    <li><input type="checkbox" id="c-4-4"> Controleer ook een <strong>uitgaande</strong> levering:
+      het formulier moet normaal openen. Alleen de prognosekolom is daar niet meer aanzetbaar.</li>
+  </ul>
+
+  <h2 id="s5">5. Terugdraaien</h2>
+
+  <p>Eén handeling: ga terug naar <strong>Instellingen → Technisch → Gebruikersinterface →
+  Weergaven</strong>, zoek <code>stock.picking.form.geen.forecast.bab</code> en zet hem op
+  <strong>inactief</strong> (of verwijder hem). Alles staat meteen terug zoals het was; er is
+  niets aan gegevens gewijzigd.</p>
+
+  <h2 id="s6">6. Waar de grens ligt</h2>
+
+  <p>De kost van die <code>onchange</code> is strikt lineair in het aantal regels van de
+  ontvangst — <strong>ongeveer 0,75 ms per regel</strong>, gemeten na deze aanpassing:</p>
+
+  <table>
+    <tr><th>Ontvangst</th><th>Regels</th><th>onchange</th></tr>
+    <tr><td>WH/IN/00099</td><td class="num">185</td><td class="num">145 ms</td></tr>
+    <tr><td>WH/IN/00184</td><td class="num">450</td><td class="num">309 ms</td></tr>
+    <tr><td>VAS/IN/00084</td><td class="num">2484</td><td class="num">1898 ms</td></tr>
+  </table>
+
+  <p>De melding <em>Laden</em> verschijnt zodra een oproep ongeveer een kwart seconde duurt. Dat
+  komt neer op een grens rond <strong>330 regels</strong>: daaronder voelt invullen onmiddellijk,
+  daarboven zie je de melding bij elk getal.</p>
+
+  <div class="callout">
+    <p><strong>Wat hier verder niet aan te doen is.</strong> Die <code>onchange</code> zelf krijg
+    je niet weg: Odoo stuurt hem omdat de statusbalk van de overdracht berekend wordt uit haar
+    regels. Voor ontvangsten van duizenden regels blijven er dus maar twee echte remedies:
+    ze opsplitsen tot pakweg 300 regels, of ze via de barcode-app verwerken — die gebruikt dit
+    formulier niet.</p>
+  </div>
+
+  <h2 id="s7">7. Naslag: hoe het zonder override was</h2>
+
+  <p>Zodat je later kan terugzien wat er precies veranderd is. Dit staat in de standaardweergave
+  <code>stock.picking.form</code>, in de lijst van het tabblad Bewerkingen, en blijft daar ook
+  staan — de override laat het origineel ongemoeid en overschrijft het alleen bij het samenstellen
+  van de weergave.</p>
+
+  <p style="color:var(--muted);font-size:.9em">Uitgelezen op 2026-08-09 uit Odoo 18.0.</p>
+
+  <h3>De twee knoppen</h3>
+  <div class="codewrap"><pre>&lt;button type="object" name="action_product_forecast_report" title="Forecast Report"
+        icon="fa-area-chart"
+        invisible="not product_id or product_uom_qty == 0 or quantity == 0 and forecast_availability &lt;= 0
+                   or (parent.picking_type_code == 'outgoing' and state == 'draft')"/&gt;
+
+&lt;button type="object" name="action_product_forecast_report" title="Forecast Report"
+        icon="fa-area-chart text-danger"
+        invisible="not product_id or product_uom_qty == 0 or quantity &gt; 0 or forecast_availability &gt; 0
+                   or (parent.picking_type_code == 'outgoing' and state == 'draft')"/&gt;</pre></div>
+
+  <h3>De twee velden</h3>
+  <div class="codewrap"><pre>&lt;field name="forecast_expected_date" column_invisible="True"/&gt;
+
+&lt;field name="forecast_availability" string="Forecast" optional="hide"
+       column_invisible="parent.state in ('draft', 'done') or parent.picking_type_code != 'outgoing'"
+       widget="forecast_widget"/&gt;</pre></div>
+
+  <div class="callout ok">
+    <p>Achtergrond, meetmethode en alles wat wél en niet hielp: zie <code>overzicht.md</code> in
+    deze map, en het dagboek in <code>$claude/status.md</code> (entries 2026-08-08 en 2026-08-09).</p>
+  </div>
+</main>
+
+<script>
+(function () {
+  var STORE_KEY = 'bab-forecast-override-v1';
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) {}
+
+  var boxes = document.querySelectorAll('ul.checklist > li > input[type=checkbox]');
+  function updateProgress() {
+    var done = 0;
+    boxes.forEach(function (b) { if (b.checked) done++; });
+    var el = document.getElementById('progress');
+    if (el) el.textContent = done + ' / ' + boxes.length + ' afgevinkt';
+  }
+  boxes.forEach(function (b) {
+    if (saved[b.id]) b.checked = true;
+    b.parentNode.classList.toggle('done', b.checked);
+    b.addEventListener('change', function () {
+      saved[b.id] = b.checked;
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(saved)); } catch (e) {}
+      b.parentNode.classList.toggle('done', b.checked);
+      updateProgress();
+    });
+  });
+  updateProgress();
+
+  var clearBtn = document.getElementById('clear-state');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function () {
+      if (!confirm('Alle vinkjes op deze pagina wissen?')) return;
+      boxes.forEach(function (b) { b.checked = false; b.parentNode.classList.remove('done'); });
+      saved = {};
+      try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+      updateProgress();
+    });
+  }
+
+  document.querySelectorAll('.codewrap').forEach(function (wrap) {
+    var pre = wrap.querySelector('pre');
+    if (!pre) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy';
+    btn.textContent = 'Kopieer';
+    btn.addEventListener('click', function () {
+      var tekst = pre.textContent;
+      function gelukt() {
+        btn.textContent = 'Gekopieerd';
+        btn.classList.add('ok');
+        setTimeout(function () { btn.textContent = 'Kopieer'; btn.classList.remove('ok'); }, 1600);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(tekst).then(gelukt, function () {});
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = tekst;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); gelukt(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+    wrap.appendChild(btn);
+  });
+})();
+</script>
+</body>
+</html>

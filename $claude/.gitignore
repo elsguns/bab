@@ -1,0 +1,21 @@
+# Wat hieronder in git hoort: wat ik zelf gemaakt heb -- gidsen (.html),
+# notities (.md), importbestanden (.xlsx) en bouwscripts (.py).
+#
+# Wat niet: ruwe klantinvoer en momentopnames uit productie. Die zijn groot,
+# verouderen bij de eerste wijziging in de databank, en zijn bij een volgende
+# ronde gewoon opnieuw op te halen. De gidsen beschrijven hoe.
+
+input_klant/
+
+*.zip
+*.xls
+*.jpg
+*.jpeg
+*.pdf
+
+afbeeldingen_*/
+wetransfer_*/
+
+# Testbestanden voor een werkkopie: de externe ID's van merken en categorieen
+# zijn per databank verschillend, dus buiten die ene kopie zijn ze onbruikbaar.
+werkkopie_test/

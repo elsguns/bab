@@ -1,0 +1,457 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAB — Totaal gewicht op de batch</title>
+<style>
+:root{--fg:#1d2433;--muted:#5b6478;--accent:#875a7b;--accent-soft:#f3e8ee;
+--rule:#e3e6ed;--code-bg:#f4f5f7;--ok:#eef7ee;--ok-bd:#bcdfbc;--warn:#fff7e6;--warn-bd:#f0c36d;
+--bad:#fdecea;--bad-bd:#f0b3ac;--info:#eef4fb;--info-bd:#b8d0eb;}
+*,*::before,*::after{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+color:var(--fg);background:#fff;display:grid;grid-template-columns:300px minmax(0,1fr);min-height:100vh;}
+aside.toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;padding:1.4rem 1.2rem 2rem;
+border-right:1px solid var(--rule);background:#fafbfd;font-size:14px;}
+aside.toc h2{margin:0 0 .6rem;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+aside.toc ol{list-style:none;padding:0;margin:0 0 1.2rem;}
+aside.toc a{display:block;padding:.2rem .4rem;color:var(--fg);text-decoration:none;border-radius:4px;}
+aside.toc a:hover{background:var(--accent-soft);color:var(--accent);}
+main{padding:2rem 2.4rem 4rem;max-width:1000px;}
+h1{margin:0 0 .3rem;font-size:26px;}
+.sub{color:var(--muted);margin:0 0 1.6rem;}
+h2{margin:2.2rem 0 .5rem;padding-bottom:.3rem;border-bottom:2px solid var(--accent);color:var(--accent);font-size:20px;}
+h3{margin:1.6rem 0 .4rem;font-size:16px;}
+p{margin:.5rem 0;}
+table{border-collapse:collapse;width:100%;margin:.6rem 0 1rem;font-size:14px;}
+th,td{text-align:left;vertical-align:top;padding:.5rem .6rem;border-bottom:1px solid var(--rule);}
+th{background:#fafbfd;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+code{background:var(--code-bg);padding:.05em .35em;border-radius:4px;font-size:13px;
+font-family:ui-monospace,Menlo,Consolas,monospace;}
+pre{background:var(--code-bg);border:1px solid var(--rule);border-radius:8px;padding:.8rem 1rem;
+overflow-x:auto;font-size:13px;line-height:1.45;font-family:ui-monospace,Menlo,Consolas,monospace;}
+.box{border-radius:8px;padding:.8rem 1rem;margin:1rem 0;font-size:13.5px;border:1px solid;}
+.box-info{background:var(--info);border-color:var(--info-bd);}
+.box-ok{background:var(--ok);border-color:var(--ok-bd);}
+.box-warn{background:var(--warn);border-color:var(--warn-bd);}
+.box-bad{background:var(--bad);border-color:var(--bad-bd);}
+.box h3{margin:0 0 .35rem;}
+.tag{display:inline-block;border-radius:5px;padding:.05em .5em;font-size:12px;font-weight:600;border:1px solid;}
+.tag-rec{background:var(--ok);border-color:var(--ok-bd);color:#2f6b2f;}
+.tag-quick{background:var(--info);border-color:var(--info-bd);color:#274b73;}
+.tag-avoid{background:var(--bad);border-color:var(--bad-bd);color:#9c2a1c;}
+.muted{color:var(--muted);}
+.kbd{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;background:#fff;border:1px solid var(--rule);
+border-radius:4px;padding:.05em .4em;}
+ol.steps{list-style:none;counter-reset:step;padding:0;margin:1rem 0;}
+ol.steps>li{position:relative;padding:.55rem .6rem .55rem 2.4rem;border-bottom:1px solid var(--rule);}
+ol.steps>li::before{content:"";position:absolute;left:.55rem;top:.62rem;width:1.05rem;height:1.05rem;
+border:1.5px solid var(--accent);border-radius:4px;}
+ol.steps input{position:absolute;left:.5rem;top:.55rem;width:1.2rem;height:1.2rem;margin:0;opacity:0;cursor:pointer;}
+ol.steps input:checked+span::before{content:"\2713";position:absolute;left:.7rem;top:.5rem;color:var(--accent);font-weight:700;}
+
+  /* Wisknop voor de vinkjes, bovenaan de zijbalk. */
+  button.o_clear {
+    display: block; width: 100%; margin: 0 0 1rem;
+    font: inherit; font-size: 12px; padding: .4rem .6rem; cursor: pointer;
+    color: var(--accent); background: #fff;
+    border: 1px solid var(--rule); border-radius: 4px;
+  }
+  button.o_clear:hover { background: var(--accent-soft); }
+  button.o_clear.done { color: #198754; border-color: #9dcda3; }
+  @media print { button.o_clear { display: none; } }
+
+  /* Kopieerknop op elk codeblok. */
+  .o_code { position: relative; }
+  .o_code > button.o_copy {
+    position: absolute; top: .5rem; right: .5rem;
+    font: inherit; font-size: 12px; line-height: 1;
+    padding: .3rem .6rem; cursor: pointer;
+    color: var(--accent); background: #fff;
+    border: 1px solid var(--rule); border-radius: 4px;
+    opacity: .55; transition: opacity .15s;
+  }
+  .o_code:hover > button.o_copy { opacity: 1; }
+  .o_code > button.o_copy:hover { background: var(--accent-soft); }
+  .o_code > button.o_copy.done { color: #198754; border-color: #9dcda3; opacity: 1; }
+  .o_code > pre { margin-top: 0; }
+  @media print { .o_code > button.o_copy { display: none; } }
+</style></head><body><aside class="toc"><button type="button" class="o_clear" id="o_wis">Vinkjes wissen</button>
+<h2>Inhoud</h2><ol>
+<li><a href="#doel">Doel &amp; overzicht</a></li>
+<li><a href="#voor">Voorbereiding</a></li>
+<li><a href="#s1">Stap 1 · Nulmeting</a></li>
+<li><a href="#s2">Stap 2 · Actie A — grammen naar kg</a></li>
+<li><a href="#s3">Stap 3 · Actie B — sjabloon naar varianten</a></li>
+<li><a href="#s4">Stap 4 · Actie C — bewegingen rechtzetten</a></li>
+<li><a href="#s5">Stap 5 · Controle van de opkuis</a></li>
+<li><a href="#s6">Stap 6 · Het veld aanmaken</a></li>
+<li><a href="#s7">Stap 7 · Op het rapport</a></li>
+<li><a href="#s8">Stap 8 · Eindcontrole en opruimen</a></li>
+<li><a href="#terug">Terugdraaien</a></li>
+<li><a href="#waarom">Achtergrond — waarom alles op 0 stond</a></li>
+<li><a href="#valkuil">De twee valkuilen</a></li>
+<li><a href="#perf">Performantie van het veld</a></li>
+<li><a href="#voortaan">Voortaan — gewichten invullen</a></li>
+</ol></aside>
+<main>
+<h1>Totaal gewicht op de batch</h1>
+<p class="sub">BAB · Odoo 18.0 · uitvoergids voor productie — <strong>alles via de UI</strong>, geen shell of
+code-installatie nodig · 2026-08-11</p>
+
+<h2 id="doel">Doel &amp; overzicht</h2>
+<p>Een opgeslagen veld <strong>Totaal gewicht</strong> op de batchpicking, klaar om via Studio op het
+batchbriefje te zetten. Daarvóór moet de brondata recht: vandaag komen de meeste batches op
+<strong>0,00&nbsp;kg</strong> uit omdat de productgewichten op het <em>sjabloon</em> staan en niet op de
+<em>variant</em>, en Odoo's voorraadbewegingen lezen de variant.</p>
+
+<table>
+<thead><tr><th>Stap</th><th>Waar</th><th>Wat</th><th>Duur*</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Serveractie</td><td>Nulmeting — vastleggen hoe het er nú voorstaat</td><td>&lt; 1 s</td></tr>
+<tr><td>2</td><td>Serveractie A</td><td>Sjablonen die in grammen staan delen door 1000</td><td>0,2 s</td></tr>
+<tr><td>3</td><td>Serveractie B</td><td>Sjabloongewicht doorduwen naar de varianten</td><td>4 s</td></tr>
+<tr><td>4</td><td>Serveractie C</td><td><code>weight</code> op de bestaande bewegingen rechtzetten</td><td>7 s</td></tr>
+<tr><td>5</td><td>Serveractie</td><td>Controle — dezelfde meting, nu met resultaat</td><td>&lt; 1 s</td></tr>
+<tr><td>6</td><td>Technisch → Velden</td><td>Het veld <code>x_weight_total</code> aanmaken</td><td>&lt; 1 s</td></tr>
+<tr><td>7</td><td>Studio</td><td>Het veld op het batchrapport zetten (twee kopblokken!)</td><td>—</td></tr>
+<tr><td>8</td><td>UI</td><td>Eindcontrole en de eenmalige acties verwijderen</td><td>—</td></tr>
+</tbody></table>
+<p class="muted">* Gemeten op de werkkopie (70 279 bewegingen, 4294 batchleveringen, 1856 batches). Productie
+is groter, reken op een veelvoud — maar dit blijft werk van minuten, niet van uren.</p>
+
+<div class="box box-info">
+<p><strong>Verwacht resultaat</strong> (gemeten op de werkkopie): batchleveringen mét een gewicht gaat van
+<strong>2267 naar 3500</strong> van de 4294 (82&nbsp;%), gemiddeld <strong>75&nbsp;kg</strong> per batch. De
+resterende 18&nbsp;% blijft 0 tot die artikels een gewicht krijgen.</p>
+</div>
+
+<h2 id="voor">Voorbereiding</h2>
+<ol class="steps">
+<li><label><input type="checkbox"><span><strong>Ontwikkelaarsmodus aan</strong>: <em>Instellingen</em> → onderaan <em>Ontwikkelaarshulpmiddelen</em> → <em>Ontwikkelaarsmodus activeren</em>.</span></label></li>
+<li><label><input type="checkbox"><span><strong>Buiten de piekuren</strong> werken. Stap 4 herschrijft veel rijen; er verandert niets aan de voorraad, maar het is druk verkeer op de database.</span></label></li>
+<li><label><input type="checkbox"><span><strong>Backup.</strong> Odoo.sh houdt dagelijkse backups bij. Stap 2 is met de hand omkeerbaar (× 1000), stap 3 en 4 zijn herberekenbaar — het risico is klein, maar weet waar je backup staat vóór je begint.</span></label></li>
+<li><label><input type="checkbox"><span>De serveracties maak je in <em>Instellingen → Technisch → Acties → Serveracties</em> → <strong>Nieuw</strong>. Telkens: <strong>Model</strong> invullen zoals vermeld, <strong>Type</strong> = <em>Python-code uitvoeren</em>, code plakken, opslaan.</span></label></li>
+<li><label><input type="checkbox"><span>Draaien doe je met de knop <strong>Uitvoeren</strong> bovenaan het formulier van de actie zelf. De acties zoeken hun eigen records — je hoeft <em>niets</em> te selecteren in een lijst.</span></label></li>
+<li><label><input type="checkbox"><span>Wat de acties rapporteren lees je in <em>Instellingen → Technisch → Logboekregels</em> (nieuwste bovenaan).</span></label></li>
+</ol>
+
+<div class="box box-warn">
+<p><strong>Volgorde is niet vrijblijvend.</strong> A → B → C. Draai je B vóór A, dan duw je de
+gram-waarden door naar duizenden varianten en staat het gewicht er duizend keer te zwaar in.</p>
+</div>
+
+<h2 id="s1">Stap 1 · Nulmeting</h2>
+<p>Maak eerst de controle-actie. Je draait ze twee keer: nu, en opnieuw na de opkuis. Zo zie je zwart op wit
+wat er veranderd is.</p>
+<p><strong>Naam:</strong> <code>* Gewicht: controle</code> — <strong>Model:</strong>
+<code>Batchoverdracht</code> (<code>stock.picking.batch</code>) — <strong>Type:</strong> Python-code
+uitvoeren</p>
+<pre>Variant = env['product.product']
+Picking = env['stock.picking']
+Template = env['product.template']
+log('sjablonen die nog in grammen staan: %s' % Template.search_count([('weight', '&gt;=', 100)]))
+log('varianten zonder gewicht: %s' % Variant.search_count([('weight', '=', 0)]))
+log('batchleveringen met gewicht: %s' % Picking.search_count([('batch_id', '!=', False), ('weight', '&gt;', 0)]))
+log('batchleveringen zonder gewicht: %s' % Picking.search_count([('batch_id', '!=', False), ('weight', '=', 0)]))</pre>
+<ol class="steps">
+<li><label><input type="checkbox"><span>Actie aanmaken en op <strong>Uitvoeren</strong> klikken.</span></label></li>
+<li><label><input type="checkbox"><span>De vier regels noteren uit <em>Technisch → Logboekregels</em>. Dit is je nulmeting.</span></label></li>
+</ol>
+<p class="muted">Op de werkkopie was dat vóór de opkuis: 234 sjablonen in grammen · 16 825 varianten zonder
+gewicht · 2267 batchleveringen mét · 2027 zonder.</p>
+
+<h2 id="s2">Stap 2 · Actie A — grammen naar kilogram</h2>
+<p>Een handvol artikels staat in grammen (ronde waarden 1500, 2000, 3000, 4000, 5000, 6000 — een pullover
+van 5000&nbsp;kg). Die deelt deze actie door 1000.</p>
+<ol class="steps">
+<li><label><input type="checkbox"><span><strong>Eerst kijken wat erin zit</strong>: <em>Voorraad → Producten → Producten</em>, aangepaste filter <code>Gewicht &gt;= 100</code>. Zitten er artikels tussen die écht zwaarder zijn dan 100&nbsp;kg? Pas dan het getal <code>100</code> in de code aan of sluit ze uit.</span></label></li>
+<li><label><input type="checkbox"><span>Actie aanmaken — <strong>Naam:</strong> <code>* Gewicht: grammen naar kilogram</code>, <strong>Model:</strong> <code>Productsjabloon</code> (<code>product.template</code>).</span></label></li>
+<li><label><input type="checkbox"><span><strong>Uitvoeren</strong>. Verwacht in het logboek: het aantal sjablonen dat is aangepast.</span></label></li>
+</ol>
+<pre>templates = env['product.template'].search([('weight', '&gt;=', 100)])
+log('grammen naar kg: %s sjablonen' % len(templates))
+for template in templates:
+    template['weight'] = template.weight / 1000.0</pre>
+
+<h2 id="s3">Stap 3 · Actie B — sjabloongewicht naar de varianten</h2>
+<p>Dit is de kern van het probleem: het gewicht staat op het sjabloon, de voorraadbewegingen lezen de
+variant. Deze actie kopieert het sjabloongewicht naar elke variant die er nog geen heeft.</p>
+<ol class="steps">
+<li><label><input type="checkbox"><span>Actie aanmaken — <strong>Naam:</strong> <code>* Gewicht: sjabloon doorduwen naar varianten</code>, <strong>Model:</strong> <code>Productsjabloon</code> (<code>product.template</code>).</span></label></li>
+<li><label><input type="checkbox"><span><strong>Uitvoeren</strong>. Verwacht: enkele duizenden varianten (op de werkkopie 9171).</span></label></li>
+<li><label><input type="checkbox"><span>Steekproef: open een kledingstuk met maten, tabblad <em>Varianten</em>, open er één en kijk of het gewicht ingevuld staat.</span></label></li>
+</ol>
+<pre>templates = env['product.template'].search([('weight', '&gt;', 0)])
+aantal = 0
+for template in templates:
+    gewicht = template.weight
+    for variant in template.product_variant_ids:
+        if not variant.weight:
+            variant['weight'] = gewicht
+            aantal += 1
+log('varianten een gewicht gegeven: %s' % aantal)</pre>
+<div class="box box-warn">
+<p><strong>Wijzig die eerste regel van de lus niet.</strong> <code>gewicht = template.weight</code> moet
+vóór de binnenste lus staan. Zodra de eerste variant een gewicht krijgt, herberekent Odoo het
+sjabloongewicht naar 0 — schrijf je <code>variant['weight'] = template.weight</code> rechtstreeks, dan
+krijgt enkel de eerste variant de juiste waarde. Zie <a href="#valkuil">De twee valkuilen</a>.</p>
+</div>
+
+<h2 id="s4">Stap 4 · Actie C — bewegingen rechtzetten</h2>
+<p>De bestaande leveringen kennen hun gewicht nog niet: Odoo berekent het gewicht van een beweging bij
+aanmaak en herrekent het níét als het productgewicht later verandert. Deze actie zet het recht met exact
+dezelfde formule als Odoo zelf (<code>gevraagd aantal × gewicht van de variant</code>), en enkel waar de
+waarde effectief verschilt. De leveringen en de batchtotalen volgen automatisch.</p>
+<ol class="steps">
+<li><label><input type="checkbox"><span>Actie aanmaken — <strong>Naam:</strong> <code>* Gewicht: bewegingen rechtzetten</code>, <strong>Model:</strong> <code>Voorraadverplaatsing</code> (<code>stock.move</code>).</span></label></li>
+<li><label><input type="checkbox"><span><strong>Uitvoeren</strong> en even geduld — op de werkkopie 70 279 bewegingen in 6,4&nbsp;s.</span></label></li>
+<li><label><input type="checkbox"><span>In het logboek staat hoeveel bewegingen gecorrigeerd zijn.</span></label></li>
+</ol>
+<pre>moves = env['stock.move'].search([])
+per_waarde = {}
+aantal = 0
+for move in moves:
+    nieuw = move.product_qty * move.product_id.weight
+    if abs(nieuw - move.weight) &gt; 0.0001:
+        per_waarde.setdefault(nieuw, []).append(move.id)
+        aantal += 1
+log('bewegingen te corrigeren: %s' % aantal)
+for waarde, ids in per_waarde.items():
+    env['stock.move'].browse(ids)['weight'] = waarde</pre>
+<div class="box box-bad">
+<p><strong>Vervang dit niet door <code>moves.modified([...])</code>.</strong> Dat lijkt eleganter maar
+sloopt reservaties — gemeten: 2467 reservatielijnen weg. Zie <a href="#valkuil">De twee valkuilen</a>.</p>
+</div>
+<p class="muted">Loopt de actie tegen een time-out aan doordat productie veel groter is? Beperk ze dan tot
+een deel van de bewegingen en draai ze een paar keer, bv.
+<code>search([('date', '&gt;', '2025-01-01')])</code> — of laat de rest gewoon staan: enkel wat je op een
+briefje wil zien, moet recht.</p>
+
+<h2 id="s5">Stap 5 · Controle van de opkuis</h2>
+<ol class="steps">
+<li><label><input type="checkbox"><span>De actie <code>* Gewicht: controle</code> uit <a href="#s1">stap 1</a> opnieuw <strong>Uitvoeren</strong> en vergelijken met je nulmeting.</span></label></li>
+<li><label><input type="checkbox"><span><em>sjablonen in grammen</em> moet <strong>0</strong> zijn.</span></label></li>
+<li><label><input type="checkbox"><span><em>batchleveringen met gewicht</em> moet fors gestegen zijn (werkkopie: 2267 → 3500).</span></label></li>
+<li><label><input type="checkbox"><span>Steekproef in de UI: <em>Voorraad → Overdrachten</em>, kolom <strong>Gewicht</strong> toevoegen via het kolommenknopje rechtsboven, en een paar recente leveringen bekijken.</span></label></li>
+</ol>
+<div class="box box-ok">
+<p>Reservaties horen ongemoeid te blijven. Na de test op de werkkopie stonden het aantal reservatielijnen
+(54 101), het aantal gereserveerde bewegingen (4720) en de som van de aantallen (358 118) exact gelijk aan
+vóór de run. Zie je wél verschuivingen in <em>Gereserveerd</em>, stop dan en bekijk het samen.</p>
+</div>
+
+<h2 id="s6">Stap 6 · Het veld aanmaken</h2>
+<p><em>Instellingen → Technisch → Structuur van de database → Velden</em> → <strong>Nieuw</strong>.</p>
+<table>
+<thead><tr><th>Veld in het formulier</th><th>Waarde</th></tr></thead>
+<tbody>
+<tr><td>Model</td><td><code>stock.picking.batch</code> (Batchoverdracht)</td></tr>
+<tr><td>Veldnaam</td><td><code>x_weight_total</code></td></tr>
+<tr><td>Veldlabel</td><td>Totaal gewicht</td></tr>
+<tr><td>Veldtype</td><td><code>float</code></td></tr>
+<tr><td>Opgeslagen</td><td><strong>aangevinkt</strong></td></tr>
+<tr><td>Alleen-lezen</td><td>aangevinkt</td></tr>
+<tr><td>Gekopieerd</td><td>uit</td></tr>
+<tr><td>Afhankelijkheden</td><td><code>picking_ids.weight</code></td></tr>
+<tr><td>Berekenen</td><td>de code hieronder</td></tr>
+</tbody></table>
+<pre>for record in self:
+    record['x_weight_total'] = round(sum(record.picking_ids.mapped('weight')), 2)</pre>
+<ol class="steps">
+<li><label><input type="checkbox"><span>Opslaan. Meer moet je niet doen: Odoo maakt de kolom aan en berekent meteen alle bestaande batches. Getest: 1856 batches, waarvan 1526 direct een gewicht &gt; 0 kregen.</span></label></li>
+<li><label><input type="checkbox"><span>Controle: <em>Voorraad → Bewerkingen → Batchtransfers</em>, kolom <strong>Totaal gewicht</strong> toevoegen en aflopend sorteren. De zwaarste batch moet een plausibel getal tonen (werkkopie: 5529&nbsp;kg voor 7 leveringen met 2071 stuks).</span></label></li>
+<li><label><input type="checkbox"><span>Open die batch en tel de kolom <em>Gewicht</em> van zijn leveringen op — dat moet exact het batchtotaal geven.</span></label></li>
+</ol>
+<div class="box box-info">
+<p><strong>Waarom die naam?</strong> Odoo's veld op de levering heet <code>weight</code>; de bestaande
+batchtotalen heten <code>x_uom_qty_total</code> en <code>x_quantity_total</code>. Dus
+<code>x_weight_total</code>. Maak je het veld via Studio in plaats van via Technisch → Velden, hernoem het
+dan naar diezelfde naam — Studio stelt zelf een <code>x_studio_…</code>-naam voor.</p>
+</div>
+
+<h2 id="s7">Stap 7 · Op het rapport</h2>
+<ol class="steps">
+<li><label><input type="checkbox"><span><em>Instellingen → Technisch → Rapporten</em> → <strong>Batchepicking</strong> openen → <strong>Bewerken in Studio</strong>.</span></label></li>
+<li><label><input type="checkbox"><span>Het veld in het kopblok zetten, onder <em>Leverinformatie</em>, met een vast label: <strong>Totaal gewicht:</strong> … <strong>kg</strong>.</span></label></li>
+<li><label><input type="checkbox"><span><strong>Twee kopblokken!</strong> Dezelfde kop staat op pagina 1 (samenvatting) én pagina 2 (detail). Doe het op beide, anders staat het gewicht maar op één blad.</span></label></li>
+<li><label><input type="checkbox"><span>Eén batch afdrukken ter controle.</span></label></li>
+</ol>
+<p>In XML komt dat neer op:</p>
+<pre>&lt;strong&gt;Totaal gewicht:&lt;/strong&gt;
+&lt;span t-field="o.x_weight_total"/&gt; kg</pre>
+<div class="box box-info">
+<p><strong>&ldquo;kg&rdquo; is vaste tekst.</strong> Het eenheidslabel <code>weight_uom_name</code> bestaat
+enkel op de levering, niet op de batch. In deze database staat de gewichtseenheid op kilogram; wijzigt dat
+ooit, dan moet die tekst mee.</p>
+</div>
+
+<h2 id="s8">Stap 8 · Eindcontrole en opruimen</h2>
+<ol class="steps">
+<li><label><input type="checkbox"><span>Een batchbriefje afdrukken van een batch met meerdere leveringen — staat het gewicht er op beide bladen?</span></label></li>
+<li><label><input type="checkbox"><span>Een levering aanpassen (aantal wijzigen) en controleren dat het batchtotaal meebeweegt. <span class="muted">Getest: beweging 0,4 → 5,4&nbsp;kg trok de levering én het batchtotaal mee.</span></span></label></li>
+<li><label><input type="checkbox"><span>De drie eenmalige acties (<code>A</code>, <code>B</code>, <code>C</code>) verwijderen. De controle-actie mag je houden — handig om later opnieuw te meten.</span></label></li>
+<li><label><input type="checkbox"><span>Ontwikkelaarsmodus weer uit.</span></label></li>
+</ol>
+
+<h2 id="terug">Terugdraaien</h2>
+<table>
+<thead><tr><th>Wat</th><th>Hoe</th></tr></thead>
+<tbody>
+<tr><td>Het veld</td><td>Eerst uit het rapport halen (Studio, beide kopblokken), dán het veld verwijderen in <em>Technisch → Velden</em>. Andersom rendert de PDF een onbekend veld.</td></tr>
+<tr><td>Actie C</td><td>Niets te herstellen: de waarden zijn exact wat Odoo zelf zou berekenen.</td></tr>
+<tr><td>Actie B</td><td>Een variantgewicht wissen kan per product, maar er is geen reden toe — zonder dit staat het gewicht nergens.</td></tr>
+<tr><td>Actie A</td><td>Omkeerbaar met dezelfde actie waarin je <code>/ 1000.0</code> vervangt door <code>* 1000.0</code> en de filter aanpast. Doe dat enkel als blijkt dat die waarden tóch geen grammen waren.</td></tr>
+</tbody></table>
+
+<h2 id="waarom">Achtergrond — waarom alles op 0 stond</h2>
+<h3>1 · Het gewicht staat op het sjabloon, niet op de variant</h3>
+<p>Een voorraadbeweging rekent met het gewicht van de <strong>variant</strong>. Odoo duwt een sjabloongewicht
+enkel door naar de variant bij <em>éénvariant</em>-producten; bij een kledingstuk met maten en kleuren blijft
+het op het sjabloon staan en zien de bewegingen het nooit. Op de werkkopie: van de 8272 varianten die het
+afgelopen jaar in batchleveringen zaten, hadden er maar <strong>980</strong> (12&nbsp;%) een eigen gewicht,
+terwijl 445 sjablonen er wél één droegen.</p>
+<p class="muted">Voorbeeld: <em>52550 Jas</em> — 0,60&nbsp;kg op het sjabloon, 42 varianten zonder gewicht.
+Een batchlevering met 220 lijnen kwam zo op 0,00&nbsp;kg uit.</p>
+
+<h3>2 · Een later ingevuld gewicht herrekent de historiek niet</h3>
+<p>Odoo's <code>stock.move.weight</code> hangt af van het product, het aantal en de maateenheid —
+<strong>niet</strong> van het gewicht van dat product. Een levering die gemaakt is vóór het gewicht bestond,
+houdt dus eeuwig 0. Vandaar stap 4.</p>
+
+<h3>3 · Een deel van de gewichten stond in grammen</h3>
+<p>De mediaan van de ingevulde gewichten is 0,31&nbsp;kg (klopt voor kleding), maar er stonden ook ronde
+waarden 1500 tot 6000 tussen. Ongewijzigd doorduwen zou het jaartotaal op 28 000 ton brengen in plaats van
+141 ton. Vandaar stap 2, vóór stap 3.</p>
+
+<h2 id="valkuil">De twee valkuilen</h2>
+<div class="box box-bad">
+<h3>Geen <code>modified()</code> om een herberekening af te dwingen</h3>
+<p>De voor de hand liggende truc is <code>moves.modified(['product_id'])</code>. Dat markeert álle velden die
+van <code>product_id</code> afhangen — en op <code>stock.move</code> zit daar ook <code>quantity</code>
+tussen. Getest op een werkkopie: alle 70 279 bewegingen herschreven, <strong>2467 reservatielijnen
+verdwenen</strong> en 2475 bewegingen sprongen van <em>gereserveerd</em> terug naar <em>bevestigd</em>. Ook
+nog eens twaalf keer trager (81&nbsp;s tegenover 6,4&nbsp;s). Dezelfde valkuil geldt voor
+<code>picking.modified(['move_ids'])</code>: dat hangt aan <code>state</code>, <code>scheduled_date</code>
+en <code>sale_id</code>.</p>
+<p>Actie C schrijft daarom <code>weight</code> rechtstreeks. Dat raakt precies één kolom, en omdat het een
+gewone schrijfbewerking is, lopen de afhankelijke velden (levering → batchtotaal) wél netjes mee.</p>
+</div>
+<div class="box box-bad">
+<h3>Lees het sjabloongewicht vóór de lus in een variabele</h3>
+<p><code>product.template.weight</code> is een <em>berekend</em> veld: het volgt de varianten. Zodra de
+eerste variant een gewicht krijgt, valt de sjabloonwaarde bij een meervariant-product terug op
+<strong>0</strong>. Wie <code>variant['weight'] = template.weight</code> rechtstreeks in de lus schrijft,
+geeft dus enkel de eerste variant de juiste waarde en alle andere een 0. Gemeten: 441 varianten in plaats
+van 9171, en een totaalgewicht dat 20&nbsp;% te laag uitkwam.</p>
+</div>
+<p class="muted">Nog een randvoorwaarde: de code van een serveractie draait door <code>safe_eval</code>. Geen
+<code>lambda</code>, geen comprehensions, en geen namen met een underscore — <code>_fields</code> en
+<code>_read_group</code> zijn dus onbereikbaar. De code in deze gids houdt daar rekening mee.</p>
+
+<h2 id="perf">Performantie van het veld</h2>
+<div class="box box-ok">
+<p>Gemeten op de werkkopie: <strong>2 queries, 5,4&nbsp;ms</strong> voor 30 batches met koude cache, en de
+waarden komen exact overeen met een <code>SUM(weight) GROUP BY batch_id</code> in SQL (1856 batches
+gecontroleerd, 0 afwijkingen).</p>
+</div>
+<ul>
+<li><strong>Eén query voor de leveringen, één voor het gewicht.</strong> <code>picking_ids</code> is een echte
+one2many en <code>weight</code> staat opgeslagen op de levering; Odoo haalt het gewicht van álle leveringen
+van álle batches in één keer op. Het blijven 2 queries, of je nu 1 of 500 batches herberekent.</li>
+<li><strong>Niets extra bij het openen van een batch of het afdrukken.</strong> Het veld is opgeslagen — de
+lijst, het formulier en de PDF lezen gewoon een kolom mee.</li>
+<li><strong>Herberekenen gebeurt zelden.</strong> Enkel wanneer het gewicht van een levering verandert (lijn
+erbij, aantal of product gewijzigd, levering uit de batch). Reserveren en onreserveren raken het niet: het
+gewicht hangt aan het <em>gevraagde</em> aantal, niet aan het gepickte.</li>
+<li><strong>Geen <code>move_ids</code> in de afhankelijkheden.</strong> Dat is de gekende traagheidsval op dit
+model (onreserveren werd er ooit 11&nbsp;s traag van). Het veld hangt aan <code>picking_ids.weight</code> —
+beide kanten opgeslagen en doorzoekbaar.</li>
+</ul>
+
+<h2 id="voortaan">Voortaan — gewichten invullen</h2>
+<div class="box box-warn">
+<p><strong>Vul gewichten in op de variant, niet op het sjabloon.</strong> Wat je op het sjabloon van een
+maten/kleuren-product typt, bereikt de voorraadbewegingen nooit — dat is precies waarom alles op 0 stond. Ga
+via het tabblad <em>Varianten</em> → variant openen → <em>Gewicht</em>, of importeer op
+<em>Productvarianten</em> met de kolom <code>weight</code>.</p>
+</div>
+<ul>
+<li><strong>Na de opkuis tonen ±441 sjablonen 0,00 bij Gewicht.</strong> Dat is standaard Odoo: het
+sjabloongewicht wordt berekend uit de varianten en toont enkel iets bij een product met één variant. De
+gegevens zitten nu op de varianten, waar ze gelezen worden.</li>
+<li><strong>Wat geen gewicht heeft, telt als 0.</strong> Na de opkuis blijft ±18&nbsp;% van de
+batchleveringen op 0 staan omdat die artikels nergens een gewicht hebben. Het batchtotaal is dus een
+ondergrens; de controle-actie vertelt je hoeveel varianten er nog ontbreken.</li>
+<li><strong>Loopt het opnieuw scheef</strong> (bv. na een grote import op sjabloonniveau), dan zet je het
+recht door actie B en C nog eens te draaien.</li>
+<li><strong>Historische batches bewegen niet mee.</strong> Verander je later een productgewicht, dan blijft
+het totaal van oude batches staan zoals het was — voor een afdrukbriefje net goed, maar hou er rekening mee
+bij een analyse achteraf.</li>
+</ul>
+</main><script>
+(function () {
+  // Vinkjes onthouden per gids, en een knop om ze allemaal te wissen.
+  var sleutel = 'bab_totaal_gewicht_vinkjes';
+  var vakjes = Array.prototype.slice.call(document.querySelectorAll('ol.steps input[type=checkbox]'));
+  var bewaard = {};
+  try { bewaard = JSON.parse(localStorage.getItem(sleutel) || '{}'); } catch (e) { bewaard = {}; }
+  vakjes.forEach(function (vak, i) {
+    if (bewaard[i]) { vak.checked = true; }
+    vak.addEventListener('change', function () {
+      bewaard[i] = vak.checked;
+      try { localStorage.setItem(sleutel, JSON.stringify(bewaard)); } catch (e) {}
+    });
+  });
+  var wis = document.getElementById('o_wis');
+  if (wis) {
+    wis.addEventListener('click', function () {
+      vakjes.forEach(function (vak) { vak.checked = false; });
+      bewaard = {};
+      try { localStorage.removeItem(sleutel); } catch (e) {}
+      wis.textContent = 'Gewist';
+      wis.classList.add('done');
+      setTimeout(function () { wis.textContent = 'Vinkjes wissen'; wis.classList.remove('done'); }, 1500);
+    });
+  }
+})();
+(function () {
+  document.querySelectorAll('pre').forEach(function (pre) {
+    if (pre.parentNode.classList.contains('o_code')) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'o_code';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+    var knop = document.createElement('button');
+    knop.type = 'button';
+    knop.className = 'o_copy';
+    knop.textContent = 'Kopiëren';
+    wrap.appendChild(knop);
+    knop.addEventListener('click', function () {
+      var tekst = pre.innerText;
+      function gelukt() {
+        knop.textContent = 'Gekopieerd';
+        knop.classList.add('done');
+        setTimeout(function () {
+          knop.textContent = 'Kopiëren';
+          knop.classList.remove('done');
+        }, 1500);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(tekst).then(gelukt, terugval);
+      } else {
+        terugval();
+      }
+      function terugval() {
+        var hulp = document.createElement('textarea');
+        hulp.value = tekst;
+        hulp.style.position = 'fixed';
+        hulp.style.opacity = '0';
+        document.body.appendChild(hulp);
+        hulp.select();
+        try { document.execCommand('copy'); gelukt(); } catch (e) { knop.textContent = 'Mislukt'; }
+        document.body.removeChild(hulp);
+      }
+    });
+  });
+})();
+</script>
+</body></html>
