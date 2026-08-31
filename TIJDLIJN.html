@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>BAB (Babimex) — Tijdlijn Odoo 18</title>
+<style>
+ body { font-family: sans-serif; max-width: 1000px; margin: 2rem auto; padding: 0 1rem; line-height: 1.45; color: #333; }
+ h1 { font-size: 1.9rem; border-bottom: 2px solid #ccc; padding-bottom: .25rem; }
+ h2 { font-size: 1.35rem; margin-top: 2.2rem; border-bottom: 1px solid #e0e0e0; padding-bottom: .2rem; }
+ h3 { font-size: 1rem; margin: 1.2rem 0 .4rem; color: #555; text-transform: uppercase; letter-spacing: .04em; }
+ code { background: #f5f5f5; padding: .1rem .3rem; border-radius: 3px; font-size: .9em; }
+ ul { margin: .3rem 0 .6rem; padding-left: 1.3rem; }
+ li { margin: .25rem 0; }
+ .st { font-weight: bold; }
+ .prod { color: #157347; }
+ .lokaal { color: #a06000; }
+ .doc { color: #0a58ca; }
+ .park { color: #888; }
+ .legend { background: #f7f7f7; border: 1px solid #e0e0e0; padding: .6rem 1rem; font-size: .9rem; }
+ .legend li { margin: .15rem 0; }
+ .intro { color: #666; }
+ table { border-collapse: collapse; font-size: .9rem; margin: .4rem 0; }
+ th, td { border: 1px solid #ddd; padding: .2rem .5rem; text-align: left; }
+ .oud li { margin: .1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>BAB (Babimex) — Tijdlijn Odoo 18</h1>
+
+<p class="intro">Wat er op welke datum gebeurde, kort. Nieuwste bovenaan. Het <em>hoe</em> staat in <code>IMPLEMENTATIE.html</code>, het <em>waarom en waar we staan</em> in <code>$claude/status.md</code>. Babimex draait op odoo.sh, eigen modules mogen.</p>
+
+<div class="legend">
+<ul>
+<li><span class="st prod">✅ productie</span> — staat live bij de klant</li>
+<li><span class="st lokaal">🧪 werkkopie</span> — gebouwd en getest, nog niet uitgerold</li>
+<li><span class="st doc">📄 analyse</span> — onderzoek of nota, geen wijziging</li>
+<li><span class="st park">⏸️ geparkeerd</span> — klaar, bewust blijven liggen</li>
+</ul>
+</div>
+
+<h2>31 augustus 2026</h2>
+
+<h3>Analyse en advies</h3>
+<ul>
+<li><span class="st doc">📄</span> <strong>Bad Gateway en "too many requests" op productie — korte episode rond 14:44</strong> — Hilde belde dat ze geregeld <em>too many requests</em> kregen en niet deftig konden werken; Els kreeg om 14:44 zelf een Bad Gateway op babimex.be. Op odoo.sh stond alles groen: <em>All systems operational</em>, 100&nbsp;% uptime op dag, week en maand, en de productiebuild (<code>[ADD][T1928]bab_stock_delivery</code>, 7 augustus) draaide gewoon. De staging- en main-builds staan op <em>dropped</em>, wat normaal is en los staat van dit voorval.</li>
+<li><span class="st doc">📄</span> <strong>Geen zicht van binnenuit</strong> — het odoo.sh-project heet <code>dear-digital-babimex</code> en staat niet onder Els' eigen account. Ook met het Babimex-account blijft de logviewer op <em>Loading logs…</em> hangen: dat account heeft geen ontwikkelaarsrechten, dus logs, shell en SSH zijn dicht tot de partneroverdracht rond is. Els vraagt bij de huidige partner na wat er tijdelijk misging.</li>
+<li><span class="st doc">📄</span> <strong>Van buitenaf gemeten: om 14:57 was het al voorbij</strong> — tussen 14:57 en 15:09 zijn <code>/</code>, <code>/shop</code> en <code>/web/login</code> 315 keer opgevraagd. Alle antwoorden waren 200, de homepage in ~0,25&nbsp;s en de shop in 0,9–2,3&nbsp;s; geen enkele foutpagina. De episode was dus kort en ging vanzelf over — het profiel van een container die even weg was of workers die enkele minuten vol zaten. Voor de partner betekent dat een smal venster rond 14:44 om na te kijken: een herstart van de container, een worker over zijn geheugenlimiet, requests die de timeout raken, en of de 429's van de proxy komen of van Odoo zelf.</li>
+<li><span class="st doc">📄</span> <strong>Meetscript bewaard voor een volgende keer</strong> — <code>$claude/meet_babimex_bereikbaarheid.sh</code> polst de drie adressen, logt tijdstip, statuscode en responstijd, en legt bij elk afwijkend antwoord de volledige headers en foutpagina vast. Zolang er geen logtoegang is, is dat de enige manier om een episode met een tijdstip te documenteren.</li>
+</ul>
+
+<h2>28 augustus 2026</h2>
+
+<h3>Naar productie gegaan</h3>
+<ul>
+<li><span class="st prod">✅</span> <strong>Karntner S27: de collectie staat volledig op productie</strong> — de 261 afbeeldingen sloten de reeks af. A tot en met G zijn gedraaid: 272 hoofdproducten, 7&nbsp;598 varianten met barcode, vinkjes, routes, prijzen en foto's. Enkel artikel 175 wacht nog op drie handmatige aanpassingen.</li>
+<li><span class="st prod">✅</span> <strong>Karntner S27: productinstellingen en prijzen</strong> — <code>import_productinstellingen.xlsx</code> (271 regels: vinkjes Verkoop/Inkoop en de routes Kopen + MTO), <code>import_E1_leveranciersprijzen.xlsx</code> en <code>import_E2_prijslijsten.xlsx</code> op productie gedraaid. Van de oplaadprocedure blijven enkel de afbeeldingen en de handmatige aanpassingen aan artikel 175 open.</li>
+<li><span class="st prod">✅</span> <strong>Karntner S27: alle barcodes op de varianten</strong> — stap D van de oplaadprocedure is rond. Els heeft <code>import_D_barcodes.xlsx</code> (7&nbsp;460 regels) op productie gedraaid; elke S27-variant draagt nu een barcode.</li>
+<li><span class="st prod">✅</span> <strong>Karntner S27: de twaalf ontbrekende EAN's van artikel 72255</strong> — Karntner leverde ze na; <code>import_D2_barcodes_72255.xlsx</code> gebouwd als stap D4 van de oplaadprocedure, met controlecijfers, onderlinge uniciteit en botsingen met bestaande barcodes vooraf nagekeken. Els heeft de import diezelfde dag op productie gedraaid. De klantnota <code>barcodes_72255.html</code> is van vraag naar antwoord omgezet; het onderwerp is afgerond.</li>
+</ul>
+
+<h2>27 augustus 2026</h2>
+
+<h3>Werkomgeving</h3>
+<ul>
+<li><strong>Documentenmap heringedeeld</strong> — <code>$claude</code> gesplitst in lopend en afgerond: afgewerkte onderwerpen staan nu onder <code>$claude/$afgewerkt/</code>. Deze tijdlijn aangelegd; ze wordt voortaan bij elke actie bijgehouden.</li>
+</ul>
+
+<h2>25 augustus 2026</h2>
+
+<h3>Naar productie gegaan</h3>
+<ul>
+<li><span class="st prod">✅</span> <strong>Btw inclusief voor EU-consumenten</strong> — in het register opgenomen; de uitleg is nadien rechtgezet — de prijslijst bepaalt het bedrag, de belastinginstelling enkel hoe het gelezen wordt.</li>
+</ul>
+
+<h3>Gebouwd, nog niet uitgerold</h3>
+<ul>
+<li><span class="st lokaal">🧪</span> <strong>Karntner Summer 27: afbeeldingen en de rest van de imports</strong> — de negende export kwam binnen; vinkjes en MTO zaten er niet in en zijn apart gescript, net als de stappen B, C en E. Het herbruikbare deel is naar de <code>cld</code>-repo gegaan.</li>
+</ul>
+
+<h3>Analyse en advies</h3>
+<ul>
+<li><span class="st doc">📄</span> <strong>Seizoensartikelen — analyse voor het klantgesprek</strong> — bijgestuurd tot: alleen het nieuwe seizoen overschrijven.</li>
+</ul>
+
+<h3>Werkomgeving</h3>
+<ul>
+<li><strong>Werkdossiers uit deze repo naar cld</strong> — de <code>$claude</code>-map hoort niet in de klantrepo; ruwe klantdata gaat sowieso nergens in.</li>
+</ul>
+
+<h2>23 augustus 2026</h2>
+
+<h3>Analyse en advies</h3>
+<ul>
+<li><span class="st doc">📄</span> <strong>Karntner S27 — procedure klaar</strong> — de volledige oplaadprocedure uitgeschreven, in afwachting van de productie-exports.</li>
+</ul>
+
+<h3>Werkomgeving</h3>
+<ul>
+<li><strong>Overdracht van dear digital naar osadmin</strong> — afgerond op de opzeg na — die ligt bij Kristof. De dd-modules zijn LGPL-3, dus geen lock-in.</li>
+<li><strong>PDF-generatie omgezet naar headless Chrome</strong> — wkhtmltopdf plakte woorden aan elkaar vóór <code>&lt;strong&gt;</code> en <code>&lt;em&gt;</code>.</li>
+</ul>
+
+<h2>19 augustus 2026</h2>
+
+<h3>Naar productie gegaan</h3>
+<ul>
+<li><span class="st prod">✅</span> <strong>Nullijnen-serveractie, factuurstatus forceren, batchkop</strong> — drie losse ingrepen, in het register vastgelegd.</li>
+</ul>
+
+<h2>18 augustus 2026</h2>
+
+<h3>Analyse en advies</h3>
+<ul>
+<li><span class="st doc">📄</span> <strong>Backorder die niet meer nageleverd wordt</strong> — P00050 / 13735-TAF uitgezocht en beschreven.</li>
+</ul>
+
+<h2>14 augustus 2026</h2>
+
+<h3>Naar productie gegaan</h3>
+<ul>
+<li><span class="st prod">✅</span> <strong>Te veel scannen blokkeren per bewerkingstype</strong> — <code>bab_stock_barcode</code>: de barcode-app aanvaardt niet langer meer dan besteld.</li>
+</ul>
+
+<h3>Analyse en advies</h3>
+<ul>
+<li><span class="st doc">📄</span> <strong>Het ontbrekende stuk van batch 02473</strong> — uitgezocht; een wachtende bon valt permanent buiten de automatische batch, want die grijpt enkel bij status Klaar. De herstelactie staat klaar maar is nog niet geactiveerd.</li>
+</ul>
+
+<h2>11 augustus 2026</h2>
+
+<h3>Naar productie gegaan</h3>
+<ul>
+<li><span class="st prod">✅</span> <strong>O-lijn telt de afgesloten aankooporder mee</strong> — <code>bab_stock_delivery</code>: de reservatiematrix keek de afgesloten order voorbij.</li>
+<li><span class="st prod">✅</span> <strong>Register: leesbaarheid, auteurstags en voorraadconfiguratie</strong> — documentatiewerk in het register.</li>
+</ul>
+
+<h2>10 augustus 2026</h2>
+
+<h3>Naar productie gegaan</h3>
+<ul>
+<li><span class="st prod">✅</span> <strong>Reservatiematrix: totaalkolom per kleur, één hoofdproduct per blad</strong> — plus een eigen briefje per backorder en een herafdrukvenster dat sluit na Print again of Cancel.</li>
+<li><span class="st prod">✅</span> <strong>Barcode-app verbergt de nog niet gescande lijnen</strong> — <code>bab_stock_barcode</code>.</li>
+<li><span class="st prod">✅</span> <strong>Klantreferentie uniek, maar kopiëren blijft mogelijk</strong> — geannuleerde orders vallen buiten de controle.</li>
+</ul>
+
+<h2>9 augustus 2026</h2>
+
+<h3>Naar productie gegaan</h3>
+<ul>
+<li><span class="st prod">✅</span> <strong>Batchtotalen als SQL-aggregaat</strong> — in plaats van een Python-lus over alle lijnen.</li>
+</ul>
+
+<h3>Analyse en advies</h3>
+<ul>
+<li><span class="st doc">📄</span> <strong>De echte oorzaak van de trage ontvangsten gevonden</strong> — niet het valideren maar het invullen van aantallen: de onchange herrekent élke lijn, en dat schaalt lineair met het aantal lijnen. Onvermijdelijk in standaard Odoo — het spoor is bewust afgesloten. De forecast uit de lijst halen gaf wel 23 % winst.</li>
+</ul>
+
+<h2>8 augustus 2026</h2>
+
+<h3>Geparkeerd</h3>
+<ul>
+<li><span class="st park">⏸️</span> <strong>Module voor uitgestelde reservatie</strong> — gebouwd en gemeten: 46 % sneller. De keuze om ze uit te rollen staat nog open.</li>
+</ul>
+
+<h2>7 augustus 2026</h2>
+
+<h3>Naar productie gegaan</h3>
+<ul>
+<li><span class="st prod">✅</span> <strong>Briefjes op de pickbon in plaats van de levering</strong> — en de o-lijn verankerd op de aankooporder in plaats van op de keten; ook een briefje bij één orderlijn per hoofdproduct.</li>
+<li><span class="st prod">✅</span> <strong>Stocklocatie-nummering enkel voor Vasa International</strong> — landspecifiek gemaakt.</li>
+</ul>
+
+<h2>6 augustus 2026</h2>
+
+<h3>Naar productie gegaan</h3>
+<ul>
+<li><span class="st prod">✅</span> <strong>Briefjes tonen de levering, met stocklocatie per bedrijf</strong> — <code>bab_stock_delivery</code>.</li>
+</ul>
+
+<h2>21 juli 2026</h2>
+
+<h3>Naar productie gegaan</h3>
+<ul>
+<li><span class="st prod">✅</span> <strong>Reservatiematrix met o-lijn en automatische stocklocatie</strong> — plus het register samengevoegd in het Knowledge-artikel.</li>
+</ul>
+
+<h2>Eerder — gereconstrueerd uit de git-historiek</h2>
+
+<p class="intro">Beknopt, uit de commits en documenten van vóór bovenstaande data.</p>
+
+<div class="oud">
+<ul>
+<li><strong>7 juli 2026</strong> — rapport "Productenmatrix met reservaties"; het overzicht toont enkel deels-gereserveerde producten.</li>
+<li><strong>1 juli 2026</strong> — skelet van <code>IMPLEMENTATIE.html</code> met klant-PDF.</li>
+<li><strong>26 juni 2026</strong> — rapport "Productenmatrix per kleur en klant", serveractie om afleveradressen te nummeren, en backorders die zichzelf als afgedrukt markeren.</li>
+<li><strong>17 juni 2026</strong> — nullen blanco laten, sneller bulk afdrukken, en een print-once-beveiliging.</li>
+<li><strong>13 juni 2026</strong> — eerste versie van <code>bab_stock_delivery</code> (Productenmatrix) plus <code>bab_website_sale_salesperson_order</code>; matrixleesbaarheid en expliciete randen voor poppler en Evince.</li>
+<li><strong>16 maart 2026</strong> — start van de repo.</li>
+</ul>
+</div>
+
+</body>
+</html>
