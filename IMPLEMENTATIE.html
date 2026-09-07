@@ -82,6 +82,7 @@
                 <li><a href="#levervelden-op-het-contactformulier">Levervelden op het contactformulier (idem Lucati)</a></li>
                 <li><a href="#extra-kolommen-in-de-contactenlijst">Extra kolommen in de contactenlijst (idem Lucati)</a></li>
                 <li><a href="#zoeken-op-btw-nummer">Zoeken op btw-nummer (idem Lucati)</a></li>
+                <li><a href="#vies-vinkje-doorgeven-aan-de-adressen">Het VIES-vinkje doorgeven aan de adressen (idem Lucati)</a></li>
             </ul>
         </li>
         <li><a href="#producten">Producten</a>
@@ -150,6 +151,7 @@
         </li>
         <li><a href="#boekhouding">Boekhouding</a>
             <ul>
+                <li><a href="#volgorde-van-de-fiscale-posities">De volgorde van de fiscale posities (idem Lucati)</a></li>
                 <li><a href="#totale-hoeveelheid-artikelen">Totale hoeveelheid artikelen (idem Lucati)</a></li>
                 <li><a href="#lijnen-groeperen-per-verkooporder">Lijnen groeperen per verkooporder (idem Lucati)</a></li>
                 <li><a href="#leverdatum-niet-op-factuurpdf">Leverdatum niet op factuurpdf</a></li>
@@ -264,6 +266,27 @@ die is nooit in gebruik genomen (zie Voorraad → GLS).</p>
 <h2 id="zoeken-op-btw-nummer">Zoeken op btw-nummer (idem Lucati)</h2>
 <p><span class="tag">[view]</span> <code>res.partner</code> zoekweergave — <code>vat</code> toegevoegd
 naast de handelsnaam.</p>
+
+<h2 id="vies-vinkje-doorgeven-aan-de-adressen">Het VIES-vinkje doorgeven aan de adressen (idem Lucati)</h2>
+<p>Odoo kiest de fiscale positie van een order op het <strong>leveradres</strong>, niet op de klant of het
+factuuradres. De controle op <code>vat_required</code> kijkt dus naar het vinkje
+<em>Intracommunautair geldig</em> op dát adres. Staat het daar leeg terwijl de klantfiche wél gecontroleerd
+is, dan valt <em>Intracommunautair</em> uit de selectie en krijgt het order 21&nbsp;% in plaats van
+0&nbsp;% verlegd.</p>
+<p>Odoo lost dit eigenlijk zelf op &mdash; <code>_compute_vies_valid</code> laat een contact met hetzelfde
+btw-nummer als zijn moeder haar waarde erven &mdash; maar die berekening draait nooit:
+<code>base_vat</code> roept in <code>create()</code> expliciet
+<code>remove_to_compute('vies_valid')</code> aan, en in <code>write()</code> hetzelfde bij een import.</p>
+<p><span class="tag">[auto]</span> <code>base.automation</code>
+<strong>* VIES-vinkje doorgeven aan de adressen eronder</strong> op <code>res.partner</code>, trigger
+<em>Bij opslaan</em>, triggervelden <code>vat</code>, <code>parent_id</code>, <code>vies_valid</code>
+&mdash; <span class="tag">[serv]</span> de gekoppelde <code>ir.actions.server</code> draagt de code. Hier in
+de interface aangemaakt; bij Lucati met een script, en daar staat ook de volledige uitleg.</p>
+<p class="bijschrift">Het vinkje van de moeder overnemen kan nooit op een ander btw-nummer slaan:
+<code>vat</code> staat in <code>_commercial_fields()</code>, dus Odoo dwingt op elk onderliggend contact het
+nummer van de commerciële moeder af.</p>
+<p class="status">Achterstand was er niet: geen enkel adres stond leeg onder een gecontroleerde moederfiche.
+De actie is hier dus preventief.</p>
 
 <h1 id="producten">Producten</h1>
 
@@ -1206,6 +1229,21 @@ webshopcontroller, een eigen portaal-<code>account</code>-pagina, en een aangepa
 <p><span class="tag">[code]</span> <code>website_odoo_debranding</code> (oca)</p>
 
 <h1 id="boekhouding">Boekhouding</h1>
+
+<h2 id="volgorde-van-de-fiscale-posities">De volgorde van de fiscale posities (idem Lucati)</h2>
+<p><em>Intracommunautair</em> staat nu vóór <em>EU B2C</em>, in beide bedrijven. In Odoo&nbsp;18 verandert
+dat niets: die versie rangschikt alle passende posities en neemt de <em>best</em> passende, waarbij
+<code>vat_required</code> zwaarder weegt dan de volgorde. Nagerekend op de werkkopie: 4858
+klant/leveradres-combinaties over beide bedrijven, geen enkel verschil.</p>
+<p>De ingreep dient Odoo&nbsp;19, waar <code>_get_first_matching_fpos</code> het rangschikken verving door
+sorteren op volgorde en de <em>eerste</em> passende nemen. Odoo draaide daarom in
+<code>l10n_be</code> zelf de volgorde om. Bleef deze database op de oude nummering staan (EU B2C op 2,
+Intracommunautair op 3), dan zou in 19 élke EU-klant op B2C matchen en de intracommunautaire positie nooit
+meer aan bod komen, ook met een geldig btw-nummer.</p>
+<p class="bijschrift"><em>Import/Export</em> heeft geen land en geen landengroep en past dus op iedereen;
+die moet laatst blijven staan. <em>Medecontractant</em> staat niet op automatisch en telt niet mee.</p>
+<p><span class="tag">[conf]</span> <code>account.fiscal.position</code> &mdash; <code>sequence</code>, in de
+interface gesleept: Belgium B2B&nbsp;1, Intracommunautair&nbsp;2, EU B2C&nbsp;3, Import/Export&nbsp;4.</p>
 
 <h2 id="totale-hoeveelheid-artikelen">Totale hoeveelheid artikelen (idem Lucati)</h2>
 <p><span class="tag">[fiel]</span> <code>x_qty_total</code> met afhankelijkheden <code>invoice_line_ids,invoice_line_ids.quantity</code> …</p>
