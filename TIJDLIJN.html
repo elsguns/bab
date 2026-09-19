@@ -39,6 +39,19 @@
 </ul>
 </div>
 
+<h2>9 september 2026</h2>
+
+<h3>Naar productie gegaan</h3>
+<ul>
+<li><span class="st prod">✅</span> <strong>VAS/OUT/00337 weer leverbaar gemaakt</strong> — de vier maten van <code>51289 Vest zonder mouwen (49 black)</code> stonden na de retour terug in <code>VAS/Voorraad</code> maar niet in de uitgaande zone, waardoor de levering op <em>In afwachting</em> bleef. Pickbon <code>VAS/PICK/00486</code> aangemaakt en gevalideerd (Voorraad → Uitgaand, 1 per maat); de levering staat nu op <em>Beschikbaar</em>. Let op: het valideren van een losse pickbon zet via de doorstuurregel automatisch een tweede levering klaar (<code>VAS/OUT/00338</code>) — die is meteen geannuleerd en verwijderd, het nummer is overgeslagen.</li>
+</ul>
+
+<h3>Analyse en advies</h3>
+<ul>
+<li><span class="st doc">📄</span> <strong>Dubbele scan op VAS/OUT/00322 — een retour zet ze wél terug in de voorraad</strong> — vier maten van <code>51289 Vest zonder mouwen (49 black)</code> staan met 2 geleverd terwijl er 1 besteld was. Nagespeeld in een testkopie van de werkkopie (<code>bab18-retourtest</code>): de retour van een VAS-levering loopt over het bewerkingstype <em>Vasa International: Ontvangsten</em> en komt daardoor in <code>VAS/Voorraad</code> terecht, niet in <code>VAS/Uitgaand</code>. Met "Aantallen bijwerken op VO/IO" aangevinkt zakt het geleverde aantal ook weer van 2 naar 1.</li>
+<li><span class="st doc">📄</span> <strong>De conceptfactuur van S01949 draagt de fout nog</strong> — vier lijnen à 2 stuks, 75,56 € excl. btw te veel. De retour corrigeert de verkooporder maar raakt een bestaande conceptfactuur niet; die moet weg of met de hand naar 1 per lijn.</li>
+</ul>
+
 <h2>7 september 2026</h2>
 
 <h3>Naar productie gegaan</h3>
@@ -70,7 +83,7 @@
 <li><span class="st prod">✅</span> <strong>Karntner S27: de collectie staat volledig op productie</strong> — de 261 afbeeldingen sloten de reeks af. A tot en met G zijn gedraaid: 272 hoofdproducten, 7&nbsp;598 varianten met barcode, vinkjes, routes, prijzen en foto's. Enkel artikel 175 wacht nog op drie handmatige aanpassingen.</li>
 <li><span class="st prod">✅</span> <strong>Karntner S27: productinstellingen en prijzen</strong> — <code>import_productinstellingen.xlsx</code> (271 regels: vinkjes Verkoop/Inkoop en de routes Kopen + MTO), <code>import_E1_leveranciersprijzen.xlsx</code> en <code>import_E2_prijslijsten.xlsx</code> op productie gedraaid. Van de oplaadprocedure blijven enkel de afbeeldingen en de handmatige aanpassingen aan artikel 175 open.</li>
 <li><span class="st prod">✅</span> <strong>Karntner S27: alle barcodes op de varianten</strong> — stap D van de oplaadprocedure is rond. Els heeft <code>import_D_barcodes.xlsx</code> (7&nbsp;460 regels) op productie gedraaid; elke S27-variant draagt nu een barcode.</li>
-<li><span class="st prod">✅</span> <strong>Karntner S27: de twaalf ontbrekende EAN's van artikel 72255</strong> — Karntner leverde ze na; <code>import_D2_barcodes_72255.xlsx</code> gebouwd als stap D4 van de oplaadprocedure, met controlecijfers, onderlinge uniciteit en botsingen met bestaande barcodes vooraf nagekeken. Els heeft de import diezelfde dag op productie gedraaid. De klantnota <code>barcodes_72255.html</code> is van vraag naar antwoord omgezet; het onderwerp is afgerond.</li>
+<li><span class="st prod">✅</span> <strong>Karntner S27: de twaalf ontbrekende EAN's van artikel 72255</strong> — Karntner leverde ze na; <code>20260828_import_D2_barcodes_72255.xlsx</code> gebouwd als stap D4 van de oplaadprocedure, met controlecijfers, onderlinge uniciteit en botsingen met bestaande barcodes vooraf nagekeken. Els heeft de import diezelfde dag op productie gedraaid. De klantnota <code>20260824_barcodes_72255.html</code> is van vraag naar antwoord omgezet; het onderwerp is afgerond.</li>
 </ul>
 
 <h2>27 augustus 2026</h2>
