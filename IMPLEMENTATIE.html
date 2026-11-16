@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <title>Implementatie — BAB 18.0</title>
+    <title>bab18: Implementatie</title>
     <style>
         body { font-family: sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; line-height: 1.45; color: #333; counter-reset: h1; }
         h1 { font-size: 1.9rem; border-bottom: 2px solid #ccc; padding-bottom: .25rem; margin-top: 2rem; counter-reset: h2; }
@@ -55,6 +55,17 @@
         #naar-boven.zichtbaar { opacity: .85; pointer-events: auto; }
         #naar-boven:hover { opacity: 1; }
         @media print { #naar-boven { display: none; } }
+        /* TOC vast links — beheerd door maak-toc.py, niet met de hand wijzigen */
+        @media screen and (min-width: 1100px) {
+            body > details:first-of-type { position: fixed; top: 0; left: 0; bottom: 0; width: 300px; margin: 0;
+                overflow-y: auto; background: #fafafa; border: 0; border-right: 1px solid #ddd; font-size: .85rem;
+                padding: 0 .5rem 1rem 0; z-index: 10; box-sizing: border-box; }
+            body > details:first-of-type > summary { position: sticky; top: 0; background: #f0f0f0; border: 0;
+                border-bottom: 1px solid #ddd; }
+            body > details:first-of-type ul { padding-left: 1rem; }
+            body { margin-left: 330px !important; margin-right: 1.5rem !important; }
+        }
+        /* einde TOC vast links */
     </style>
 </head>
 <body>
@@ -89,7 +100,11 @@
             <ul>
                 <li><a href="#varianten-opladen">Varianten opladen</a></li>
                 <li><a href="#status">Status</a></li>
-                <li><a href="#merk">Merk</a></li>
+                <li><a href="#merk">Merk</a>
+                    <ul>
+                        <li><a href="#doelgroep-per-merk">Doelgroep per merk</a></li>
+                    </ul>
+                </li>
                 <li><a href="#attribuutwaarden-attribuut-en-code-in-de-lijst">Attribuutwaarden: attribuut en code in de lijst (idem Lucati)</a></li>
                 <li><a href="#volgorde-van-de-attribuutlijnen">Volgorde van de attribuutlijnen (idem Lucati)</a></li>
                 <li><a href="#extra-kolommen-in-de-productlijsten">Extra kolommen in de productlijsten (idem Lucati)</a></li>
@@ -123,13 +138,37 @@
         <li><a href="#voorraad">Voorraad</a>
             <ul>
                 <li><a href="#magazijnstructuur">Magazijnstructuur per bedrijf</a></li>
+                <li><a href="#retoursoorten-pickretour-en-klantretour">Retoursoorten Pickretour en Klantretour</a></li>
                 <li><a href="#bevoorrading-van-de-producten">Bevoorrading van de producten</a></li>
                 <li><a href="#productenmatrix-briefjes">Productenmatrix (briefjes)</a></li>
                 <li><a href="#productenmatrix-met-reservaties">Productenmatrix met reservaties</a></li>
                 <li><a href="#productenmatrix-met-reservaties-per-kleur-en-klant">Productenmatrix met reservaties per kleur en klant</a></li>
                 <li><a href="#stocklocatie-toekennen-aan-afleveradressen">Stocklocatie toekennen aan afleveradressen</a></li>
-                <li><a href="#verplaatsingen">Verplaatsingen</a></li>
-                <li><a href="#batchpikings">Batchpikings</a></li>
+                <li><a href="#verplaatsingen">Verplaatsingen</a>
+                    <ul>
+                        <li><a href="#leveringsadres-op-pickbon">Leveringsadres op pickbon</a></li>
+                        <li><a href="#leveringsadres-op-de-leverbon-nodig-eigenlijk">Leveringsadres op de leverbon (nodig eigenlijk?)</a></li>
+                        <li><a href="#klant-leveranciersreferentie-op-de-pickbon-en-leve">Klant/leveranciersreferentie op de pickbon en leverbon (idem Lucati)</a></li>
+                        <li><a href="#overzicht-producten-in-bestelling-met-subtotaal-kl">Overzicht producten in bestelling met subtotaal + klantreferenties</a></li>
+                        <li><a href="#inventory-gt-rapportages-gt-batchpickings-idem-luc">Inventory &gt; Rapportages &gt; Batchpickings (idem Lucati)</a></li>
+                    </ul>
+                </li>
+                <li><a href="#batchpikings">Batchpikings</a>
+                    <ul>
+                        <li><a href="#wachtende-bon-alsnog-batchen">Wachtende bon alsnog batchen</a></li>
+                        <li><a href="#bedrag-vanaf-er-geen-portkosten-zijn-idem-lucati">Bedrag vanaf er geen portkosten zijn (idem Lucati)</a></li>
+                        <li><a href="#leveradres-op-de-batch-idem-lucati">Leveradres op de batch (idem Lucati)</a></li>
+                        <li><a href="#interne-leverinformatie-en-sluitingsdagen-idem-luc">Interne leverinformatie en sluitingsdagen (idem Lucati)</a></li>
+                        <li><a href="#stocklocatie-totaal-gereserveerd-en-printdatum-op-">Stocklocatie, totaal gereserveerd en printdatum op het batchbriefje</a></li>
+                        <li><a href="#batchpickings-kunnen-goedkeuren-idem-lucati">Batchpickings kunnen goedkeuren (idem Lucati)</a></li>
+                        <li><a href="#aanduiden-wanneer-voor-een-klant-reservaties-niet-">Aanduiden wanneer voor een klant reservaties niet meer gewijzigd kunnen worden (idem Lucati)</a></li>
+                        <li><a href="#sluitingsdagen-van-het-contact-overnemen-idem-luca">Sluitingsdagen van het contact overnemen (idem Lucati)</a></li>
+                        <li><a href="#leverinformatie-van-het-contact-overnemen-idem-luc">Leverinformatie van het contact overnemen (idem Lucati)</a></li>
+                        <li><a href="#totaal-gevraagd-idem-lucati">Totaal gevraagd (idem Lucati)</a></li>
+                        <li><a href="#totaal-aantal-gereserveerd-idem-lucati">Totaal aantal (gereserveerd) (idem Lucati)</a></li>
+                        <li><a href="#batchformulier-en-lijst-idem-lucati">Batchformulier en -lijst (idem Lucati)</a></li>
+                    </ul>
+                </li>
                 <li><a href="#backorders-per-bewerkingstype">Backorders per bewerkingstype (idem Lucati)</a></li>
                 <li><a href="#barcode-app-nog-niet-gescande-lijnen-verbergen">Barcode-app: nog niet gescande lijnen verbergen</a></li>
                 <li><a href="#barcode-app-te-veel-scannen-blokkeren">Barcode-app: te veel scannen blokkeren</a></li>
@@ -304,7 +343,7 @@ sjabloon, met de code van elke attribuutwaarde erin.</p>
 (zie Voorraad) en naar de omzetrapportage (zie Boekhouding).</p>
 <p><span class="tag">[code]</span> <code>product_brand</code> (oca)</p>
 
-<h3>Doelgroep per merk</h3>
+<h3 id="doelgroep-per-merk">Doelgroep per merk</h3>
 <p>Selectieveld op het merk met de waarden <strong>Mannen</strong>, <strong>Vrouwen</strong> en
 <strong>Mannen en vrouwen</strong>. Op de productenlijst zitten twee filters die daarop teruggrijpen,
 zodat je in één klik de heren- of damescollectie ziet zonder per merk te moeten selecteren.</p>
@@ -539,6 +578,22 @@ andere bewerkingstypes <em>vragen</em> het (zie Backorders per bewerkingstype). 
 schuiven bij het bevestigen vanzelf in een batch per klant, behalve bij bol.com (zie
 Batchpikings).</p>
 
+<h2 id="retoursoorten-pickretour-en-klantretour">Retoursoorten Pickretour en Klantretour</h2>
+<p>Een retour krijgt een eigen bewerkingssoort en nummer, zodat hij niet tussen de gewone pickbonnen of de
+ontvangsten van leveranciers staat en niet mee in een automatische batch gaat. Live sinds 16/11/2026.</p>
+<p><span class="tag">[conf]</span> Per magazijn WH, BOL en VAS twee bewerkingssoorten, ingevuld als
+<em>Retourtype</em> op <em>Pick</em> (VAS: <em>Picken</em>) en <em>Leveringen</em>:</p>
+<ul>
+    <li><strong>Pickretour</strong> — reeks <code>PICKRET</code> (<code>WH/PICKRET/…</code>, <code>BOL/PICKRET/…</code>,
+        <code>VAS/PICKRET/…</code>), intern, Uitgaand → Voorraad, retourtype Pick, geen automatische batch</li>
+    <li><strong>Klantretour</strong> — reeks <code>KLNTRET</code> (<code>WH/KLNTRET/…</code>, <code>BOL/KLNTRET/…</code>,
+        <code>VAS/KLNTRET/…</code>), ontvangst, Partners/Customers → Voorraad, retourtype Leveringen, geen automatische batch</li>
+</ul>
+<figure><img src="IMPLEMENTATIE_img/retoursoorten_pick_retourtype.png" alt=""><figcaption>Bewerkingssoort
+<em>Picken</em> van Vasa: 1 = <em>Retourtype</em> Pickretour.</figcaption></figure>
+<figure><img src="IMPLEMENTATIE_img/retoursoorten_voorraadoverzicht.png" alt=""><figcaption>Voorraadoverzicht:
+1 = tegels Pickretour, 2 = tegels Klantretour (één per magazijn).</figcaption></figure>
+
 <h2 id="bevoorrading-van-de-producten">Bevoorrading van de producten</h2>
 <p><span class="tag">[conf]</span> De bevoorrading staat <strong>per product</strong>: geen enkele
 productcategorie draagt een route. Drie routes zijn in gebruik, elk magazijn heeft zijn eigen
@@ -651,7 +706,7 @@ extra veld, dus de weergave kan los bijgewerkt worden.</p>
 
 <h2 id="verplaatsingen">Verplaatsingen</h2>
 
-<h3>Leveringsadres op pickbon</h3>
+<h3 id="leveringsadres-op-pickbon">Leveringsadres op pickbon</h3>
 <p><span class="tag">[view]</span> <code>report_picking_bab</code> &lt; <code>report_picking</code></p>
 <pre><code>&lt;data inherit_id="stock.report_picking"&gt;
     &lt;xpath expr="//div[@name='div_outgoing_address']/div[@t-if='o.should_print_delivery_address()']" position="replace"&gt;
@@ -669,7 +724,7 @@ extra veld, dus de weergave kan los bijgewerkt worden.</p>
     &lt;/xpath&gt;
 &lt;/data&gt;</code></pre>
 
-<h3>Leveringsadres op de leverbon (nodig eigenlijk?)</h3>
+<h3 id="leveringsadres-op-de-leverbon-nodig-eigenlijk">Leveringsadres op de leverbon (nodig eigenlijk?)</h3>
 <p><span class="tag">[view]</span> <code>report_delivery_document_bab</code> &lt; <code>report_delivery_document</code></p>
 <pre><code>&lt;data inherit_id="stock.report_delivery_document"&gt;
     &lt;xpath expr="//div[@name='outgoing_delivery_address']" position="replace"&gt;
@@ -682,7 +737,7 @@ extra veld, dus de weergave kan los bijgewerkt worden.</p>
     &lt;/xpath&gt;
 &lt;/data&gt;</code></pre>
 
-<h3>Klant/leveranciersreferentie op de pickbon en leverbon (idem Lucati)</h3>
+<h3 id="klant-leveranciersreferentie-op-de-pickbon-en-leve">Klant/leveranciersreferentie op de pickbon en leverbon (idem Lucati)</h3>
 <p class="lucati">Bij Lucati zit het blok in een gewone afgeleide rapportview achter <code>div_origin</code>, niet in de Studio-rapporteditor.</p>
 <p><span class="tag">[fiel]</span> <code>x_studio_origin_ref</code> met afhankelijkheden <code>sale_id,purchase_id</code> …</p>
 <pre><code>for record in self:
@@ -701,7 +756,7 @@ extra veld, dus de weergave kan los bijgewerkt worden.</p>
     &lt;span t-field="o.x_studio_origin_ref"/&gt;
 &lt;/div&gt;</code></pre>
 
-<h3>Overzicht producten in bestelling met subtotaal + klantreferenties</h3>
+<h3 id="overzicht-producten-in-bestelling-met-subtotaal-kl">Overzicht producten in bestelling met subtotaal + klantreferenties</h3>
 
 <h4>Inventory &gt; Rapportages &gt; Verplaatsingen (deels idem Lucati)</h4>
 <p class="lucati">Bij Lucati staan de velden, de lijst- en zoekweergave en de drie favorieten er; die laatste met de locaties van het Lucati-magazijn (voorraad, verpakkingszone en uitgaand, want daar wordt in drie stappen geleverd). Enkel het merk ontbreekt nog, in afwachting van de beslissing over <code>product_brand</code>.</p>
@@ -782,7 +837,7 @@ scherm <em>Alle overdrachten</em>: <code>picking_type_id = 2</code> en
 <code>stock.location</code>, scherm <em>Locaties</em>: <code>complete_name</code> bevat "toonzaal"
 of "2e keus".</p>
 
-<h3>Inventory &gt; Rapportages &gt; Batchpickings (idem Lucati)</h3>
+<h3 id="inventory-gt-rapportages-gt-batchpickings-idem-luc">Inventory &gt; Rapportages &gt; Batchpickings (idem Lucati)</h3>
 <p class="status">Tijdelijk: de serveractie dient enkel om bestaande records eenmalig te herberekenen nadat het veld is aangemaakt. In een verse databank valt er niets recht te trekken, dus ze hoort niet bij de eigenlijke opzet.</p>
 <p><span class="tag">[fiel]</span> <strong>stock.picking.batch</strong></p>
 <p><code>x_studio_move_quantity_total</code> (Aantal Totaal) met afhankelijkheden <code>move_ids.x_studio_quantity_total</code> …</p>
@@ -822,7 +877,7 @@ blijft hangen.</p>
 niet gegroepeerd op bestemming, vervoerder of locatie — enkel op contact. Interne overdrachten
 batchen nooit.</p>
 
-<h3>Wachtende bon alsnog batchen</h3>
+<h3 id="wachtende-bon-alsnog-batchen">Wachtende bon alsnog batchen</h3>
 <p>Odoo zoekt maar op <strong>twee momenten</strong> een batch voor een overdracht: bij het
 bevestigen ervan (<code>action_confirm</code>) en, voor een backorder, meteen na het valideren van
 zijn voorganger. Op zo'n moment neemt hij de bon enkel mee als die dan al op <em>Klaar</em> staat —
@@ -863,7 +918,7 @@ for bon in bonnen:
             'toen hij bevestigd werd en viel daardoor buiten de batches.'
             % batch.name))</code></pre>
 
-<h3>Bedrag vanaf er geen portkosten zijn (idem Lucati)</h3>
+<h3 id="bedrag-vanaf-er-geen-portkosten-zijn-idem-lucati">Bedrag vanaf er geen portkosten zijn (idem Lucati)</h3>
 <p><span class="tag">[fiel]</span> <strong>res.partner</strong> — <code>x_studio_amount_free_delivery</code> (Bedrag Gratis Levering)</p>
 <p><strong>stock.picking.batch</strong> — <code>x_studio_picking_partner_amount_free_delivery</code> (Bedrag Gratis Levering) met afhankelijkheden <code>picking_ids.partner_id</code> …</p>
 <pre><code>for record in self:
@@ -872,7 +927,7 @@ for bon in bonnen:
     if record['x_studio_picking_partner_amount_free_delivery'] == 0.0:
         record['x_studio_picking_partner_amount_free_delivery'] = record.picking_ids.partner_id.parent_id.x_studio_amount_free_delivery</code></pre>
 
-<h3>Leveradres op de batch (idem Lucati)</h3>
+<h3 id="leveradres-op-de-batch-idem-lucati">Leveradres op de batch (idem Lucati)</h3>
 <p>Op de batchpicking het volledige leveradres tonen i.p.v. enkel de klantnaam. Vroeger stond op de
 PDF een regel <strong>Klant:</strong> met het standaardveld <code>description</code> (een samenvoegsel
 als een batch meerdere klanten zou bevatten). Bij BAB is een batch altijd per klant, dus tonen we het
@@ -903,7 +958,7 @@ opgeslagen) met afhankelijkheden <code>picking_ids,picking_ids.batch_sequence,pi
             lines.append(partner.country_id.name)
     record['x_studio_delivery_address'] = '\n'.join(lines)</code></pre>
 
-<h3>Interne leverinformatie en sluitingsdagen (idem Lucati)</h3>
+<h3 id="interne-leverinformatie-en-sluitingsdagen-idem-luc">Interne leverinformatie en sluitingsdagen (idem Lucati)</h3>
 <p><span class="tag">[fiel]</span> <strong>res.partner</strong> — <code>x_studio_delivery_info</code> (Leverinformatie), <code>x_studio_closing_days</code> (Sluitingsdagen)</p>
 <p><strong>stock.picking.batch</strong> — <code>x_studio_picking_partner_closing_days</code>, <code>x_studio_picking_partner_delivery_info</code></p>
 <p>Op de batch-PDF staan die regels samen in de kop, en de kop staat er twee keer: op pagina 1 (de
@@ -989,7 +1044,7 @@ zie <em>Stocklocatie, totaal gereserveerd en printdatum op het batchbriefje</em>
   &lt;/data&gt;
 &lt;/data&gt;</code></pre>
 
-<h3>Stocklocatie, totaal gereserveerd en printdatum op het batchbriefje</h3>
+<h3 id="stocklocatie-totaal-gereserveerd-en-printdatum-op-">Stocklocatie, totaal gereserveerd en printdatum op het batchbriefje</h3>
 <p><span class="tag">[view]</span> Drie regels bij in de kop van het batchbriefje, in beide kopblokken
 van de arch hierboven. Er komt <strong>geen enkel nieuw veld</strong> bij: alles wordt in het rapport
 zelf gerekend.</p>
@@ -1021,16 +1076,16 @@ vervang de test dan door <code>o.company_id.stock_location_numbering and deliver
 Dat leest de bedrijfsvlag uit <code>bab_stock_delivery</code> en houdt ook de Babimex-contacten weg die
 vóór die ingreep nog een nummer kregen.</p>
 
-<h3>Batchpickings kunnen goedkeuren (idem Lucati)</h3>
+<h3 id="batchpickings-kunnen-goedkeuren-idem-lucati">Batchpickings kunnen goedkeuren (idem Lucati)</h3>
 <p><span class="tag">[fiel]</span> <code>stock.picking.batch</code> &gt; <code>x_studio_approved</code></p>
 
-<h3>Aanduiden wanneer voor een klant reservaties niet meer gewijzigd kunnen worden (idem Lucati)</h3>
+<h3 id="aanduiden-wanneer-voor-een-klant-reservaties-niet-">Aanduiden wanneer voor een klant reservaties niet meer gewijzigd kunnen worden (idem Lucati)</h3>
 <p><span class="tag">[fiel]</span> <code>stock.picking.batch</code> &gt; <code>x_studio_reservation_blocked</code></p>
 <p>Het vinkje staat op het batchformulier in de rechterkolom, bij <em>Bedrag Gratis Levering</em>,
 <em>Gevraagd Totaal</em>, <em>Aantal Totaal</em> en <em>Goedgekeurd</em>, en is in de batchlijst
 als optionele kolom op te zetten.</p>
 
-<h3>Sluitingsdagen van het contact overnemen (idem Lucati)</h3>
+<h3 id="sluitingsdagen-van-het-contact-overnemen-idem-luca">Sluitingsdagen van het contact overnemen (idem Lucati)</h3>
 <p><span class="tag">[fiel]</span> <code>res.partner</code> &gt; <code>x_studio_closing_days</code> (Sluitingsdagen); <code>stock.picking.batch</code> &gt; <code>x_studio_picking_partner_closing_days</code> met afhankelijkheden <code>picking_ids.partner_id</code> …</p>
 <pre><code>for record in self:
     if len(record.picking_ids.partner_id) == 1:
@@ -1038,7 +1093,7 @@ als optionele kolom op te zetten.</p>
     if not record['x_studio_picking_partner_closing_days']:
         record['x_studio_picking_partner_closing_days'] = record.picking_ids.partner_id.parent_id.x_studio_closing_days</code></pre>
 
-<h3>Leverinformatie van het contact overnemen (idem Lucati)</h3>
+<h3 id="leverinformatie-van-het-contact-overnemen-idem-luc">Leverinformatie van het contact overnemen (idem Lucati)</h3>
 <p><span class="tag">[fiel]</span> <code>res.partner</code> &gt; <code>x_studio_delivery_info</code> (Leverinformatie); <code>stock.picking.batch</code> &gt; <code>x_studio_picking_partner_delivery_info</code> met afhankelijkheden <code>picking_ids.partner_id</code> …</p>
 <pre><code>for record in self:
     if len(record.picking_ids.partner_id) == 1:
@@ -1046,21 +1101,21 @@ als optionele kolom op te zetten.</p>
     if not record['x_studio_picking_partner_delivery_info']:
         record['x_studio_picking_partner_delivery_info'] = record.picking_ids.partner_id.parent_id.x_studio_delivery_info</code></pre>
 
-<h3>Totaal gevraagd (idem Lucati)</h3>
+<h3 id="totaal-gevraagd-idem-lucati">Totaal gevraagd (idem Lucati)</h3>
 <p><span class="tag">[fiel]</span> <code>x_uom_qty_total</code> met afhankelijkheden <code>picking_ids.move_ids,picking_ids.move_ids.product_uom_qty</code></p>
 <pre><code>for record in self:
     record['x_uom_qty_total'] = 0
     for move_id in record.move_ids:
         record['x_uom_qty_total'] += move_id.product_uom_qty</code></pre>
 
-<h3>Totaal aantal (gereserveerd) (idem Lucati)</h3>
+<h3 id="totaal-aantal-gereserveerd-idem-lucati">Totaal aantal (gereserveerd) (idem Lucati)</h3>
 <p><span class="tag">[fiel]</span> <code>x_quantity_total</code> met afhankelijkheden <code>picking_ids.move_ids,picking_ids.move_ids.quantity</code></p>
 <pre><code>for record in self:
     record['x_quantity_total'] = 0
     for move_id in record.move_ids:
         record['x_quantity_total'] += move_id.quantity</code></pre>
 
-<h3>Batchformulier en -lijst (idem Lucati)</h3>
+<h3 id="batchformulier-en-lijst-idem-lucati">Batchformulier en -lijst (idem Lucati)</h3>
 <p class="lucati">Bij Lucati staan de eigen velden in twee groepen (Levering en Totalen) in plaats van tussen de standaardvelden geschoven, en erft de verplaatsingenlijst van <code>view_picking_move_tree_inherited</code> in plaats van inline in het formulier te staan. Zelfde kolommen, maar overdraagbaar naar een andere databank.</p>
 <p><span class="tag">[view]</span> Op het <strong>formulier</strong> staan de eigen velden gegroepeerd in de
 rechterkolom: Bedrag Gratis Levering, Gevraagd Totaal, Aantal Totaal, Reservatie geblokkeerd, Goedgekeurd,
