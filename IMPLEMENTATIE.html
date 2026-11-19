@@ -589,6 +589,9 @@ ontvangsten van leveranciers staat en niet mee in een automatische batch gaat. L
     <li><strong>Klantretour</strong> — reeks <code>KLNTRET</code> (<code>WH/KLNTRET/…</code>, <code>BOL/KLNTRET/…</code>,
         <code>VAS/KLNTRET/…</code>), ontvangst, Partners/Customers → Voorraad, retourtype Leveringen, geen automatische batch</li>
 </ul>
+<p>Volgorde: Pickretour staat direct achter Pick en Klantretour direct achter Leveringen. Ze hebben dezelfde
+volgorde (sequence) als Pick en Leveringen en komen daarna door hun hogere id. Zo blijft
+<em>Interne overdrachten</em> de standaard bij een nieuwe interne overdracht (19/11/2026).</p>
 <figure><img src="IMPLEMENTATIE_img/retoursoorten_pick_retourtype.png" alt=""><figcaption>Bewerkingssoort
 <em>Picken</em> van Vasa: 1 = <em>Retourtype</em> Pickretour.</figcaption></figure>
 <figure><img src="IMPLEMENTATIE_img/retoursoorten_voorraadoverzicht.png" alt=""><figcaption>Voorraadoverzicht:
