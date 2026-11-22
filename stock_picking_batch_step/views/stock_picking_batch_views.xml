@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        From one batch to the batches of the step before and after it, so the
+        pick batch of a customer leads to the batch that ships the same goods.
+    -->
+    <record id="stock_picking_batch_view_form_steps" model="ir.ui.view">
+        <field name="name">stock.picking.batch.view.form.steps</field>
+        <field name="model">stock.picking.batch</field>
+        <field name="inherit_id" ref="stock_picking_batch.stock_picking_batch_form"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button name="action_view_previous_batches" type="object"
+                        class="oe_stat_button" icon="fa-arrow-left"
+                        invisible="not previous_batch_count">
+                    <div class="o_stat_info">
+                        <span class="o_stat_value"><field name="previous_batch_count"/></span>
+                        <span class="o_stat_text">Previous Step</span>
+                    </div>
+                </button>
+                <button name="action_view_next_batches" type="object"
+                        class="oe_stat_button" icon="fa-arrow-right"
+                        invisible="not next_batch_count">
+                    <div class="o_stat_info">
+                        <span class="o_stat_value"><field name="next_batch_count"/></span>
+                        <span class="o_stat_text">Next Step</span>
+                    </div>
+                </button>
+            </div>
+        </field>
+    </record>
+
+    <record id="stock_picking_batch_view_list_steps" model="ir.ui.view">
+        <field name="name">stock.picking.batch.view.list.steps</field>
+        <field name="model">stock.picking.batch</field>
+        <field name="inherit_id" ref="stock_picking_batch.stock_picking_batch_tree"/>
+        <field name="arch" type="xml">
+            <field name="picking_type_id" position="after">
+                <field name="previous_batch_ids" widget="many2many_tags" optional="show"/>
+                <field name="next_batch_ids" widget="many2many_tags" optional="show"/>
+            </field>
+        </field>
+    </record>
+</odoo>
