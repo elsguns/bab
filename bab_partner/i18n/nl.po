@@ -1,6 +1,6 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
-# 	* bab_custom
+# 	* bab_partner
 #
 msgid ""
 msgstr ""
@@ -10,7 +10,7 @@ msgstr ""
 "Content-Transfer-Encoding: \n"
 "Language: nl\n"
 
-#. module: bab_custom
-#: model_terms:ir.ui.view,arch_db:bab_custom.contact
+#. module: bab_partner
+#: model_terms:ir.ui.view,arch_db:bab_partner.contact
 msgid "<span>Customer Code:</span>"
 msgstr "<span>Klantcode:</span>"
