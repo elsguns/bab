@@ -20,12 +20,15 @@ class StockPickingBatch(models.Model):
     previous_batch_count = fields.Integer(compute='_compute_step_batch_ids')
     next_batch_count = fields.Integer(compute='_compute_step_batch_ids')
 
-    @api.depends('move_ids.move_orig_ids.picking_id.batch_id',
-                 'move_ids.move_dest_ids.picking_id.batch_id')
+    # Through picking_ids, not the batch's own move_ids: that one is computed
+    # and not searchable, so the ORM could not tell which batch to recompute.
+    @api.depends('picking_ids.move_ids.move_orig_ids.picking_id.batch_id',
+                 'picking_ids.move_ids.move_dest_ids.picking_id.batch_id')
     def _compute_step_batch_ids(self):
         for batch in self:
-            previous = batch.move_ids.move_orig_ids.picking_id.batch_id - batch
-            following = batch.move_ids.move_dest_ids.picking_id.batch_id - batch
+            moves = batch.picking_ids.move_ids
+            previous = moves.move_orig_ids.picking_id.batch_id - batch
+            following = moves.move_dest_ids.picking_id.batch_id - batch
             batch.previous_batch_ids = previous
             batch.next_batch_ids = following
             batch.previous_batch_count = len(previous)
