@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Address blocks: a separate t-options-* attribute instead of rewriting
+         t-options, so it combines with other changes to the same address; high
+         priority so it is applied after a view that replaces the node. -->
+    <!-- The standard "Customer ref" line only reads the invoice address itself;
+         the address block shows the company's code instead. -->
+    <template id="followup_filter_info_template" inherit_id="account_followup.followup_filter_info_template" priority="99">
+        <xpath expr="//div[hasclass('o_followup_address')]/span[@t-field='partner_addr.self']" position="attributes">
+            <attribute name="t-options-bab_customer_code">True</attribute>
+        </xpath>
+    </template>
+</odoo>

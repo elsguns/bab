@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_payment_receipt_document" inherit_id="account.report_payment_receipt_document" priority="99">
+        <xpath expr="//span[@t-field='o.partner_id']" position="after">
+            <div t-if="o.partner_type == 'customer' and o.partner_id.commercial_partner_id.ref" name="bab_customer_code">
+                <span>Customer Code:</span> <span t-field="o.partner_id.commercial_partner_id.ref"/>
+            </div>
+        </xpath>
+    </template>
+</odoo>

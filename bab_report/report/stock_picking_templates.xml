@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Address blocks: a separate t-options-* attribute instead of rewriting
+         t-options, so it combines with other changes to the same address; high
+         priority so it is applied after a view that replaces the node. -->
+    <template id="report_delivery_document" inherit_id="stock.report_delivery_document" priority="99">
+        <xpath expr="//div[@name='outgoing_delivery_address']/div[@t-out='o.move_ids[0].partner_id or o.partner_id']" position="attributes">
+            <attribute name="t-options-bab_customer_code">True</attribute>
+        </xpath>
+    </template>
+
+    <template id="report_picking" inherit_id="stock.report_picking" priority="99">
+        <xpath expr="//div[@name='div_outgoing_address']//div[@t-out='o.move_ids[0].partner_id or o.partner_id']" position="attributes">
+            <attribute name="t-options-bab_customer_code">True</attribute>
+        </xpath>
+    </template>
+
+    <!-- The return slip only shows where to send the parcel; the customer
+         returning it is identified by an extra line. -->
+    <template id="report_return_slip" inherit_id="stock.report_return_slip" priority="99">
+        <xpath expr="//span[@t-out='o.name']/ancestor::h2" position="after">
+            <p t-if="o.picking_type_code == 'incoming' and o.partner_id.commercial_partner_id.ref" name="bab_customer_code">
+                <span>Customer Code:</span> <span t-field="o.partner_id.commercial_partner_id.ref"/>
+            </p>
+        </xpath>
+    </template>
+
+    <template id="report_deliveryslip_matrix_blocks" inherit_id="bab_stock_delivery.report_deliveryslip_matrix_blocks" priority="99">
+        <xpath expr="//div[@name='div_customer']/span[@t-out='picking.partner_id.name']" position="after">
+            <span t-if="picking.partner_id.commercial_partner_id.ref" name="bab_customer_code">
+                (<t t-out="picking.partner_id.commercial_partner_id.ref"/>)
+            </span>
+        </xpath>
+    </template>
+
+    <template id="report_product_overview" inherit_id="bab_stock_delivery.report_product_overview" priority="99">
+        <xpath expr="//span[@t-out=&quot;row['customer'].name&quot;]" position="after">
+            <span t-if="row['customer'].commercial_partner_id.ref" name="bab_customer_code">
+                (<t t-out="row['customer'].commercial_partner_id.ref"/>)
+            </span>
+        </xpath>
+    </template>
+</odoo>

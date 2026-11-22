@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_picking_batch" inherit_id="stock_picking_batch.report_picking_batch" priority="99">
+        <xpath expr="//span[@t-field='pick.name' and not(@t-options)]" position="after">
+            <div t-if="pick.partner_id" name="bab_customer">
+                <span t-field="pick.partner_id.commercial_partner_id.name"/>
+                <t t-if="pick.partner_id.commercial_partner_id.ref">
+                    (<span t-field="pick.partner_id.commercial_partner_id.ref"/>)
+                </t>
+            </div>
+        </xpath>
+    </template>
+</odoo>

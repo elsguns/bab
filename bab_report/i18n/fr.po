@@ -1,6 +1,6 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
-# 	* bab_partner
+# 	* bab_report
 #
 msgid ""
 msgstr ""
@@ -8,9 +8,11 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
-"Language: de\n"
+"Language: fr\n"
 
-#. module: bab_partner
-#: model_terms:ir.ui.view,arch_db:bab_partner.contact
+#. module: bab_report
+#: model_terms:ir.ui.view,arch_db:bab_report.contact
+#: model_terms:ir.ui.view,arch_db:bab_report.report_payment_receipt_document
+#: model_terms:ir.ui.view,arch_db:bab_report.report_return_slip
 msgid "<span>Customer Code:</span>"
-msgstr "<span>Kundencode:</span>"
+msgstr "<span>Numéro de client:</span>"
