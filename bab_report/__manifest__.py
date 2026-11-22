@@ -1,7 +1,7 @@
 # Part of the o.s.admin add-ons.
 {
     'name': 'Babimex Reports',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.0.1',
     'category': 'Hidden',
     'summary': "Prints the customer code on the customer documents and the warehouse documents",
     'description': """

@@ -5,13 +5,22 @@
          priority so it is applied after a view that replaces the node. -->
     <template id="report_delivery_document" inherit_id="stock.report_delivery_document" priority="99">
         <xpath expr="//div[@name='outgoing_delivery_address']/div[@t-out='o.move_ids[0].partner_id or o.partner_id']" position="attributes">
-            <attribute name="t-options-bab_customer_code">True</attribute>
+            <attribute name="t-options-bab_customer_code">o.picking_type_code != 'incoming'</attribute>
         </xpath>
     </template>
 
+    <!-- The delivery address is not printed on every picking (an internal pick
+         only shows the customer in the partner header), but where both blocks
+         are printed the code must appear only once. -->
     <template id="report_picking" inherit_id="stock.report_picking" priority="99">
         <xpath expr="//div[@name='div_outgoing_address']//div[@t-out='o.move_ids[0].partner_id or o.partner_id']" position="attributes">
-            <attribute name="t-options-bab_customer_code">True</attribute>
+            <attribute name="t-options-bab_customer_code">o.picking_type_code != 'incoming'</attribute>
+        </xpath>
+        <xpath expr="//div[@name='div_outgoing_address']//div[@t-out='o.move_ids[0].partner_id or o.partner_id']" position="after">
+            <t t-set="bab_customer_code_shown" t-value="True"/>
+        </xpath>
+        <xpath expr="//div[@name='partner_header']/div[@t-field='o.partner_id.commercial_partner_id']" position="attributes">
+            <attribute name="t-options-bab_customer_code">o.picking_type_code != 'incoming' and not bab_customer_code_shown</attribute>
         </xpath>
     </template>
 
