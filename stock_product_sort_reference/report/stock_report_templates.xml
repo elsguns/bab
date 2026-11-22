@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Part of osadmin. See LICENSE file for full copyright and licensing details. -->
+<!-- License: OPL-1 (https://www.odoo.com/documentation/18.0/legal/licenses.html#odoo-apps) -->
+<odoo>
+
+    <!-- Picking operations: the route (source, then destination location)
+         stays first, then the product. Standard: no order within a location. -->
+    <template id="report_picking" inherit_id="stock.report_picking">
+        <xpath expr="//tr[@t-as='ml'][contains(@t-foreach, 'move_line_ids_without_package')]" position="attributes">
+            <attribute name="t-foreach">o.move_line_ids_without_package.sorted(lambda ml: (ml.location_id.complete_name, ml.location_dest_id.complete_name, ml.product_sort_key or '', ml.id))</attribute>
+        </xpath>
+    </template>
+
+    <!-- Batch transfer: per location, then product. Standard: product id. -->
+    <template id="report_picking_batch" inherit_id="stock_picking_batch.report_picking_batch">
+        <xpath expr="//t[@t-set='move_lines'][contains(@t-value, 'location_dest_id==location_dest')]" position="attributes">
+            <attribute name="t-value">loc_move_line.filtered(lambda x: x.location_dest_id==location_dest).sorted(lambda ml: (ml.product_sort_key or '', ml.id))</attribute>
+        </xpath>
+    </template>
+
+    <!-- Count sheet: per location, then product. Standard: order of the selection. -->
+    <template id="report_inventory" inherit_id="stock.report_inventory">
+        <xpath expr="//tr[@t-as='line'][contains(@t-foreach, 'quant.location_id.id == location.id')]" position="attributes">
+            <attribute name="t-foreach">docs.filtered(lambda quant: quant.location_id.id == location.id).sorted(lambda quant: (quant.product_sort_key or '', quant.id))</attribute>
+        </xpath>
+    </template>
+
+</odoo>

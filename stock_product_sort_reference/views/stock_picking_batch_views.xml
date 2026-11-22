@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Part of osadmin. See LICENSE file for full copyright and licensing details. -->
+<!-- License: OPL-1 (https://www.odoo.com/documentation/18.0/legal/licenses.html#odoo-apps) -->
+<odoo>
+
+    <!-- Detailed operations of a batch transfer: per location, then product. -->
+    <record id="view_move_line_tree" model="ir.ui.view">
+        <field name="name">stock_picking_batch.move.line.list.sort</field>
+        <field name="model">stock.move.line</field>
+        <field name="inherit_id" ref="stock_picking_batch.view_move_line_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="default_order">location_id, product_sort_key, id</attribute>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
