@@ -1,0 +1,47 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* bab_stock_delivery
+#
+# Only the strings of the "slips after receipt" switch are translated here.
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 18.0\n"
+"Report-Msgid-Bugs-To: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: bab_stock_delivery
+#: model:ir.model.fields,field_description:bab_stock_delivery.field_stock_picking_type__auto_print_matrix_after_receipt
+msgid "Productenmatrix (briefjes) of the pick transfers"
+msgstr "Productenmatrix (briefjes) van de pickbonnen"
+
+#. module: bab_stock_delivery
+#: model:ir.model.fields,help:bab_stock_delivery.field_stock_picking_type__auto_print_matrix_after_receipt
+msgid ""
+"When a receipt of this type is validated, print the Productenmatrix "
+"(briefjes) of every pick transfer that has something reserved of the "
+"received hoofdproducten, limited to those hoofdproducten, and keep each slip"
+" as an attachment in the chatter of its pick transfer. While this is ticked,"
+" the slips can also be printed on a pick transfer that is not done yet."
+msgstr ""
+"Bij het bevestigen van een ontvangst van deze soort worden de briefjes "
+"(Productenmatrix) afgedrukt van elke pickbon met een reservatie van de "
+"ontvangen hoofdproducten, beperkt tot die hoofdproducten. Elk briefje blijft"
+" als bijlage in de chatter van zijn pickbon. Zolang dit aangevinkt is, kunnen"
+" de briefjes ook afgedrukt worden op een pickbon die nog niet gereed is."
+
+#. module: bab_stock_delivery
+#. odoo-python
+#: code:addons/bab_stock_delivery/models/stock_picking.py:0
+msgid "Productenmatrix (briefjes) after receipt %s"
+msgstr "Productenmatrix (briefjes) na ontvangst %s"
+
+#. module: bab_stock_delivery
+#. odoo-python
+#: code:addons/bab_stock_delivery/models/stock_picking.py:0
+msgid "Productenmatrix (briefjes) of %s pick transfers"
+msgstr "Productenmatrix (briefjes) van %s pickbonnen"

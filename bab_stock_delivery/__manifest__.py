@@ -1,7 +1,7 @@
 # Part of the o.s.admin add-ons.
 {
     'name': 'Delivery Slip with Variant Matrix',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'category': 'Inventory/Delivery',
     'summary': "Adds a delivery report showing the product variant matrix of the sales order",
     'description': """
@@ -30,6 +30,7 @@ the new report.
         'views/res_company_views.xml',
         'views/res_partner_views.xml',
         'views/stock_picking_views.xml',
+        'views/stock_picking_type_views.xml',
         'wizard/matrix_reprint_confirm_views.xml',
         'report/delivery_report_matrix.xml',
         # reservation_matrix must load BEFORE product_overview so its report

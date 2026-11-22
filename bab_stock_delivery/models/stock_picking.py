@@ -1,5 +1,6 @@
 # Part of the o.s.admin add-ons.
 from odoo import _, fields, models
+from odoo.addons.web.controllers.utils import clean_action
 from odoo.tools import float_compare
 
 
@@ -38,6 +39,106 @@ class StockPicking(models.Model):
                 'context': {'default_picking_ids': [(6, 0, self.ids)]},
             }
         return report.report_action(self)
+
+    def _matrix_allowed_before_done(self):
+        """True if this pick may get its slips before it is done.
+
+        That is the case as soon as one receipt type of the pick's warehouse prints
+        the slips after a receipt: the slips then follow the reservation, not the
+        validated pick. Hilde's own print action relies on the same rule, so it
+        keeps working on those picks too.
+        """
+        self.ensure_one()
+        warehouse = self.picking_type_id.warehouse_id
+        return bool(warehouse) and bool(self.env['stock.picking.type'].search_count([
+            ('warehouse_id', '=', warehouse.id),
+            ('code', '=', 'incoming'),
+            ('auto_print_matrix_after_receipt', '=', True),
+        ], limit=1))
+
+    def _get_autoprint_report_actions(self):
+        # Called by button_validate right after _action_done, i.e. after the
+        # receipt reserved the waiting picks (_trigger_assign), so the
+        # reservations the slips show are already there.
+        report_actions = super()._get_autoprint_report_actions()
+        receipts = self.filtered(
+            lambda p: p.state == 'done'
+            and p.picking_type_id.code == 'incoming'
+            and p.picking_type_id.auto_print_matrix_after_receipt
+        )
+        if receipts:
+            action = receipts._print_matrix_after_receipt()
+            if action:
+                report_actions.append(action)
+        return report_actions
+
+    def _print_matrix_after_receipt(self):
+        """Slips of the picks fed by these validated receipts.
+
+        Every pick of the receipts' warehouses with something reserved of a
+        received hoofdproduct gets a slip limited to those hoofdproducten. Each
+        slip is stored as a PDF in the chatter of its pick, so a lost slip is
+        reprinted from there and earlier versions stay available. The receipt
+        keeps the combined PDF of all its slips, and the return value prints them
+        in one go, grouped per hoofdproduct.
+
+        No difference with what an earlier receipt already reserved is computed:
+        Lucati receives per hoofdproduct, so the filter on hoofdproduct already
+        keeps earlier slips off. When the same hoofdproduct comes in twice, the
+        second slip shows the full reservation and the two PDFs in the chatter
+        tell what was added.
+        """
+        templates = self.move_ids.filtered(
+            lambda m: m.state == 'done' and m.quantity
+        ).product_id.product_tmpl_id.filtered(lambda t: t.product_variant_count > 1)
+        pick_types = self.picking_type_id.warehouse_id.pick_type_id
+        if not templates or not pick_types:
+            return False
+        picks = self.search([
+            ('picking_type_id', 'in', pick_types.ids),
+            ('state', 'not in', ('draft', 'done', 'cancel')),
+            ('move_ids', 'any', [
+                ('product_id.product_tmpl_id', 'in', templates.ids),
+                ('state', 'not in', ('done', 'cancel')),
+                ('quantity', '>', 0),
+            ]),
+        ])
+        if not picks:
+            return False
+        data = {'matrix_template_ids': templates.ids}
+        report = self.env.ref('bab_stock_delivery.action_report_delivery_matrix')
+        receipt_names = ", ".join(self.mapped('name'))
+        # One wkhtmltopdf run for all picks, split per pick by Odoo itself (see the
+        # split_per_picking branch of the report template).
+        streams = self.env['ir.actions.report']._render_qweb_pdf_prepare_streams(
+            report, dict(data, matrix_split_per_picking=True), res_ids=picks.ids)
+        for pick in picks:
+            stream = streams.get(pick.id, {}).get('stream')
+            if stream:
+                pdf = stream.getvalue()
+            else:
+                # Odoo could not split (no headings found): render this pick alone.
+                pdf = self.env['ir.actions.report'].with_context(force_report_rendering=True)._render_qweb_pdf(
+                    report, res_ids=pick.ids, data=data)[0]
+            pick.message_post(
+                body=_("Productenmatrix (briefjes) after receipt %s", receipt_names),
+                attachments=[(
+                    "%s - %s.pdf" % (pick.name.replace('/', '-'), receipt_names.replace('/', '-')),
+                    pdf,
+                )],
+            )
+        # The receipt keeps the combined PDF too (all slips of this receipt, as
+        # printed), so a whole delivery's slips can be found again in one place.
+        combined_pdf = self.env['ir.actions.report'].with_context(force_report_rendering=True)._render_qweb_pdf(
+            report, res_ids=picks.ids, data=data)[0]
+        for receipt in self:
+            receipt.message_post(
+                body=_("Productenmatrix (briefjes) of %s pick transfers", len(picks)),
+                attachments=[("Briefjes - %s.pdf" % receipt.name.replace('/', '-'), combined_pdf)],
+            )
+        action = report.report_action(picks, data=data, config=False)
+        clean_action(action, self.env)
+        return action
 
     def _split_size_colour(self, template, ptavs):
         """Split a variant's attribute values into its size (maat) and its colour.
@@ -493,6 +594,12 @@ class StockPicking(models.Model):
         # (product_add_mode == 'matrix'): for this delivery slip the matrix must
         # always be built as soon as the product has variants.
         grid_templates = all_lines.filtered('is_configurable_product').product_template_id
+        # The slips printed after a receipt only carry the hoofdproducten of that
+        # receipt (see _print_matrix_after_receipt): the other hoofdproducten on
+        # the pick were already printed with their own receipt.
+        template_filter = self.env.context.get('matrix_template_ids')
+        if template_filter:
+            grid_templates = grid_templates.filtered(lambda t: t.id in template_filter)
 
         matrixes = []
         for template in grid_templates:

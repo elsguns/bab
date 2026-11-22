@@ -13,6 +13,10 @@ class ReportDeliverySlipMatrix(models.AbstractModel):
     def _get_report_values(self, docids, data=None):
         """Build the report values, but only for completed pick transfers.
 
+        Exception: in a warehouse whose receipts print the slips (see
+        stock.picking.type.auto_print_matrix_after_receipt) a pick that is not
+        done yet is accepted too, since the slips then follow the reservation.
+
         The Productenmatrix is cut into slips that travel with the picked goods,
         so it only makes sense once the warehouse's pick step is validated. Odoo
         report bindings carry no per-record visibility, so we can't hide the Print
@@ -30,7 +34,9 @@ class ReportDeliverySlipMatrix(models.AbstractModel):
         for picking in pickings:
             if picking.picking_type_id != picking.picking_type_id.warehouse_id.pick_type_id:
                 refused.append(_("%s (not a pick transfer)", picking.name))
-            elif picking.state != 'done':
+            elif picking.state != 'done' and not (
+                    picking.state not in ('draft', 'cancel')
+                    and picking._matrix_allowed_before_done()):
                 refused.append(_("%s (not done yet)", picking.name))
         if refused:
             raise UserError(_(
@@ -41,9 +47,16 @@ class ReportDeliverySlipMatrix(models.AbstractModel):
         # reprint (see stock.picking.action_print_matrix). Runs on every render
         # path, so the flag stays correct even if the report is reached directly.
         pickings.filtered(lambda p: not p.matrix_printed).matrix_printed = True
+        # The slips printed after a receipt only carry that receipt's
+        # hoofdproducten, see stock.picking._print_matrix_after_receipt.
+        if data and data.get('matrix_template_ids'):
+            pickings = pickings.with_context(matrix_template_ids=data['matrix_template_ids'])
         return {
             'doc_ids': docids,
             'doc_model': 'stock.picking',
             'docs': pickings,
+            # One article per pick so Odoo can split the PDF per pick, see the
+            # report template.
+            'split_per_picking': bool(data and data.get('matrix_split_per_picking')),
             'data': data,
         }

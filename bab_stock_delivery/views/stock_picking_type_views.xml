@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        The switch sits with Odoo's own "Print on Validation" boxes of the
+        operation type, and only on receipts: validating a receipt is what
+        reserves the pick transfers whose slips get printed.
+    -->
+    <record id="view_picking_type_form_matrix_after_receipt" model="ir.ui.view">
+        <field name="name">stock.picking.type.form.matrix.after.receipt</field>
+        <field name="model">stock.picking.type</field>
+        <field name="inherit_id" ref="stock.view_picking_type_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='auto_print_delivery_slip']" position="before">
+                <field name="auto_print_matrix_after_receipt" invisible="code != 'incoming'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
