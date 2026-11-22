@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Only the address blocks babimex_custom marks for its commercial name, so
+         the portal, website and other reports keep the standard address. The code
+         is the company's, also when the document is addressed to a contact. -->
+    <template id="contact" inherit_id="base.contact">
+        <xpath expr="//div[@itemtype='http://schema.org/PostalAddress']" position="before">
+            <div t-if="options.get('babimex_commercial_name') and object.commercial_partner_id.ref"
+                 name="bab_customer_code">
+                <span>Customer Code:</span> <span t-esc="object.commercial_partner_id.ref"/>
+            </div>
+        </xpath>
+    </template>
+</odoo>

@@ -1,0 +1,16 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* bab_custom
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 18.0\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Language: nl\n"
+
+#. module: bab_custom
+#: model_terms:ir.ui.view,arch_db:bab_custom.contact
+msgid "<span>Customer Code:</span>"
+msgstr "<span>Klantcode:</span>"
