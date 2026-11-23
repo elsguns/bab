@@ -66,3 +66,5 @@ class TestBatchSteps(TransactionCase):
         self.assertEqual(action['res_id'], ship_batch.id)
         action = ship_batch.action_view_previous_batches()
         self.assertEqual(action['domain'], [('id', 'in', (pick_batch_1 | pick_batch_2).ids)])
+        # A saved default filter (e.g. only open batches) must not hide them.
+        self.assertTrue(action['context'].get('search_disable_custom_filters'))

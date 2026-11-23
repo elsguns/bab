@@ -48,5 +48,7 @@ class StockPickingBatch(models.Model):
         if len(batches) == 1:
             action.update(views=[(False, 'form')], res_id=batches.id)
         else:
-            action.update(domain=[('id', 'in', batches.ids)], context={})
+            # No saved default filter: one that hides done batches would empty the list.
+            action.update(domain=[('id', 'in', batches.ids)],
+                          context={'search_disable_custom_filters': True})
         return action

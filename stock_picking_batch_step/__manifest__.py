@@ -1,7 +1,7 @@
 # Part of the o.s.admin add-ons.
 {
     'name': 'Batch Transfers: Previous and Next Step',
-    'version': '18.0.1.0.1',
+    'version': '18.0.1.0.2',
     'category': 'Inventory/Inventory',
     'summary': "Links a batch transfer to the batches of the step before and after it",
     'description': """
