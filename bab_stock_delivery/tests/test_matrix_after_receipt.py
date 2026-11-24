@@ -165,6 +165,14 @@ class TestMatrixAfterReceipt(TransactionCase):
         self.assertEqual(len(actions), 1)
         self.assertEqual(set(actions[0]['context']['active_ids']), set((self.pick_a | self.pick_b).ids))
         self.assertEqual(actions[0]['data']['matrix_template_ids'], self.shirt.ids)
+        # The download in the browser: the web client puts the data in the URL
+        # and the picks only in the context, no ids (see getReportUrl).
+        downloaded = self.env['ir.actions.report'].with_context(actions[0]['context'])._render_qweb_html(
+            actions[0]['report_name'], None,
+            data=dict(actions[0]['data'], context=actions[0]['context']))[0].decode()
+        self.assertIn('Klant A (test)', downloaded)
+        self.assertIn('Klant B (test)', downloaded)
+        self.assertNotIn('Broek (test)', downloaded)
         slips_a = self._slips(self.pick_a)
         self.assertEqual(len(slips_a), 2, "the earlier slip stays in the chatter")
         newest = self._text(slips_a.sorted('id')[-1])

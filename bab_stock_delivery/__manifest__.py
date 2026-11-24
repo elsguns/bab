@@ -1,7 +1,7 @@
 # Part of the o.s.admin add-ons.
 {
     'name': 'Delivery Slip with Variant Matrix',
-    'version': '18.0.1.1.0',
+    'version': '18.0.1.1.1',
     'category': 'Inventory/Delivery',
     'summary': "Adds a delivery report showing the product variant matrix of the sales order",
     'description': """

@@ -29,6 +29,11 @@ class ReportDeliverySlipMatrix(models.AbstractModel):
         Vasa) has its own pick type, and its code is 'internal' like that of any
         other internal transfer.
         """
+        if not docids and data:
+            # A report action that carries data (the slips printed after a
+            # receipt) is downloaded by the web client as /report/pdf/<name>?options=...
+            # without ids in the URL: the picks only travel in the action's context.
+            docids = (data.get('context') or {}).get('active_ids')
         pickings = self.env['stock.picking'].browse(docids)
         refused = []
         for picking in pickings:
