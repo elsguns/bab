@@ -7,7 +7,9 @@ class ResPartner(models.Model):
 
     # Babimex stock location code, shown before the customer name on the
     # Productenmatrix delivery report.
-    stock_location = fields.Integer(string="Stock Location")
+    # No aggregator: a summed location code means nothing, and as first
+    # column with a sum it squeezes the group name in grouped lists.
+    stock_location = fields.Integer(string="Stock Location", aggregator=None)
 
     # Country-specific numbering ranges for the stock location code.
     # Each entry is (lower bound, upper bound), both inclusive; an upper bound
