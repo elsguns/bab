@@ -383,3 +383,24 @@ class TestMatrixAfterReceipt(TransactionCase):
         self.receipt_type.auto_print_matrix_after_receipt = False
         receipt.invalidate_recordset(['matrix_hidden_action_ids'])
         self.assertEqual(sorted(receipt.matrix_hidden_action_ids), sorted([pick_action.id, receipt_action.id]))
+
+    def test_12_reservation_reports_printed_on_a_receipt(self):
+        """Both reservation reports printed on a receipt cover its open picks."""
+        self.receipt_type.auto_print_matrix_after_receipt = True
+        # A gets its 2 S, B only 1 of its 3: partially reserved, so the detail
+        # per colour and customer shows the table.
+        receipt, _action = self._receive_purchase([(self.shirt, 'S', 3)])
+        Report = self.env['ir.actions.report']
+        for report_name in ('bab_stock_delivery.report_reservation_matrix',
+                            'bab_stock_delivery.report_product_overview'):
+            html = Report._render_qweb_html(report_name, receipt.ids)[0].decode()
+            self.assertIn('Shirt (test)', html, report_name)
+            self.assertNotIn('Broek (test)', html, "only the received hoofdproducten")
+        detail = Report._render_qweb_html(
+            'bab_stock_delivery.report_product_overview', receipt.ids)[0].decode()
+        self.assertIn('Klant A (test)', detail)
+        self.assertIn('Klant B (test)', detail)
+        # Picks, or receipts mixed with other transfers, are printed as selected.
+        self.assertEqual(self.pick_a._get_matrix_report_pickings(), self.pick_a)
+        self.assertFalse(self.pick_a._get_matrix_report_pickings().env.context.get('matrix_template_ids'))
+        self.assertEqual((receipt | self.pick_a)._get_matrix_report_pickings(), receipt | self.pick_a)

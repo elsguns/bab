@@ -19,9 +19,10 @@ class ReportProductOverview(models.AbstractModel):
         stock.picking._get_customer_matrix_blocks; pickings without a linked sales
         order simply contribute nothing there.
         """
-        pickings = self.env['stock.picking'].browse(docids)
+        # Printed on a receipt: the open picks of the received hoofdproducten.
+        pickings = self.env['stock.picking'].browse(docids)._get_matrix_report_pickings()
         return {
-            'doc_ids': docids,
+            'doc_ids': pickings.ids,
             'doc_model': 'stock.picking',
             'docs': pickings,
             'blocks': pickings._get_customer_matrix_blocks(),

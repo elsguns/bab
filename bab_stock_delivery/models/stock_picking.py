@@ -191,6 +191,23 @@ class StockPicking(models.Model):
         clean_action(action, self.env)
         return action
 
+    def _get_matrix_report_pickings(self):
+        """The transfers a reservation report covers when printed from Print.
+
+        Printed on done receipts, the reports would read the receipt's own moves
+        (received quantities, no customers). Like the overview printed at
+        validation, they then cover the open picks holding the received
+        hoofdproducten instead, limited to those hoofdproducten. Any other
+        selection, or one mixing receipts with other transfers, is left as is.
+        """
+        receipts = self.filtered(
+            lambda p: p.state == 'done' and p.picking_type_id.code == 'incoming')
+        if not self or receipts != self:
+            return self
+        templates = receipts._get_received_templates()
+        picks = receipts._get_fed_picks(templates, reserved_only=False)
+        return picks.with_context(matrix_template_ids=templates.ids)
+
     def _print_reservation_matrix_after_receipt(self):
         """Overview of the reservations of the hoofdproducten these receipts brought in.
 
@@ -559,6 +576,9 @@ class StockPicking(models.Model):
         # its outgoing transfer, or over a backorder, is only counted once. We
         # deliberately do NOT restrict to outgoing transfers: the matrix must also
         # be printable from the pick step (WH/PICK) of a multi-step delivery route.
+        # Printed from a receipt only the received hoofdproducten count (see
+        # _get_matrix_report_pickings).
+        template_filter = self.env.context.get('matrix_template_ids')
         orders = self.env['sale.order']
         for picking in self:
             orders |= picking._get_picking_orders()
@@ -566,6 +586,8 @@ class StockPicking(models.Model):
             for line in order.order_line:
                 if line.combo_item_id:
                     # Combo/kit child lines would double count against their parent.
+                    continue
+                if template_filter and line.product_template_id.id not in template_filter:
                     continue
                 size_ptav, colour_ptavs = self._split_size_colour(
                     line.product_template_id, line.product_template_attribute_value_ids)
@@ -582,6 +604,8 @@ class StockPicking(models.Model):
         # variant gives the same size/colour split as the ordered line above.
         for move in self.move_ids:
             if move.state == 'cancel' or not move.sale_line_id:
+                continue
+            if template_filter and move.product_id.product_tmpl_id.id not in template_filter:
                 continue
             variant = move.product_id
             size_ptav, colour_ptavs = self._split_size_colour(
