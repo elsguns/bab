@@ -45,7 +45,7 @@
     <!--
         On a done receipt: whether the slips of the pick transfers it fed were
         printed (set by "* Briefjes van de pickbonnen"). Only on receipt types that
-        print the reservations first, so the other databases see no change. Next
+        print the slips after a receipt, so the other databases see no change. Next
         to Source Document, so it is seen without opening a tab.
     -->
     <record id="view_picking_form_receipt_slips_printed" model="ir.ui.view">
@@ -55,8 +55,8 @@
         <field name="arch" type="xml">
             <xpath expr="//group/field[@name='origin']" position="after">
                 <field name="matrix_printed" string="Slips printed"
-                       invisible="not picking_type_matrix_slips_on_request or state != 'done'"/>
-                <field name="picking_type_matrix_slips_on_request" invisible="1"/>
+                       invisible="not picking_type_auto_print_matrix_after_receipt or state != 'done'"/>
+                <field name="picking_type_auto_print_matrix_after_receipt" invisible="1"/>
             </xpath>
         </field>
     </record>

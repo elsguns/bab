@@ -9,27 +9,22 @@ class StockPickingType(models.Model):
     # tables and pick from there into the customers' boxes straight away. The
     # slips must therefore come with the receipt, not with the validated pick:
     # validating the receipt reserves the waiting pick transfers, and those are
-    # the slips to print. Off = the original behaviour (slips only on a done
-    # pick), so switching back is just unticking this box.
+    # the slips to print. Hilde first wants to see how the received goods were
+    # reserved, so she can still move reservations between customers:
+    # validating prints that overview, and the slips wait for the action
+    # "* Briefjes van de pickbonnen" on the receipt. Off = the original
+    # behaviour (slips only on a done pick), so switching back is just
+    # unticking this box.
     auto_print_matrix_after_receipt = fields.Boolean(
         string="Productenmatrix (briefjes) of the pick transfers",
         help="When a receipt of this type is validated, print the Productenmatrix "
-             "(briefjes) of every pick transfer that has something reserved of "
-             "the received hoofdproducten, limited to those hoofdproducten, and "
-             "keep each slip as an attachment in the chatter of its pick "
-             "transfer. While this is ticked, the slips can also be printed on a "
-             "pick transfer that is not done yet.",
-    )
-
-    # Lucati: Hilde first wants to see, after a receipt, how the received goods
-    # were reserved, so she can still move reservations between customers. The
-    # slips then wait for the action "* Briefjes van de pickbonnen" on the receipt.
-    matrix_slips_on_request = fields.Boolean(
-        string="First the reservations, slips on request",
-        help="Validating a receipt prints the Productenmatrix met reservaties of "
-             "the received hoofdproducten instead of the slips. Once the "
+             "met reservaties of the received hoofdproducten. Once the "
              "reservations are right, the action \"* Briefjes van de pickbonnen\" "
-             "on the receipt prints the slips.",
+             "on the receipt prints the Productenmatrix (briefjes) of every pick "
+             "transfer that has something reserved of those hoofdproducten and "
+             "keeps each slip in the chatter of its pick transfer. While this is "
+             "ticked, the slips can also be printed on a pick transfer that is "
+             "not done yet.",
     )
 
     # Inventory Overview: done receipts whose slips were not printed yet, so
@@ -37,11 +32,11 @@ class StockPickingType(models.Model):
     count_matrix_slips_to_print = fields.Integer(compute='_compute_count_matrix_slips_to_print')
 
     def _compute_count_matrix_slips_to_print(self):
-        on_request = self.filtered(lambda t: t.code == 'incoming' and t.matrix_slips_on_request)
+        slip_types = self.filtered(lambda t: t.code == 'incoming' and t.auto_print_matrix_after_receipt)
         data = dict(self.env['stock.picking']._read_group(
-            [('picking_type_id', 'in', on_request.ids)] + self._matrix_slips_to_print_domain(),
+            [('picking_type_id', 'in', slip_types.ids)] + self._matrix_slips_to_print_domain(),
             ['picking_type_id'], ['__count'],
-        )) if on_request else {}
+        )) if slip_types else {}
         for picking_type in self:
             picking_type.count_matrix_slips_to_print = data.get(picking_type, 0)
 

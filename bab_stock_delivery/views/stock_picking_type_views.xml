@@ -12,13 +12,12 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='auto_print_delivery_slip']" position="before">
                 <field name="auto_print_matrix_after_receipt" invisible="code != 'incoming'"/>
-                <field name="matrix_slips_on_request" invisible="code != 'incoming' or not auto_print_matrix_after_receipt"/>
             </xpath>
         </field>
     </record>
 
     <!--
-        Inventory Overview: on a receipt type that prints the reservations first,
+        Inventory Overview: on a receipt type that prints the slips after a receipt,
         a line "Slips to print" under Back Orders, to the done receipts whose
         slips are not printed yet. Like Odoo's own lines, only when there are any.
     -->

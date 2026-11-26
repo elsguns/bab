@@ -20,8 +20,8 @@ class StockPicking(models.Model):
     # done receipts that still lack it.
     matrix_printed = fields.Boolean(
         string="Productenmatrix printed", default=False, copy=False, readonly=True)
-    picking_type_matrix_slips_on_request = fields.Boolean(
-        related='picking_type_id.matrix_slips_on_request')
+    picking_type_auto_print_matrix_after_receipt = fields.Boolean(
+        related='picking_type_id.auto_print_matrix_after_receipt')
 
     def action_print_matrix(self):
         """Print the Productenmatrix, asking to confirm a reprint.
@@ -93,14 +93,11 @@ class StockPicking(models.Model):
             and p.picking_type_id.code == 'incoming'
             and p.picking_type_id.auto_print_matrix_after_receipt
         )
-        # Slips on request: first the overview of the reservations, so they can
-        # still be moved between customers; the slips follow with an action.
-        on_request = receipts.filtered(lambda p: p.picking_type_id.matrix_slips_on_request)
-        for batch, method in ((on_request, '_print_reservation_matrix_after_receipt'),
-                              (receipts - on_request, '_print_matrix_after_receipt')):
-            action = batch and getattr(batch, method)()
-            if action:
-                report_actions.append(action)
+        # First the overview of the reservations, so they can still be moved
+        # between customers; the slips follow with "* Briefjes van de pickbonnen".
+        action = receipts and receipts._print_reservation_matrix_after_receipt()
+        if action:
+            report_actions.append(action)
         return report_actions
 
     def _get_received_templates(self):

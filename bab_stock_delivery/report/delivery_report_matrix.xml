@@ -313,8 +313,8 @@
     </record>
 
     <!--
-        On a done receipt whose operation type prints the reservations first
-        (matrix_slips_on_request): the slips of the pick transfers it fed, once
+        On a done receipt whose operation type prints the slips after a receipt
+        (auto_print_matrix_after_receipt): the slips of the pick transfers it fed, once
         the reservations have been checked. Also works on a selection of receipts.
     -->
     <record id="action_print_matrix_slips_server" model="ir.actions.server">

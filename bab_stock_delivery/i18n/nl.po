@@ -20,21 +20,6 @@ msgid "Productenmatrix (briefjes) of the pick transfers"
 msgstr "Productenmatrix (briefjes) van de pickbonnen"
 
 #. module: bab_stock_delivery
-#: model:ir.model.fields,help:bab_stock_delivery.field_stock_picking_type__auto_print_matrix_after_receipt
-msgid ""
-"When a receipt of this type is validated, print the Productenmatrix "
-"(briefjes) of every pick transfer that has something reserved of the "
-"received hoofdproducten, limited to those hoofdproducten, and keep each slip"
-" as an attachment in the chatter of its pick transfer. While this is ticked,"
-" the slips can also be printed on a pick transfer that is not done yet."
-msgstr ""
-"Bij het bevestigen van een ontvangst van deze soort worden de briefjes "
-"(Productenmatrix) afgedrukt van elke pickbon met een reservatie van de "
-"ontvangen hoofdproducten, beperkt tot die hoofdproducten. Elk briefje blijft"
-" als bijlage in de chatter van zijn pickbon. Zolang dit aangevinkt is, kunnen"
-" de briefjes ook afgedrukt worden op een pickbon die nog niet gereed is."
-
-#. module: bab_stock_delivery
 #. odoo-python
 #: code:addons/bab_stock_delivery/models/stock_picking.py:0
 msgid "Productenmatrix (briefjes) after receipt %s"
@@ -45,24 +30,6 @@ msgstr "Productenmatrix (briefjes) na ontvangst %s"
 #: code:addons/bab_stock_delivery/models/stock_picking.py:0
 msgid "Productenmatrix (briefjes) of %s pick transfers"
 msgstr "Productenmatrix (briefjes) van %s pickbonnen"
-
-#. module: bab_stock_delivery
-#: model:ir.model.fields,field_description:bab_stock_delivery.field_stock_picking_type__matrix_slips_on_request
-msgid "First the reservations, slips on request"
-msgstr "Eerst de reservaties, briefjes op vraag"
-
-#. module: bab_stock_delivery
-#: model:ir.model.fields,help:bab_stock_delivery.field_stock_picking_type__matrix_slips_on_request
-msgid ""
-"Validating a receipt prints the Productenmatrix met reservaties of the "
-"received hoofdproducten instead of the slips. Once the reservations are "
-"right, the action \"* Briefjes van de pickbonnen\" on the receipt prints the"
-" slips."
-msgstr ""
-"Bij het bevestigen van een ontvangst wordt de Productenmatrix met reservaties"
-" van de ontvangen hoofdproducten afgedrukt in plaats van de briefjes. Zodra "
-"de reservaties juist staan, drukt de actie \"* Briefjes van de pickbonnen\" "
-"op de ontvangst de briefjes af."
 
 #. module: bab_stock_delivery
 #. odoo-python
@@ -162,3 +129,22 @@ msgstr ""
 #: code:addons/bab_stock_delivery/models/stock_picking.py:0
 msgid "Productenmatrix (briefjes): no pick transfer has anything reserved"
 msgstr "Productenmatrix (briefjes): geen enkele pickbon heeft iets gereserveerd"
+
+#. module: bab_stock_delivery
+#: model:ir.model.fields,help:bab_stock_delivery.field_stock_picking_type__auto_print_matrix_after_receipt
+msgid ""
+"When a receipt of this type is validated, print the Productenmatrix met "
+"reservaties of the received hoofdproducten. Once the reservations are "
+"right, the action \"* Briefjes van de pickbonnen\" on the receipt prints "
+"the Productenmatrix (briefjes) of every pick transfer that has something "
+"reserved of those hoofdproducten and keeps each slip in the chatter of its "
+"pick transfer. While this is ticked, the slips can also be printed on a "
+"pick transfer that is not done yet."
+msgstr ""
+"Bij het bevestigen van een ontvangst van deze soort wordt de "
+"Productenmatrix met reservaties van de ontvangen hoofdproducten afgedrukt. "
+"Kloppen de reservaties, dan drukt de actie \"* Briefjes van de pickbonnen\" "
+"op de ontvangst de Productenmatrix (briefjes) af van elke pickbon die iets "
+"van die hoofdproducten gereserveerd heeft, en bewaart elk briefje in de "
+"chatter van zijn pickbon. Zolang dit aangevinkt is, kunnen de briefjes ook "
+"afgedrukt worden op een pickbon die nog niet gereed is."

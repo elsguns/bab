@@ -24,9 +24,6 @@ class TestMatrixAfterReceipt(TransactionCase):
             [('company_id', '=', cls.env.company.id)], limit=1)
         cls.warehouse.delivery_steps = 'pick_ship'
         cls.receipt_type = cls.warehouse.in_type_id
-        # The database may already print the reservations first; the tests that
-        # want that switch it on themselves.
-        cls.receipt_type.matrix_slips_on_request = False
         cls.pick_type = cls.warehouse.pick_type_id
 
         Attribute = cls.env['product.attribute']
@@ -119,10 +116,21 @@ class TestMatrixAfterReceipt(TransactionCase):
 
     @staticmethod
     def _matrix_actions(action):
-        if not isinstance(action, dict) or action.get('tag') != 'do_multi_print':
+        if not isinstance(action, dict):
+            return []
+        if action.get('report_name') == 'bab_stock_delivery.report_deliveryslip_matrix':
+            return [action]
+        if action.get('tag') != 'do_multi_print':
             return []
         return [a for a in action['params']['reports']
                 if a.get('report_name') == 'bab_stock_delivery.report_deliveryslip_matrix']
+
+    def _receive_and_print(self, lines):
+        """Receive, then print the slips as Hilde does once the reservations
+        are checked; returns the receipt and the slips action."""
+        receipt, action = self._receive(lines)
+        self.assertFalse(self._matrix_actions(action), "no slips at validation")
+        return receipt, receipt.action_print_matrix_slips()
 
     def _text(self, attachments):
         """Text of the slip PDFs (real PDFs: one wkhtmltopdf run, split per pick).
@@ -156,11 +164,11 @@ class TestMatrixAfterReceipt(TransactionCase):
             self.env['ir.actions.report']._render_qweb_html(report, self.pick_b.ids)
 
     def test_02_slips_per_receipt_and_hoofdproduct(self):
-        """Each receipt prints the picks it fed, only for its hoofdproduct."""
+        """Each receipt's slips cover the picks it fed, only for its hoofdproduct."""
         self.receipt_type.auto_print_matrix_after_receipt = True
 
         # Receipt 1: only Broek -> only customer A ordered it.
-        _receipt, action = self._receive([(self.broek, 'S', 1)])
+        _receipt, action = self._receive_and_print([(self.broek, 'S', 1)])
         actions = self._matrix_actions(action)
         self.assertEqual(len(actions), 1)
         self.assertEqual(actions[0]['context']['active_ids'], self.pick_a.ids)
@@ -173,7 +181,7 @@ class TestMatrixAfterReceipt(TransactionCase):
         self.assertNotIn('Shirt (test)', html)
 
         # Receipt 2: Shirt -> both customers; Broek, already printed, stays off.
-        receipt, action = self._receive([(self.shirt, 'S', 5), (self.shirt, 'M', 1)])
+        receipt, action = self._receive_and_print([(self.shirt, 'S', 5), (self.shirt, 'M', 1)])
         # The receipt keeps the combined PDF with the slips of both picks.
         combined = receipt.message_ids.attachment_ids.filtered(lambda a: a.name.startswith('Briefjes - '))
         self.assertEqual(len(combined), 1)
@@ -216,19 +224,19 @@ class TestMatrixAfterReceipt(TransactionCase):
         """A short receipt only reserves part; the slip shows that part."""
         self.receipt_type.auto_print_matrix_after_receipt = True
         # Oldest order first: A gets its 2 S, B gets the remaining 1 of 3.
-        self._receive([(self.shirt, 'S', 3)])
+        self._receive_and_print([(self.shirt, 'S', 3)])
         move_b = self.pick_b.move_ids.filtered(lambda m: m.product_id == self._variant(self.shirt, 'S'))
         self.assertEqual(move_b.quantity, 1)
         self.assertTrue(self._slips(self.pick_b))
         # A pick that got nothing from this receipt gets no slip.
-        receipt, _action = self._receive([(self.broek, 'M', 1)])
+        receipt, _action = self._receive_and_print([(self.broek, 'M', 1)])
         self.assertEqual(receipt.state, 'done')
         self.assertEqual(len(self._slips(self.pick_a)), 1, "nobody ordered Broek M")
 
     def test_04_manual_print_with_switch_on(self):
         """Hilde's own print keeps working, before and after the pick is done."""
         self.receipt_type.auto_print_matrix_after_receipt = True
-        self._receive([(self.shirt, 'S', 5), (self.shirt, 'M', 1), (self.broek, 'S', 1)])
+        self._receive_and_print([(self.shirt, 'S', 5), (self.shirt, 'M', 1), (self.broek, 'S', 1)])
         report = self.env.ref('bab_stock_delivery.action_report_delivery_matrix')
         # Reserved pick, full slip (both hoofdproducten, no filter).
         html = self.env['ir.actions.report']._render_qweb_html(report, self.pick_a.ids)[0].decode()
@@ -252,10 +260,9 @@ class TestMatrixAfterReceipt(TransactionCase):
             form.auto_print_matrix_after_receipt = True
         self.assertTrue(self.receipt_type.auto_print_matrix_after_receipt)
 
-    def test_06_reservations_first_slips_on_request(self):
+    def test_06_reservations_first_then_slips(self):
         """Validating prints the reservations; the slips follow with the action."""
         self.receipt_type.auto_print_matrix_after_receipt = True
-        self.receipt_type.matrix_slips_on_request = True
         # Short receipt: A gets its 2 S, B only 1 of its 3 -> B shows a shortage.
         receipt, action = self._receive_purchase([(self.shirt, 'S', 3)])
         self.assertFalse(self._matrix_actions(action), "no slips at validation")
@@ -287,7 +294,6 @@ class TestMatrixAfterReceipt(TransactionCase):
 
     def test_07_slips_action_refuses_other_transfers(self):
         self.receipt_type.auto_print_matrix_after_receipt = True
-        self.receipt_type.matrix_slips_on_request = True
         with self.assertRaises(UserError):
             self.pick_a.action_print_matrix_slips()
         # A receipt that reserved nothing (nobody ordered Broek M) still prints:
@@ -308,7 +314,6 @@ class TestMatrixAfterReceipt(TransactionCase):
         """A receipt shows under "Slips to print" until its slips are printed;
         printing them again asks first."""
         self.receipt_type.auto_print_matrix_after_receipt = True
-        self.receipt_type.matrix_slips_on_request = True
         count_before = self.receipt_type.count_matrix_slips_to_print
         receipt, _action = self._receive([(self.shirt, 'S', 5)])
         self.assertFalse(receipt.matrix_printed)
@@ -341,7 +346,6 @@ class TestMatrixAfterReceipt(TransactionCase):
         """Nobody waits for what came in: the receipt still shows under "Slips
         to print" until Hilde runs the slips, which then prints an empty PDF."""
         self.receipt_type.auto_print_matrix_after_receipt = True
-        self.receipt_type.matrix_slips_on_request = True
         other = self._create_template('Jas (test)')
         count_before = self.receipt_type.count_matrix_slips_to_print
         receipt, _action = self._receive([(other, 'S', 1)])
