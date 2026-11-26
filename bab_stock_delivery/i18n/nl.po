@@ -134,17 +134,75 @@ msgstr "Productenmatrix (briefjes): geen enkele pickbon heeft iets gereserveerd"
 #: model:ir.model.fields,help:bab_stock_delivery.field_stock_picking_type__auto_print_matrix_after_receipt
 msgid ""
 "When a receipt of this type is validated, print the Productenmatrix met "
-"reservaties of the received hoofdproducten. Once the reservations are "
-"right, the action \"* Briefjes van de pickbonnen\" on the receipt prints "
-"the Productenmatrix (briefjes) of every pick transfer that has something "
-"reserved of those hoofdproducten and keeps each slip in the chatter of its "
-"pick transfer. While this is ticked, the slips can also be printed on a "
-"pick transfer that is not done yet."
+"reservaties of the received variants. Once the reservations are right, the "
+"action \"* Briefjes van de pickbonnen\" on the receipt prints the "
+"Productenmatrix (briefjes) of every pick transfer whose reservation of "
+"those variants changed since its previous slips, with only what was added, "
+"or a full slip replacing the previous one when part of the reservation was "
+"moved away. Each slip is kept in the chatter of its pick transfer. While "
+"this is ticked, the slips can also be printed on a pick transfer that is "
+"not done yet."
 msgstr ""
 "Bij het bevestigen van een ontvangst van deze soort wordt de "
-"Productenmatrix met reservaties van de ontvangen hoofdproducten afgedrukt. "
+"Productenmatrix met reservaties van de ontvangen varianten afgedrukt. "
 "Kloppen de reservaties, dan drukt de actie \"* Briefjes van de pickbonnen\" "
-"op de ontvangst de Productenmatrix (briefjes) af van elke pickbon die iets "
-"van die hoofdproducten gereserveerd heeft, en bewaart elk briefje in de "
+"op de ontvangst de Productenmatrix (briefjes) af van elke pickbon waarvan "
+"de reservatie van die varianten veranderde sinds de vorige briefjes: enkel "
+"wat erbij kwam, of een volledig briefje dat het vorige vervangt als een "
+"deel van de reservatie verschoven werd. Elk briefje wordt bewaard in de "
 "chatter van zijn pickbon. Zolang dit aangevinkt is, kunnen de briefjes ook "
 "afgedrukt worden op een pickbon die nog niet gereed is."
+
+#. module: bab_stock_delivery
+#: model:ir.model.fields,field_description:bab_stock_delivery.field_stock_move__matrix_printed_qty
+msgid "Printed on slips"
+msgstr "Op briefjes geprint"
+
+#. module: bab_stock_delivery
+#. odoo-python
+#: code:addons/bab_stock_delivery/models/stock_picking.py:0
+msgid ""
+"No reservation of the received products changed since the previous slips of "
+"%s."
+msgstr ""
+"Geen enkele reservatie van de ontvangen producten veranderde sinds de "
+"vorige briefjes van %s."
+
+#. module: bab_stock_delivery
+#. odoo-python
+#: code:addons/bab_stock_delivery/models/stock_picking.py:0
+msgid "The reservations of the received products are already on earlier slips."
+msgstr "De reservaties van de ontvangen producten staan al op eerdere briefjes."
+
+#. module: bab_stock_delivery
+#. odoo-python
+#: code:addons/bab_stock_delivery/models/stock_picking.py:0
+msgid ""
+"Productenmatrix (briefjes): the reservations of the received products are "
+"already on earlier slips"
+msgstr ""
+"Productenmatrix (briefjes): de reservaties van de ontvangen producten staan "
+"al op eerdere briefjes"
+
+#. module: bab_stock_delivery
+#. odoo-python
+#: code:addons/bab_stock_delivery/models/stock_picking.py:0
+msgid "Productenmatrix (briefjes): printed with %s"
+msgstr "Productenmatrix (briefjes): afgedrukt met %s"
+
+#. module: bab_stock_delivery
+#: model:ir.model.fields,field_description:bab_stock_delivery.field_stock_picking__matrix_pick_batch_count
+#: model_terms:ir.ui.view,arch_db:bab_stock_delivery.view_picking_form_received_quants
+msgid "Pick batches"
+msgstr "Pickbatches"
+
+#. module: bab_stock_delivery
+#. odoo-python
+#: code:addons/bab_stock_delivery/models/stock_picking.py:0
+msgid "Pick batches of %s"
+msgstr "Pickbatches van %s"
+
+#. module: bab_stock_delivery
+#: model:ir.model.fields,field_description:bab_stock_delivery.field_stock_move__matrix_reserved_qty
+msgid "Reserved for customers"
+msgstr "Gereserveerd voor klanten"

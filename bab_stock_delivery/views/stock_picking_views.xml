@@ -38,6 +38,13 @@
                         class="oe_stat_button" icon="fa-cubes" string="Stock"
                         invisible="state != 'done' or picking_type_code != 'incoming'"
                         groups="stock.group_stock_user"/>
+                <!-- Open pick batches with a reservation of the received variants. -->
+                <button name="action_open_matrix_pick_batches" type="object"
+                        class="oe_stat_button" icon="fa-dropbox"
+                        invisible="state != 'done' or picking_type_code != 'incoming' or not matrix_pick_batch_count"
+                        groups="stock.group_stock_user">
+                    <field name="matrix_pick_batch_count" widget="statinfo" string="Pick batches"/>
+                </button>
             </xpath>
         </field>
     </record>

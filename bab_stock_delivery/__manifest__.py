@@ -1,7 +1,7 @@
 # Part of the o.s.admin add-ons.
 {
     'name': 'Delivery Slip with Variant Matrix',
-    'version': '18.0.1.8.0',
+    'version': '18.0.1.18.0',
     'category': 'Inventory/Delivery',
     'summary': "Adds a delivery report showing the product variant matrix of the sales order",
     'description': """
@@ -26,7 +26,7 @@ the new report.
     # stock_quant_reservation_info -> "Reserved Moves" button on the stock list
     #             opened by the "Stock" button of a done receipt
     'depends': ['stock', 'sale_stock', 'sale_product_matrix', 'delivery', 'purchase',
-                'stock_quant_reservation_info'],
+                'stock_picking_batch', 'stock_quant_reservation_info'],
     'data': [
         'security/ir.model.access.csv',
         'data/sale_order_stock_location_action.xml',

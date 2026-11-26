@@ -74,7 +74,9 @@
 
                     <t t-if="blocks">
                         <p class="o_ov_legend">
-                            <span class="o_ov_lbl">b</span> = besteld &#160;·&#160;
+                            <!-- Printed for a receipt b is the demand of the open picks,
+                                 see stock.picking._get_customer_matrix_blocks. -->
+                            <span class="o_ov_lbl">b</span> = <t t-if="docs.env.context.get('matrix_product_ids')">besteld, nog te picken</t><t t-else="">besteld</t> &#160;·&#160;
                             <span class="o_ov_lbl">r</span> = gereserveerd &#160;·&#160;
                             <span class="o_match">groen</span> = volledig gereserveerd /
                             <span class="o_mismatch">rood</span> = niet volledig

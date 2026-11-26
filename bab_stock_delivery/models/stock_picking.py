@@ -25,6 +25,10 @@ class StockPicking(models.Model):
     # only fits a pick, "* Briefjes van de pickbonnen" only a done receipt that
     # prints the slips.
     matrix_hidden_action_ids = fields.Json(compute='_compute_matrix_hidden_action_ids')
+    # On a done receipt: the open pick batches holding a reservation of the
+    # received variants, behind a smart button.
+    matrix_pick_batch_count = fields.Integer(
+        string="Pick batches", compute='_compute_matrix_pick_batch_count')
     picking_type_auto_print_matrix_after_receipt = fields.Boolean(
         related='picking_type_id.auto_print_matrix_after_receipt')
 
@@ -75,6 +79,33 @@ class StockPicking(models.Model):
             },
         }
 
+    def _get_matrix_pick_batches(self):
+        """Open batches of the picks that reserved something of the received variants."""
+        self.ensure_one()
+        if self.state != 'done' or self.picking_type_id.code != 'incoming':
+            return self.env['stock.picking.batch']
+        picks = self._get_fed_picks(self._get_received_products())
+        return picks.batch_id.filtered(lambda b: b.state not in ('done', 'cancel'))
+
+    def _compute_matrix_pick_batch_count(self):
+        for picking in self:
+            picking.matrix_pick_batch_count = len(picking._get_matrix_pick_batches())
+
+    def action_open_matrix_pick_batches(self):
+        """The pick batches holding reservations of what this receipt brought in."""
+        self.ensure_one()
+        batches = self._get_matrix_pick_batches()
+        action = self.env['ir.actions.act_window']._for_xml_id(
+            'stock_picking_batch.stock_picking_batch_action')
+        action.update({
+            'domain': [('id', 'in', batches.ids)],
+            'context': {'create': False},
+            'display_name': _("Pick batches of %s", self.name),
+        })
+        if len(batches) == 1:
+            action.update({'view_mode': 'form', 'views': [(False, 'form')], 'res_id': batches.id})
+        return action
+
     def action_open_received_quants(self):
         """Stock of the received products, from a done receipt.
 
@@ -103,6 +134,43 @@ class StockPicking(models.Model):
             ('code', '=', 'incoming'),
             ('auto_print_matrix_after_receipt', '=', True),
         ], limit=1))
+
+    def _action_done(self):
+        """Record how much of each receipt went to the customers' picks.
+
+        Validating a receipt reserves the waiting picks (_trigger_assign inside
+        super). The rise of their reservations is what this receipt supplied; it
+        is stored on the receipt moves for the reservation overview.
+        """
+        receipts = self.filtered(lambda p: (
+            p.picking_type_id.code == 'incoming'
+            and p.picking_type_id.auto_print_matrix_after_receipt))
+        if not receipts:
+            return super()._action_done()
+        products = receipts.move_ids.filtered(
+            lambda m: m.state not in ('done', 'cancel') and m.quantity).product_id
+        before = receipts._get_pick_reserved_per_product(products)
+        res = super()._action_done()
+        after = receipts._get_pick_reserved_per_product(products)
+        for product in products:
+            rest = after.get(product.id, 0) - before.get(product.id, 0)
+            for move in receipts.move_ids.filtered(
+                    lambda m: m.state == 'done' and m.product_id == product):
+                move.matrix_reserved_qty = max(min(rest, move.quantity), 0)
+                rest -= move.matrix_reserved_qty
+        return res
+
+    def _get_pick_reserved_per_product(self, products):
+        """{product id: reserved quantity} on the open picks of these receipts' warehouses."""
+        pick_types = self.picking_type_id.warehouse_id.pick_type_id
+        if not products or not pick_types:
+            return {}
+        groups = self.env['stock.move']._read_group([
+            ('picking_type_id', 'in', pick_types.ids),
+            ('product_id', 'in', products.ids),
+            ('state', 'not in', ('draft', 'done', 'cancel')),
+        ], ['product_id'], ['quantity:sum'])
+        return {product.id: quantity for product, quantity in groups}
 
     def _get_autoprint_report_actions(self):
         # Called by button_validate right after _action_done, i.e. after the
@@ -151,6 +219,18 @@ class StockPicking(models.Model):
             ('move_ids', 'any', move_domain),
         ])
 
+    def _get_picks_with_slip_changes(self, products):
+        """Open picks whose reservation of these variants differs from their slips.
+
+        A pick that got more since its last slip (a new receipt, a reservation
+        moved to it) or less (a reservation moved away) needs a new slip.
+        """
+        picks = self._get_fed_picks(products, reserved_only=False)
+        return picks.filtered(lambda pick: any(
+            float_compare(move.quantity, move.matrix_printed_qty,
+                          precision_rounding=move.product_uom.rounding)
+            for move in pick._get_matrix_slip_moves(products)))
+
     def action_print_matrix_slips(self):
         """Entry point of the "* Briefjes van de pickbonnen" action on a done receipt.
 
@@ -168,9 +248,46 @@ class StockPicking(models.Model):
                 "The slips can only be printed from a done receipt whose operation type prints them:\n%s",
                 "\n".join((self - receipts).mapped('name')),
             ))
-        if receipts.filtered('matrix_printed') and not self.env.context.get('matrix_reprint_confirmed'):
-            return receipts._open_matrix_reprint_confirm('slips')
-        return receipts._print_matrix_after_receipt() or receipts._print_no_matrix_slips()
+        action = receipts._print_matrix_after_receipt()
+        if action:
+            return action
+        # Run before: the PDF of that run sits on the receipt. A new run only
+        # prints what changed since, and nothing did.
+        if receipts.filtered('matrix_printed'):
+            raise UserError(_(
+                "No reservation of the received products changed since the previous slips of %s.",
+                ", ".join(receipts.mapped('name'))))
+        # Reserved, but already on the slips of another receipt (e.g. a later
+        # backorder of the same order printed them): nothing left to print.
+        products = receipts._get_received_products()
+        if receipts._get_fed_picks(products):
+            receipts._mark_slips_printed_elsewhere()
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'type': 'info',
+                    'message': _("The reservations of the received products are already on earlier slips."),
+                    'next': {'type': 'ir.actions.client', 'tag': 'soft_reload'},
+                },
+            }
+        return receipts._print_no_matrix_slips()
+
+    def _mark_slips_printed_elsewhere(self):
+        """Done receipts whose reservations went on the slips of another receipt."""
+        for receipt in self:
+            receipt.message_post(body=_(
+                "Productenmatrix (briefjes): the reservations of the received products are already on earlier slips"))
+        self.matrix_printed = True
+
+    def _get_backorder_chain(self):
+        """The receipt with all its backorders and the transfers they came from."""
+        chain = self
+        todo = self
+        while todo:
+            todo = (todo.backorder_id | todo.backorder_ids) - chain
+            chain |= todo
+        return chain
 
     def _print_no_matrix_slips(self):
         """The slips run of receipts that fed no pick: an empty PDF.
@@ -208,7 +325,7 @@ class StockPicking(models.Model):
             return self
         products = receipts._get_received_products()
         picks = receipts._get_fed_picks(products, reserved_only=False)
-        return picks.with_context(matrix_product_ids=products.ids)
+        return picks.with_context(matrix_product_ids=products.ids, matrix_receipt_ids=receipts.ids)
 
     def _print_reservation_matrix_after_receipt(self):
         """Overview of the reservations of the hoofdproducten these receipts brought in.
@@ -222,14 +339,24 @@ class StockPicking(models.Model):
         picks = self._get_fed_picks(products, reserved_only=False)
         if not picks:
             return False
-        data = {'matrix_product_ids': products.ids}
+        data = {'matrix_product_ids': products.ids, 'matrix_receipt_ids': self.ids}
         report = self.env.ref('bab_stock_delivery.action_report_reservation_matrix')
-        pdf = self.env['ir.actions.report'].with_context(force_report_rendering=True)._render_qweb_pdf(
-            report, res_ids=picks.ids, data=data)[0]
+        Report = self.env['ir.actions.report'].with_context(force_report_rendering=True)
+        pdf = Report._render_qweb_pdf(report, res_ids=picks.ids, data=data)[0]
+        # The detail per colour and customer goes along in the chatter, showing
+        # how the receipt was spread over the customers; only the overview
+        # itself opens.
+        detail_pdf = Report._render_qweb_pdf(
+            self.env.ref('bab_stock_delivery.action_report_product_overview'),
+            res_ids=picks.ids, data=data)[0]
         for receipt in self:
+            name = receipt.name.replace('/', '-')
             receipt.message_post(
                 body=_("Productenmatrix met reservaties of %s pick transfers", len(picks)),
-                attachments=[("Reservaties - %s.pdf" % receipt.name.replace('/', '-'), pdf)],
+                attachments=[
+                    ("Reservaties - %s.pdf" % name, pdf),
+                    ("Reservaties per kleur en klant - %s.pdf" % name, detail_pdf),
+                ],
             )
         action = report.report_action(picks, data=data, config=False)
         clean_action(action, self.env)
@@ -252,10 +379,12 @@ class StockPicking(models.Model):
         tell what was added.
         """
         products = self._get_received_products()
-        picks = self._get_fed_picks(products)
+        picks = self._get_picks_with_slip_changes(products)
         if not picks:
             return False
-        data = {'matrix_product_ids': products.ids}
+        # matrix_slip_changes: print what changed since the previous slips, see
+        # _get_matrix_slip_quantities.
+        data = {'matrix_product_ids': products.ids, 'matrix_slip_changes': True}
         report = self.env.ref('bab_stock_delivery.action_report_delivery_matrix')
         receipt_names = ", ".join(self.mapped('name'))
         # One wkhtmltopdf run for all picks, split per pick by Odoo itself (see the
@@ -281,15 +410,35 @@ class StockPicking(models.Model):
         # printed), so a whole delivery's slips can be found again in one place.
         combined_pdf = self.env['ir.actions.report'].with_context(force_report_rendering=True)._render_qweb_pdf(
             report, res_ids=picks.ids, data=data)[0]
+        messages = self.env['mail.message']
         for receipt in self:
-            receipt.message_post(
+            messages |= receipt.message_post(
                 body=_("Productenmatrix (briefjes) of %s pick transfers", len(picks)),
                 attachments=[("Briefjes - %s.pdf" % receipt.name.replace('/', '-'), combined_pdf)],
             )
         self.matrix_printed = True
-        action = report.report_action(picks, data=data, config=False)
-        clean_action(action, self.env)
-        return action
+        # The other receipts of the same order chain (a receipt and its
+        # backorders) that waited for their slips: this run printed what they
+        # reserved too, so they no longer belong under "Slips to print".
+        waiting = self._get_backorder_chain().filtered(lambda r: (
+            r not in self and r.state == 'done' and not r.matrix_printed
+            and r.picking_type_id == self[:1].picking_type_id))
+        # Now on paper: the next run prints only what changes from here.
+        for move in picks.move_ids.filtered(lambda m: m in m.picking_id._get_matrix_slip_moves(products)):
+            move.matrix_printed_qty = move.quantity
+        for receipt in waiting:
+            if not receipt._get_picks_with_slip_changes(receipt._get_received_products()):
+                receipt.message_post(body=_(
+                    "Productenmatrix (briefjes): printed with %s", ", ".join(self.mapped('name'))))
+                receipt.matrix_printed = True
+        # Download the stored PDF, not the report: rendered again it would show
+        # the differences with what was just printed, i.e. nothing.
+        attachment = messages.attachment_ids[:1]
+        return {
+            'type': 'ir.actions.act_url',
+            'url': '/web/content/%s?download=true' % attachment.id,
+            'target': 'download',
+        }
 
     def _split_size_colour(self, template, ptavs):
         """Split a variant's attribute values into its size (maat) and its colour.
@@ -426,7 +575,11 @@ class StockPicking(models.Model):
         #
         # qty_received is the line's own "already received" figure, converted to the
         # product's UoM since the report counts in product units.
-        purchase_lines = self.env['purchase.order.line'].search([
+        # Printed for a receipt (at validation or from Print on it) only that
+        # receipt counts: o is what it brought in, r how much of it was reserved
+        # for the customers at validation (stock.move.matrix_reserved_qty).
+        receipt_ids = self.env.context.get('matrix_receipt_ids')
+        purchase_lines = self.env['purchase.order.line'] if receipt_ids else self.env['purchase.order.line'].search([
             ('product_id', 'in', variants.ids),
             ('state', 'in', ('purchase', 'done')),
         ])
@@ -454,6 +607,12 @@ class StockPicking(models.Model):
             # row rule above then drops the colour off this slip entirely.
             last_order = max(per_order, key=lambda order: (order.date_order, order.id))
             received[product_id] = received.get(product_id, 0) + per_order[last_order]
+        reserved_from_receipt = {}
+        if receipt_ids:
+            for move in self.browse(receipt_ids).move_ids.filtered(lambda m: m.state == 'done'):
+                received[move.product_id.id] = received.get(move.product_id.id, 0) + move.quantity
+                reserved_from_receipt[move.product_id.id] = \
+                    reserved_from_receipt.get(move.product_id.id, 0) + move.matrix_reserved_qty
 
         blocks = []
         for bucket in buckets.values():
@@ -483,7 +642,7 @@ class StockPicking(models.Model):
                     surplus = variant.free_qty if not shortage else 0
                     cells.append({
                         'received': received.get(variant.id, 0),
-                        'reserved': reserved,
+                        'reserved': reserved_from_receipt.get(variant.id, 0) if receipt_ids else reserved,
                         'shortage': shortage,
                         'surplus': surplus if surplus > 0 else 0,
                         'incoming': variant.incoming_qty,
@@ -504,7 +663,12 @@ class StockPicking(models.Model):
             # reservation slip and is dropped -- which is also why the remaining
             # blocks no longer show incoming merely echoing an ordered-but-not-
             # reserved quantity.
-            if not any(cell and cell['reserved'] for row in rows for cell in row['cells']):
+            # For a receipt the block stays as long as it brought something in
+            # (the rows above), even when its reservations are all on slips.
+            if not receipt_ids and not any(
+                    cell and cell['reserved'] for row in rows for cell in row['cells']):
+                continue
+            if not rows:
                 continue
             rows.sort(key=lambda r: r['colour_name'].lower())
             blocks.append({
@@ -582,8 +746,13 @@ class StockPicking(models.Model):
         # _get_matrix_report_pickings).
         product_filter = self.env.context.get('matrix_product_ids')
         orders = self.env['sale.order']
-        for picking in self:
-            orders |= picking._get_picking_orders()
+        # Printed for a receipt the open picks are the scope: b is what is still
+        # to pick (their demand), read with the reservations below. What a done
+        # pick already moved on to the next step is no longer at the stock
+        # location and stays off.
+        if not product_filter:
+            for picking in self:
+                orders |= picking._get_picking_orders()
         for order in orders:
             for line in order.order_line:
                 if line.combo_item_id:
@@ -618,6 +787,9 @@ class StockPicking(models.Model):
                           move.sale_line_id.order_id.partner_id, variant)
             row['reserved'][size_ptav.id] = \
                 row['reserved'].get(size_ptav.id, 0) + move.quantity
+            if product_filter and move.state != 'done':
+                row['ordered'][size_ptav.id] = \
+                    row['ordered'].get(size_ptav.id, 0) + move.product_uom_qty
 
         # Warm the incoming-qty cache for every size variant in one batch so the
         # per-size header reads below don't each trigger a separate stock compute.
@@ -658,11 +830,13 @@ class StockPicking(models.Model):
             # actionable on their own) and everything already reserved (besteld ==
             # gereserveerd in every cell -> nothing left to do). "Fully reserved"
             # mirrors the report's own green/red cells (cell ordered == reserved).
+            # Printed from a receipt the report shows how that receipt was spread
+            # over the customers, so a fully reserved table stays on it too.
             any_reserved = any(row['total_reserved'] for row in rows)
             fully_reserved = all(
                 cell['ordered'] == cell['reserved']
                 for row in rows for cell in row['cells'])
-            if not any_reserved or fully_reserved:
+            if not any_reserved or (fully_reserved and not product_filter):
                 continue
             rows.sort(key=lambda r: (r['customer'].name or '').lower())
             blocks.append({
@@ -723,6 +897,61 @@ class StockPicking(models.Model):
                 lines = order_lines.filtered(lambda line: self._line_has_ptavs(line, cell['ptav_ids']))
                 if lines and not lines.combo_item_id:
                     cell['qty'] += sum(lines.mapped('product_uom_qty'))
+
+    def _get_matrix_slip_moves(self, products=None):
+        """The moves whose quantity the slip of this picking prints.
+
+        After a receipt only the received variants (see _print_matrix_after_receipt):
+        a variant reserved earlier from other stock is not part of this receipt.
+        """
+        self.ensure_one()
+        moves = self.move_ids.filtered(lambda m: m.state != 'cancel')
+        if products is None:
+            product_ids = self.env.context.get('matrix_product_ids')
+            products = product_ids and self.env['product.product'].browse(product_ids)
+        if products:
+            moves = moves.filtered(lambda m: m.product_id in products)
+        return moves
+
+    def _get_matrix_slip_quantities(self):
+        """What the slip of this picking prints per matrix cell.
+
+        Returns {'qty': {cell key: quantity}, 'replaced_keys': set of cell keys}.
+        Cells are keyed like the matrix (sorted no_variant + template values of
+        the sales order line, see _line_has_ptavs).
+
+        Normally the reserved quantity. On the slips after a receipt (context
+        matrix_slip_changes) only the change since the previous slips: what was
+        added. When a hoofdproduct LOST part of its reservation on this pick (moved
+        to another customer), its earlier slip is wrong, so that hoofdproduct gets
+        a full new slip with the reservation now, marked as replacing the previous
+        one; replaced_keys holds its cells.
+        """
+        self.ensure_one()
+        moves = self._get_matrix_slip_moves()
+
+        def key(move):
+            line = move.sale_line_id
+            return tuple(sorted(line.product_no_variant_attribute_value_ids.ids
+                                + line.product_template_attribute_value_ids.ids))
+
+        replaced_templates = self.env['product.template']
+        if self.env.context.get('matrix_slip_changes'):
+            replaced_templates = moves.filtered(lambda m: float_compare(
+                m.quantity, m.matrix_printed_qty, precision_rounding=m.product_uom.rounding) < 0
+            ).product_id.product_tmpl_id
+        qty = {}
+        replaced_keys = set()
+        for move in moves:
+            if move.product_id.product_tmpl_id in replaced_templates:
+                replaced_keys.add(key(move))
+                printed = move.quantity
+            elif self.env.context.get('matrix_slip_changes'):
+                printed = move.quantity - move.matrix_printed_qty
+            else:
+                printed = move.quantity
+            qty[key(move)] = qty.get(key(move), 0) + printed
+        return {'qty': qty, 'replaced_keys': replaced_keys}
 
     def _get_combined_matrixes(self, orders):
         """Variant matrices summed across ALL bundled orders of this picking.

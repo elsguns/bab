@@ -105,8 +105,16 @@
                         Afdrukdatum: <span t-out="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')">10/08/2026</span>
                     </p>
                     <p class="o_res_legend">
-                        <span class="o_res_lbl">o</span> = <span class="o_res_received">ontvangen (van de aanvoer)</span> &#160;·&#160;
-                        <span class="o_res_lbl">r</span> = gereserveerd &#160;·&#160;
+                        <!-- Printed for a receipt: o and r only cover that receipt, see
+                             stock.picking._get_reservation_matrix_blocks. -->
+                        <t t-if="docs.env.context.get('matrix_receipt_ids')">
+                            <span class="o_res_lbl">o</span> = <span class="o_res_received">ontvangen (deze ontvangst)</span> &#160;·&#160;
+                            <span class="o_res_lbl">r</span> = gereserveerd (van deze ontvangst) &#160;·&#160;
+                        </t>
+                        <t t-else="">
+                            <span class="o_res_lbl">o</span> = <span class="o_res_received">ontvangen (van de aanvoer)</span> &#160;·&#160;
+                            <span class="o_res_lbl">r</span> = gereserveerd &#160;·&#160;
+                        </t>
                         <span class="o_res_lbl">s</span> = <span class="o_res_surplus">+overschot (vrije voorraad)</span> / <span class="o_res_shortage">−tekort</span> &#160;·&#160;
                         <span class="o_res_lbl">i</span> = <span class="o_res_incoming">inkomend</span>
                     </p>
@@ -219,6 +227,16 @@
         re-creates the overview report after this one to keep that order on an
         already-installed database (see the <delete> there).
     -->
+    <!--
+        Re-created on every update as well: a module installed later (delivery_iot
+        with Verzendlabels / Verzenddocumenten) gets higher ids and would land
+        BETWEEN this report and the overview. Re-creating both keeps the two
+        Productenmatrix reports next to each other at the end of Print. A link
+        made by hand to one of them (e.g. an IoT printer) is lost on update.
+    -->
+    <delete model="ir.actions.report"
+            search="[('report_name', '=', 'bab_stock_delivery.report_reservation_matrix')]"/>
+
     <record id="action_report_reservation_matrix" model="ir.actions.report">
         <field name="name">Productenmatrix met reservaties</field>
         <field name="model">stock.picking</field>

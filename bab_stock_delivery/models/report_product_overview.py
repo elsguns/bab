@@ -21,6 +21,10 @@ class ReportProductOverview(models.AbstractModel):
         """
         # Printed on a receipt: the open picks of the received hoofdproducten.
         pickings = self.env['stock.picking'].browse(docids)._get_matrix_report_pickings()
+        # Rendered after a receipt (see stock.picking._print_reservation_matrix_after_receipt):
+        # the picks come with the received variants.
+        if data and data.get('matrix_product_ids'):
+            pickings = pickings.with_context(matrix_product_ids=data['matrix_product_ids'])
         return {
             'doc_ids': pickings.ids,
             'doc_model': 'stock.picking',

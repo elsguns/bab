@@ -26,7 +26,9 @@ class ReportReservationMatrix(models.AbstractModel):
             docids = (data.get('context') or {}).get('active_ids')
         pickings = self.env['stock.picking'].browse(docids)
         if data and data.get('matrix_product_ids'):
-            pickings = pickings.with_context(matrix_product_ids=data['matrix_product_ids'])
+            pickings = pickings.with_context(
+                matrix_product_ids=data['matrix_product_ids'],
+                matrix_receipt_ids=data.get('matrix_receipt_ids', False))
         pickings = pickings._get_matrix_report_pickings()
         return {
             'doc_ids': pickings.ids,

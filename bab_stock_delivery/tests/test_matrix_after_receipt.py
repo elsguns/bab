@@ -22,7 +22,10 @@ class TestMatrixAfterReceipt(TransactionCase):
         super().setUpClass()
         cls.warehouse = cls.env['stock.warehouse'].search(
             [('company_id', '=', cls.env.company.id)], limit=1)
-        cls.warehouse.delivery_steps = 'pick_ship'
+        # A pick step is needed; a database that already has one keeps it
+        # (switching would fail while the packing zone holds stock).
+        if cls.warehouse.delivery_steps == 'ship_only':
+            cls.warehouse.delivery_steps = 'pick_ship'
         cls.receipt_type = cls.warehouse.in_type_id
         cls.pick_type = cls.warehouse.pick_type_id
 
@@ -132,6 +135,12 @@ class TestMatrixAfterReceipt(TransactionCase):
         self.assertFalse(self._matrix_actions(action), "no slips at validation")
         return receipt, receipt.action_print_matrix_slips()
 
+    def _assert_downloads_slips(self, receipt, action):
+        """The slips run downloads the PDF it stored on the receipt."""
+        kept = receipt.message_ids.attachment_ids.filtered(lambda a: a.name.startswith('Briefjes - '))
+        self.assertEqual(action['type'], 'ir.actions.act_url')
+        self.assertEqual(action['url'], '/web/content/%s?download=true' % kept.sorted('id')[-1].id)
+
     def _text(self, attachments):
         """Text of the slip PDFs (real PDFs: one wkhtmltopdf run, split per pick).
 
@@ -168,11 +177,8 @@ class TestMatrixAfterReceipt(TransactionCase):
         self.receipt_type.auto_print_matrix_after_receipt = True
 
         # Receipt 1: only Broek -> only customer A ordered it.
-        _receipt, action = self._receive_and_print([(self.broek, 'S', 1)])
-        actions = self._matrix_actions(action)
-        self.assertEqual(len(actions), 1)
-        self.assertEqual(actions[0]['context']['active_ids'], self.pick_a.ids)
-        self.assertEqual(actions[0]['data']['matrix_product_ids'], self._variant(self.broek, 'S').ids)
+        receipt, action = self._receive_and_print([(self.broek, 'S', 1)])
+        self._assert_downloads_slips(receipt, action)
         slips_a = self._slips(self.pick_a)
         self.assertEqual(len(slips_a), 1)
         self.assertFalse(self._slips(self.pick_b))
@@ -189,18 +195,7 @@ class TestMatrixAfterReceipt(TransactionCase):
         self.assertIn('Klant A (test)', text)
         self.assertIn('Klant B (test)', text)
         self.assertNotIn('Broek (test)', text)
-        actions = self._matrix_actions(action)
-        self.assertEqual(len(actions), 1)
-        self.assertEqual(set(actions[0]['context']['active_ids']), set((self.pick_a | self.pick_b).ids))
-        self.assertEqual(sorted(actions[0]['data']['matrix_product_ids']), sorted(self.shirt.product_variant_ids.ids))
-        # The download in the browser: the web client puts the data in the URL
-        # and the picks only in the context, no ids (see getReportUrl).
-        downloaded = self.env['ir.actions.report'].with_context(actions[0]['context'])._render_qweb_html(
-            actions[0]['report_name'], None,
-            data=dict(actions[0]['data'], context=actions[0]['context']))[0].decode()
-        self.assertIn('Klant A (test)', downloaded)
-        self.assertIn('Klant B (test)', downloaded)
-        self.assertNotIn('Broek (test)', downloaded)
+        self._assert_downloads_slips(receipt, action)
         slips_a = self._slips(self.pick_a)
         self.assertEqual(len(slips_a), 2, "the earlier slip stays in the chatter")
         newest = self._text(slips_a.sorted('id')[-1])
@@ -280,6 +275,17 @@ class TestMatrixAfterReceipt(TransactionCase):
         self.assertNotIn('Broek (test)', downloaded)
         kept = receipt.message_ids.attachment_ids.filtered(lambda a: a.name.startswith('Reservaties - '))
         self.assertEqual(len(kept), 1, "the overview stays on the receipt")
+        # The detail per colour and customer goes along in the chatter, but only
+        # the overview opens.
+        detail = receipt.message_ids.attachment_ids.filtered(
+            lambda a: a.name.startswith('Reservaties per kleur en klant - '))
+        self.assertEqual(len(detail), 1)
+        self.assertEqual(detail.res_id, kept.res_id)
+        self.assertNotIn('bab_stock_delivery.report_product_overview',
+                         [a.get('report_name') for a in action['params']['reports']])
+        text = self._text(detail)
+        self.assertIn('Klant A (test)', text)
+        self.assertIn('Klant B (test)', text)
 
         # Hilde moves the reservation of A's S to B before printing.
         move_a = self.pick_a.move_ids.filtered(lambda m: m.product_id == self._variant(self.shirt, 'S'))
@@ -287,9 +293,8 @@ class TestMatrixAfterReceipt(TransactionCase):
         move_a.quantity = 0
         move_b.quantity = 3
         action = receipt.action_print_matrix_slips()
-        self.assertEqual(action['report_name'], 'bab_stock_delivery.report_deliveryslip_matrix')
-        self.assertEqual(action['context']['active_ids'], self.pick_b.ids, "only the pick that holds stock now")
-        self.assertTrue(self._slips(self.pick_b))
+        self._assert_downloads_slips(receipt, action)
+        self.assertTrue(self._slips(self.pick_b), "only the pick that holds stock now")
         self.assertFalse(self._slips(self.pick_a))
 
     def test_07_slips_action_refuses_other_transfers(self):
@@ -312,7 +317,7 @@ class TestMatrixAfterReceipt(TransactionCase):
 
     def test_08_receipt_remembers_its_slips(self):
         """A receipt shows under "Slips to print" until its slips are printed;
-        printing them again asks first."""
+        a second run without any change has nothing to print."""
         self.receipt_type.auto_print_matrix_after_receipt = True
         count_before = self.receipt_type.count_matrix_slips_to_print
         receipt, _action = self._receive([(self.shirt, 'S', 5)])
@@ -323,24 +328,17 @@ class TestMatrixAfterReceipt(TransactionCase):
         self.assertIn(receipt, self.env['stock.picking'].search(overview['domain']))
 
         action = receipt.action_print_matrix_slips()
-        self.assertEqual(action['report_name'], 'bab_stock_delivery.report_deliveryslip_matrix')
+        self._assert_downloads_slips(receipt, action)
         self.assertTrue(receipt.matrix_printed)
         self.receipt_type.invalidate_recordset(['count_matrix_slips_to_print'])
         self.assertEqual(self.receipt_type.count_matrix_slips_to_print, count_before)
         self.assertNotIn(receipt, self.env['stock.picking'].search(overview['domain']))
 
-        # Second time: the dialog, which then prints again or skips.
-        action = receipt.action_print_matrix_slips()
-        self.assertEqual(action['res_model'], 'bab.matrix.reprint.confirm')
-        wizard = self.env['bab.matrix.reprint.confirm'].with_context(action['context']).create({})
-        self.assertEqual(wizard.print_method, 'slips')
-        self.assertEqual(wizard.already_printed_ids, receipt)
+        # Second time without any change: nothing to print, the PDF is on the receipt.
         slips_before = len(self._slips(self.pick_a))
-        action = wizard.action_confirm()
-        self.assertEqual(action['report_name'], 'bab_stock_delivery.report_deliveryslip_matrix')
-        self.assertTrue(action['close_on_report_download'])
-        self.assertEqual(len(self._slips(self.pick_a)), slips_before + 1, "printed again")
-        self.assertEqual(wizard.action_skip_reprints(), {'type': 'ir.actions.act_window_close'})
+        with self.assertRaises(UserError):
+            receipt.action_print_matrix_slips()
+        self.assertEqual(len(self._slips(self.pick_a)), slips_before)
 
     def test_09_receipt_without_open_picks_waits_for_hilde(self):
         """Nobody waits for what came in: the receipt still shows under "Slips
@@ -431,3 +429,141 @@ class TestMatrixAfterReceipt(TransactionCase):
         self.assertEqual([grid['total_qty'] for grid in grids], [2])
         grids = self.pick_a._get_combined_matrixes(orders)
         self.assertEqual(sorted(grid['total_qty'] for grid in grids), [1, 3], "Broek 1, Shirt 2 S + 1 M")
+
+    def test_14_detail_from_a_receipt_keeps_fully_reserved(self):
+        """Printed from a receipt the detail shows the spread, even when complete."""
+        self.receipt_type.auto_print_matrix_after_receipt = True
+        # 5 S covers A's 2 and B's 3: fully reserved.
+        receipt, _action = self._receive_purchase([(self.shirt, 'S', 5)])
+        blocks = receipt._get_matrix_report_pickings()._get_customer_matrix_blocks()
+        self.assertEqual(len(blocks), 1)
+        reserved = {row['customer'].name: row['total_reserved'] for row in blocks[0]['rows']}
+        self.assertEqual(reserved, {'Klant A (test)': 2, 'Klant B (test)': 3})
+
+    def test_15_slip_prints_only_the_received_variants(self):
+        """A variant reserved from earlier stock stays off the slip of this receipt."""
+        self.receipt_type.auto_print_matrix_after_receipt = True
+        self._receive([(self.shirt, 'M', 1)])
+        receipt, _action = self._receive([(self.shirt, 'S', 5)])
+        receipt.action_print_matrix_slips()
+        text = self._text(self._slips(self.pick_a).sorted('id')[-1])
+        self.assertIn('2 stuks', text, "A: its 2 S, not its M reserved by the first receipt")
+
+    def test_16_second_receipt_prints_only_what_it_added(self):
+        """Two receipts of the same variant: the second slip shows its own part."""
+        self.receipt_type.auto_print_matrix_after_receipt = True
+        # First 1 S: A (oldest order) gets it.
+        self._receive_and_print([(self.shirt, 'S', 1)])
+        move_a = self.pick_a.move_ids.filtered(lambda m: m.product_id == self._variant(self.shirt, 'S'))
+        self.assertEqual((move_a.quantity, move_a.matrix_printed_qty), (1, 1))
+        # Then 4 S: A gets its 2nd, B its 3.
+        self._receive_and_print([(self.shirt, 'S', 4)])
+        self.assertEqual(move_a.matrix_printed_qty, 2)
+        text_a = self._text(self._slips(self.pick_a).sorted('id')[-1])
+        self.assertIn('1 stuks', text_a, "A: only the one added by the 2nd receipt")
+        self.assertNotIn('Vervangt', text_a)
+        text_b = self._text(self._slips(self.pick_b).sorted('id')[-1])
+        self.assertIn('3 stuks', text_b)
+
+    def test_17_moved_reservation_replaces_the_slip(self):
+        """A reservation moved after the slips: new full slip for the one who lost,
+        the difference for the one who gained."""
+        self.receipt_type.auto_print_matrix_after_receipt = True
+        receipt, _action = self._receive_and_print([(self.shirt, 'S', 5)])
+        variant = self._variant(self.shirt, 'S')
+        move_a = self.pick_a.move_ids.filtered(lambda m: m.product_id == variant)
+        move_b = self.pick_b.move_ids.filtered(lambda m: m.product_id == variant)
+        self.assertEqual((move_a.matrix_printed_qty, move_b.matrix_printed_qty), (2, 3))
+        # One S moves from B to A: B 2, A 3 (A ordered 2, so over-reserve is
+        # allowed by quantity on the move here).
+        move_b.quantity = 2
+        move_a.quantity = 3
+        slips_a, slips_b = len(self._slips(self.pick_a)), len(self._slips(self.pick_b))
+        receipt.action_print_matrix_slips()
+        text_b = self._text(self._slips(self.pick_b).sorted('id')[-1])
+        self.assertIn('Vervangt het vorige briefje', text_b)
+        self.assertIn('2 stuks', text_b, "B: the full reservation now")
+        text_a = self._text(self._slips(self.pick_a).sorted('id')[-1])
+        self.assertNotIn('Vervangt', text_a)
+        self.assertIn('1 stuks', text_a, "A: only the one it gained")
+        self.assertEqual((len(self._slips(self.pick_a)), len(self._slips(self.pick_b))), (slips_a + 1, slips_b + 1))
+        self.assertEqual((move_a.matrix_printed_qty, move_b.matrix_printed_qty), (3, 2))
+
+    def test_18_manual_slip_counts_as_printed(self):
+        """The full slip printed from the pick puts its reservation on paper."""
+        self.receipt_type.auto_print_matrix_after_receipt = True
+        self._receive([(self.shirt, 'S', 2)])
+        report = self.env.ref('bab_stock_delivery.action_report_delivery_matrix')
+        self.env['ir.actions.report']._render_qweb_html(report, self.pick_a.ids)
+        move_a = self.pick_a.move_ids.filtered(lambda m: m.product_id == self._variant(self.shirt, 'S'))
+        self.assertEqual(move_a.matrix_printed_qty, 2)
+
+    def test_19_overview_of_a_receipt_shows_only_that_receipt(self):
+        """Second receipt of a variant: o is what it brought, r how much of it was
+        reserved, slips printed or not."""
+        self.receipt_type.auto_print_matrix_after_receipt = True
+        self._receive([(self.shirt, 'S', 2)])  # A's 2 S, no slips printed
+        receipt, _action = self._receive_purchase([(self.shirt, 'S', 1)])  # B gets 1
+        self.assertEqual(receipt.move_ids.matrix_reserved_qty, 1)
+        blocks = receipt._get_matrix_report_pickings()._get_reservation_matrix_blocks()
+        cell = blocks[0]['rows'][0]['cells'][0]
+        self.assertEqual((cell['received'], cell['reserved']), (1, 1))
+        self.assertEqual(cell['shortage'], 2, "B still short 2 of its 3: the total stays")
+        # From the picks themselves: everything, as before.
+        blocks = (self.pick_a | self.pick_b)._get_reservation_matrix_blocks()
+        self.assertEqual(blocks[0]['rows'][0]['cells'][0]['reserved'], 3)
+        # More than anyone waits for: only the part that was reserved.
+        extra, _action = self._receive([(self.shirt, 'S', 5)])  # B's last 2
+        self.assertEqual(extra.move_ids.matrix_reserved_qty, 2)
+
+    def test_20_backorder_chain_prints_once(self):
+        """Receipt, backorder, backorder of the backorder: the slips of the last
+        one carry everything, the earlier ones leave "Slips to print"."""
+        self.receipt_type.auto_print_matrix_after_receipt = True
+        receipt, _action = self._receive([(self.shirt, 'S', 1)])
+        receipt2, _action = self._receive([(self.shirt, 'S', 1)])
+        receipt2.backorder_id = receipt
+        receipt3, _action = self._receive([(self.shirt, 'S', 3)])
+        receipt3.backorder_id = receipt2
+        receipt3.action_print_matrix_slips()
+        self.assertTrue(receipt3.matrix_printed)
+        self.assertTrue(receipt.matrix_printed, "printed with the last backorder")
+        self.assertTrue(receipt2.matrix_printed)
+        self.assertIn('WH/IN', receipt.message_ids[0].body)
+
+    def test_21_already_on_other_slips_is_no_empty_pdf(self):
+        """A receipt whose reservations went on another receipt's slips gets a
+        notice, not the empty "nothing reserved" PDF."""
+        self.receipt_type.auto_print_matrix_after_receipt = True
+        first, _action = self._receive([(self.shirt, 'S', 1)])
+        second, _action = self._receive([(self.shirt, 'S', 1)])
+        second.action_print_matrix_slips()
+        action = first.action_print_matrix_slips()
+        self.assertEqual(action['tag'], 'display_notification')
+        self.assertTrue(first.matrix_printed)
+        self.assertFalse(first.message_ids.attachment_ids.filtered(lambda a: a.name.startswith('Briefjes - ')))
+
+    def test_22_smart_button_pick_batches(self):
+        """The receipt opens the open pick batches that reserved what it brought."""
+        batch = self.env['stock.picking.batch'].create({
+            'picking_type_id': self.pick_type.id,
+            'picking_ids': [(6, 0, self.pick_a.ids)],
+        })
+        batch.action_confirm()
+        receipt, _action = self._receive([(self.shirt, 'S', 1)])  # A, oldest order
+        self.assertEqual(receipt.matrix_pick_batch_count, 1)
+        action = receipt.action_open_matrix_pick_batches()
+        self.assertEqual(action['res_id'], batch.id)
+        other, _action = self._receive([(self.broek, 'M', 1)])  # nobody ordered it
+        self.assertEqual(other.matrix_pick_batch_count, 0)
+
+    def test_23_detail_of_a_receipt_leaves_picked_goods_off(self):
+        """From a receipt the detail counts what is still to pick, not what a done
+        pick already moved on."""
+        self.receipt_type.auto_print_matrix_after_receipt = True
+        receipt, _action = self._receive([(self.shirt, 'S', 2), (self.shirt, 'M', 1)])  # A complete
+        self.pick_a.move_ids.filtered(lambda m: m.product_id.product_tmpl_id == self.shirt).picked = True
+        self.pick_a._action_done()
+        blocks = receipt._get_matrix_report_pickings()._get_customer_matrix_blocks()
+        customers = [row['customer'] for block in blocks for row in block['rows']]
+        self.assertNotIn(self.customer_a, customers, "A's shirts went on to the next step")

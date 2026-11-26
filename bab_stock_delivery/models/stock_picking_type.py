@@ -18,11 +18,13 @@ class StockPickingType(models.Model):
     auto_print_matrix_after_receipt = fields.Boolean(
         string="Productenmatrix (briefjes) of the pick transfers",
         help="When a receipt of this type is validated, print the Productenmatrix "
-             "met reservaties of the received hoofdproducten. Once the "
-             "reservations are right, the action \"* Briefjes van de pickbonnen\" "
-             "on the receipt prints the Productenmatrix (briefjes) of every pick "
-             "transfer that has something reserved of those hoofdproducten and "
-             "keeps each slip in the chatter of its pick transfer. While this is "
+             "met reservaties of the received variants. Once the reservations "
+             "are right, the action \"* Briefjes van de pickbonnen\" on the "
+             "receipt prints the Productenmatrix (briefjes) of every pick "
+             "transfer whose reservation of those variants changed since its "
+             "previous slips, with only what was added, or a full slip replacing "
+             "the previous one when part of the reservation was moved away. Each "
+             "slip is kept in the chatter of its pick transfer. While this is "
              "ticked, the slips can also be printed on a pick transfer that is "
              "not done yet.",
     )

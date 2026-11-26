@@ -52,10 +52,18 @@ class ReportDeliverySlipMatrix(models.AbstractModel):
         # reprint (see stock.picking.action_print_matrix). Runs on every render
         # path, so the flag stays correct even if the report is reached directly.
         pickings.filtered(lambda p: not p.matrix_printed).matrix_printed = True
-        # The slips printed after a receipt only carry that receipt's
-        # hoofdproducten, see stock.picking._print_matrix_after_receipt.
+        # The slips printed after a receipt only carry that receipt's variants
+        # and only what changed since the previous slips, see
+        # stock.picking._print_matrix_after_receipt, which also records what
+        # they printed.
         if data and data.get('matrix_product_ids'):
-            pickings = pickings.with_context(matrix_product_ids=data['matrix_product_ids'])
+            pickings = pickings.with_context(
+                matrix_product_ids=data['matrix_product_ids'],
+                matrix_slip_changes=data.get('matrix_slip_changes', False))
+        else:
+            # A full slip of the pick: everything reserved is now on paper.
+            for move in pickings.move_ids.filtered(lambda m: m.state != 'cancel'):
+                move.matrix_printed_qty = move.quantity
         return {
             'doc_ids': docids,
             'doc_model': 'stock.picking',
