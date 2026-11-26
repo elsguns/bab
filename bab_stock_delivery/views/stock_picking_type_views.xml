@@ -12,6 +12,7 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='auto_print_delivery_slip']" position="before">
                 <field name="auto_print_matrix_after_receipt" invisible="code != 'incoming'"/>
+                <field name="matrix_slips_on_request" invisible="code != 'incoming' or not auto_print_matrix_after_receipt"/>
             </xpath>
         </field>
     </record>

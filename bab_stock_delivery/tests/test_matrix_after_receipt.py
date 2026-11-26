@@ -24,6 +24,9 @@ class TestMatrixAfterReceipt(TransactionCase):
             [('company_id', '=', cls.env.company.id)], limit=1)
         cls.warehouse.delivery_steps = 'pick_ship'
         cls.receipt_type = cls.warehouse.in_type_id
+        # The database may already print the reservations first; the tests that
+        # want that switch it on themselves.
+        cls.receipt_type.matrix_slips_on_request = False
         cls.pick_type = cls.warehouse.pick_type_id
 
         Attribute = cls.env['product.attribute']
@@ -93,6 +96,23 @@ class TestMatrixAfterReceipt(TransactionCase):
             }) for template, size, qty in lines],
         })
         receipt.action_confirm()
+        for move in receipt.move_ids:
+            move.quantity = move.product_uom_qty
+        return receipt, receipt.button_validate()
+
+    def _receive_purchase(self, lines):
+        """Receipt from a purchase order, as in real life: the reservation
+        overview counts what came in per purchase order (its o line)."""
+        order = self.env['purchase.order'].create({
+            'partner_id': self.env['res.partner'].create({'name': 'Leverancier (test)'}).id,
+            'picking_type_id': self.receipt_type.id,
+            'order_line': [(0, 0, {
+                'product_id': self._variant(template, size).id,
+                'product_qty': qty,
+            }) for template, size, qty in lines],
+        })
+        order.button_confirm()
+        receipt = order.picking_ids
         for move in receipt.move_ids:
             move.quantity = move.product_uom_qty
         return receipt, receipt.button_validate()
@@ -231,3 +251,46 @@ class TestMatrixAfterReceipt(TransactionCase):
         with Form(self.receipt_type) as form:
             form.auto_print_matrix_after_receipt = True
         self.assertTrue(self.receipt_type.auto_print_matrix_after_receipt)
+
+    def test_06_reservations_first_slips_on_request(self):
+        """Validating prints the reservations; the slips follow with the action."""
+        self.receipt_type.auto_print_matrix_after_receipt = True
+        self.receipt_type.matrix_slips_on_request = True
+        # Short receipt: A gets its 2 S, B only 1 of its 3 -> B shows a shortage.
+        receipt, action = self._receive_purchase([(self.shirt, 'S', 3)])
+        self.assertFalse(self._matrix_actions(action), "no slips at validation")
+        self.assertFalse(self._slips(self.pick_a) | self._slips(self.pick_b))
+        reports = [a for a in action['params']['reports']
+                   if a.get('report_name') == 'bab_stock_delivery.report_reservation_matrix']
+        self.assertEqual(len(reports), 1)
+        self.assertEqual(set(reports[0]['context']['active_ids']), set((self.pick_a | self.pick_b).ids))
+        self.assertEqual(reports[0]['data']['matrix_template_ids'], self.shirt.ids)
+        # The download without ids (see test_02) renders the overview of Shirt only.
+        downloaded = self.env['ir.actions.report'].with_context(reports[0]['context'])._render_qweb_html(
+            reports[0]['report_name'], None,
+            data=dict(reports[0]['data'], context=reports[0]['context']))[0].decode()
+        self.assertIn('Shirt (test)', downloaded)
+        self.assertNotIn('Broek (test)', downloaded)
+        kept = receipt.message_ids.attachment_ids.filtered(lambda a: a.name.startswith('Reservaties - '))
+        self.assertEqual(len(kept), 1, "the overview stays on the receipt")
+
+        # Hilde moves the reservation of A's S to B before printing.
+        move_a = self.pick_a.move_ids.filtered(lambda m: m.product_id == self._variant(self.shirt, 'S'))
+        move_b = self.pick_b.move_ids.filtered(lambda m: m.product_id == self._variant(self.shirt, 'S'))
+        move_a.quantity = 0
+        move_b.quantity = 3
+        action = receipt.action_print_matrix_slips()
+        self.assertEqual(action['report_name'], 'bab_stock_delivery.report_deliveryslip_matrix')
+        self.assertEqual(action['context']['active_ids'], self.pick_b.ids, "only the pick that holds stock now")
+        self.assertTrue(self._slips(self.pick_b))
+        self.assertFalse(self._slips(self.pick_a))
+
+    def test_07_slips_action_refuses_other_transfers(self):
+        self.receipt_type.auto_print_matrix_after_receipt = True
+        self.receipt_type.matrix_slips_on_request = True
+        with self.assertRaises(UserError):
+            self.pick_a.action_print_matrix_slips()
+        # A receipt that reserved nothing (nobody ordered Broek M) has no slips to print.
+        receipt, _action = self._receive([(self.broek, 'M', 1)])
+        with self.assertRaises(UserError):
+            receipt.action_print_matrix_slips()

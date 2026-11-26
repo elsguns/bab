@@ -1,5 +1,6 @@
 # Part of the o.s.admin add-ons.
 from odoo import _, fields, models
+from odoo.exceptions import UserError
 from odoo.addons.web.controllers.utils import clean_action
 from odoo.tools import float_compare
 
@@ -40,6 +41,19 @@ class StockPicking(models.Model):
             }
         return report.report_action(self)
 
+    def action_open_received_quants(self):
+        """Stock of the received products, from a done receipt.
+
+        Opens the same list as the "On Hand" button of a product (or Inventory >
+        Reporting > Locations searched on the product), so the reservations of
+        what just came in can be moved between customers through the
+        "Reserved Moves" button of stock_quant_reservation_info.
+        """
+        self.ensure_one()
+        return self.move_ids.filtered(
+            lambda m: m.state == 'done' and m.quantity
+        ).product_id.action_open_quants()
+
     def _matrix_allowed_before_done(self):
         """True if this pick may get its slips before it is done.
 
@@ -66,11 +80,93 @@ class StockPicking(models.Model):
             and p.picking_type_id.code == 'incoming'
             and p.picking_type_id.auto_print_matrix_after_receipt
         )
-        if receipts:
-            action = receipts._print_matrix_after_receipt()
+        # Slips on request: first the overview of the reservations, so they can
+        # still be moved between customers; the slips follow with an action.
+        on_request = receipts.filtered(lambda p: p.picking_type_id.matrix_slips_on_request)
+        for batch, method in ((on_request, '_print_reservation_matrix_after_receipt'),
+                              (receipts - on_request, '_print_matrix_after_receipt')):
+            action = batch and getattr(batch, method)()
             if action:
                 report_actions.append(action)
         return report_actions
+
+    def _get_received_templates(self):
+        """The hoofdproducten (templates with variants) these receipts brought in."""
+        return self.move_ids.filtered(
+            lambda m: m.state == 'done' and m.quantity
+        ).product_id.product_tmpl_id.filtered(lambda t: t.product_variant_count > 1)
+
+    def _get_fed_picks(self, templates, reserved_only=True):
+        """Open pick transfers of these receipts' warehouses that hold the templates.
+
+        With ``reserved_only`` only the picks that got something reserved (the
+        ones that need a slip); without, also the picks still waiting, whose
+        shortage the reservation overview has to show.
+        """
+        pick_types = self.picking_type_id.warehouse_id.pick_type_id
+        if not templates or not pick_types:
+            return self.browse()
+        move_domain = [
+            ('product_id.product_tmpl_id', 'in', templates.ids),
+            ('state', 'not in', ('done', 'cancel')),
+        ]
+        if reserved_only:
+            move_domain.append(('quantity', '>', 0))
+        return self.search([
+            ('picking_type_id', 'in', pick_types.ids),
+            ('state', 'not in', ('draft', 'done', 'cancel')),
+            ('move_ids', 'any', move_domain),
+        ])
+
+    def action_print_matrix_slips(self):
+        """Entry point of the "* Briefjes van de pickbonnen" action on a done receipt.
+
+        Prints the slips once the reservations shown by the overview printed at
+        validation have been checked (and moved where needed). Can be repeated:
+        every run adds a new PDF to the chatters, the earlier ones stay.
+        """
+        receipts = self.filtered(
+            lambda p: p.state == 'done'
+            and p.picking_type_id.code == 'incoming'
+            and p.picking_type_id.auto_print_matrix_after_receipt
+        )
+        if receipts != self:
+            raise UserError(_(
+                "The slips can only be printed from a done receipt whose operation type prints them:\n%s",
+                "\n".join((self - receipts).mapped('name')),
+            ))
+        action = receipts._print_matrix_after_receipt()
+        if not action:
+            raise UserError(_(
+                "No open pick transfer has anything reserved of the products of %s.",
+                ", ".join(receipts.mapped('name')),
+            ))
+        return action
+
+    def _print_reservation_matrix_after_receipt(self):
+        """Overview of the reservations of the hoofdproducten these receipts brought in.
+
+        Covers every open pick holding one of those hoofdproducten, reserved or
+        still waiting, so a shortage next to a surplus shows what to move. The
+        receipt keeps the PDF in its chatter: it is a snapshot of the moment of
+        validation.
+        """
+        templates = self._get_received_templates()
+        picks = self._get_fed_picks(templates, reserved_only=False)
+        if not picks:
+            return False
+        data = {'matrix_template_ids': templates.ids}
+        report = self.env.ref('bab_stock_delivery.action_report_reservation_matrix')
+        pdf = self.env['ir.actions.report'].with_context(force_report_rendering=True)._render_qweb_pdf(
+            report, res_ids=picks.ids, data=data)[0]
+        for receipt in self:
+            receipt.message_post(
+                body=_("Productenmatrix met reservaties of %s pick transfers", len(picks)),
+                attachments=[("Reservaties - %s.pdf" % receipt.name.replace('/', '-'), pdf)],
+            )
+        action = report.report_action(picks, data=data, config=False)
+        clean_action(action, self.env)
+        return action
 
     def _print_matrix_after_receipt(self):
         """Slips of the picks fed by these validated receipts.
@@ -88,21 +184,8 @@ class StockPicking(models.Model):
         second slip shows the full reservation and the two PDFs in the chatter
         tell what was added.
         """
-        templates = self.move_ids.filtered(
-            lambda m: m.state == 'done' and m.quantity
-        ).product_id.product_tmpl_id.filtered(lambda t: t.product_variant_count > 1)
-        pick_types = self.picking_type_id.warehouse_id.pick_type_id
-        if not templates or not pick_types:
-            return False
-        picks = self.search([
-            ('picking_type_id', 'in', pick_types.ids),
-            ('state', 'not in', ('draft', 'done', 'cancel')),
-            ('move_ids', 'any', [
-                ('product_id.product_tmpl_id', 'in', templates.ids),
-                ('state', 'not in', ('done', 'cancel')),
-                ('quantity', '>', 0),
-            ]),
-        ])
+        templates = self._get_received_templates()
+        picks = self._get_fed_picks(templates)
         if not picks:
             return False
         data = {'matrix_template_ids': templates.ids}
@@ -211,8 +294,13 @@ class StockPicking(models.Model):
         # template.id -> {'template', 'sizes' (seen size ptavs), 'rows'}; each row
         # is keyed by its colour ptav ids and collects one cell per size.
         buckets = {}
+        # The overview printed after a receipt only covers that receipt's
+        # hoofdproducten (see _print_reservation_matrix_after_receipt).
+        template_filter = self.env.context.get('matrix_template_ids')
         for move in self.move_ids:
             if move.state == 'cancel':
+                continue
+            if template_filter and move.product_id.product_tmpl_id.id not in template_filter:
                 continue
             variant = move.product_id
             template = variant.product_tmpl_id

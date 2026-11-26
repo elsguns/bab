@@ -20,3 +20,14 @@ class StockPickingType(models.Model):
              "transfer. While this is ticked, the slips can also be printed on a "
              "pick transfer that is not done yet.",
     )
+
+    # Lucati: Hilde first wants to see, after a receipt, how the received goods
+    # were reserved, so she can still move reservations between customers. The
+    # slips then wait for the action "* Briefjes van de pickbonnen" on the receipt.
+    matrix_slips_on_request = fields.Boolean(
+        string="First the reservations, slips on request",
+        help="Validating a receipt prints the Productenmatrix met reservaties of "
+             "the received hoofdproducten instead of the slips. Once the "
+             "reservations are right, the action \"* Briefjes van de pickbonnen\" "
+             "on the receipt prints the slips.",
+    )

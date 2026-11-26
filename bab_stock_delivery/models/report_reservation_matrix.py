@@ -19,7 +19,14 @@ class ReportReservationMatrix(models.AbstractModel):
         variant moves simply contribute nothing there. Like the overview this
         report may be printed as often as needed (no print-once guard).
         """
+        if not docids and data:
+            # Printed after a receipt: the web client downloads a report action
+            # with data without ids in the URL, the picks only travel in the
+            # action's context (same as the slips, see report_delivery_matrix).
+            docids = (data.get('context') or {}).get('active_ids')
         pickings = self.env['stock.picking'].browse(docids)
+        if data and data.get('matrix_template_ids'):
+            pickings = pickings.with_context(matrix_template_ids=data['matrix_template_ids'])
         return {
             'doc_ids': docids,
             'doc_model': 'stock.picking',

@@ -22,4 +22,23 @@
             </xpath>
         </field>
     </record>
+
+    <!--
+        "Stock" smart button on a done receipt: straight to the stock of the
+        received products, where the reservations can be moved between customers
+        (Reserved Moves button of stock_quant_reservation_info).
+    -->
+    <record id="view_picking_form_received_quants" model="ir.ui.view">
+        <field name="name">stock.picking.form.received.quants</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_received_quants" type="object"
+                        class="oe_stat_button" icon="fa-cubes" string="Stock"
+                        invisible="state != 'done' or picking_type_code != 'incoming'"
+                        groups="stock.group_stock_user"/>
+            </xpath>
+        </field>
+    </record>
 </odoo>

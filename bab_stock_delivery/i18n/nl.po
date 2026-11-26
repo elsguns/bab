@@ -45,3 +45,50 @@ msgstr "Productenmatrix (briefjes) na ontvangst %s"
 #: code:addons/bab_stock_delivery/models/stock_picking.py:0
 msgid "Productenmatrix (briefjes) of %s pick transfers"
 msgstr "Productenmatrix (briefjes) van %s pickbonnen"
+
+#. module: bab_stock_delivery
+#: model:ir.model.fields,field_description:bab_stock_delivery.field_stock_picking_type__matrix_slips_on_request
+msgid "First the reservations, slips on request"
+msgstr "Eerst de reservaties, briefjes op vraag"
+
+#. module: bab_stock_delivery
+#: model:ir.model.fields,help:bab_stock_delivery.field_stock_picking_type__matrix_slips_on_request
+msgid ""
+"Validating a receipt prints the Productenmatrix met reservaties of the "
+"received hoofdproducten instead of the slips. Once the reservations are "
+"right, the action \"* Briefjes van de pickbonnen\" on the receipt prints the"
+" slips."
+msgstr ""
+"Bij het bevestigen van een ontvangst wordt de Productenmatrix met reservaties"
+" van de ontvangen hoofdproducten afgedrukt in plaats van de briefjes. Zodra "
+"de reservaties juist staan, drukt de actie \"* Briefjes van de pickbonnen\" "
+"op de ontvangst de briefjes af."
+
+#. module: bab_stock_delivery
+#. odoo-python
+#: code:addons/bab_stock_delivery/models/stock_picking.py:0
+msgid "Productenmatrix met reservaties of %s pick transfers"
+msgstr "Productenmatrix met reservaties van %s pickbonnen"
+
+#. module: bab_stock_delivery
+#. odoo-python
+#: code:addons/bab_stock_delivery/models/stock_picking.py:0
+msgid ""
+"The slips can only be printed from a done receipt whose operation type "
+"prints them:\n"
+"%s"
+msgstr ""
+"De briefjes kunnen enkel afgedrukt worden vanaf een voltooide ontvangst "
+"waarvan de bewerkingssoort ze afdrukt:\n"
+"%s"
+
+#. module: bab_stock_delivery
+#. odoo-python
+#: code:addons/bab_stock_delivery/models/stock_picking.py:0
+msgid "No open pick transfer has anything reserved of the products of %s."
+msgstr "Geen enkele open pickbon heeft iets gereserveerd van de producten van %s."
+
+#. module: bab_stock_delivery
+#: model_terms:ir.ui.view,arch_db:bab_stock_delivery.view_picking_form_received_quants
+msgid "Stock"
+msgstr "Voorraad"

@@ -1,7 +1,7 @@
 # Part of the o.s.admin add-ons.
 {
     'name': 'Delivery Slip with Variant Matrix',
-    'version': '18.0.1.1.1',
+    'version': '18.0.1.3.0',
     'category': 'Inventory/Delivery',
     'summary': "Adds a delivery report showing the product variant matrix of the sales order",
     'description': """
@@ -23,7 +23,10 @@ the new report.
     # delivery -> res.partner.property_delivery_carrier_id (anchor for stock_location field)
     # purchase -> purchase.order.line.qty_received (the o-line of the reservation
     #             matrix reads what has already come in per purchase order)
-    'depends': ['stock', 'sale_stock', 'sale_product_matrix', 'delivery', 'purchase'],
+    # stock_quant_reservation_info -> "Reserved Moves" button on the stock list
+    #             opened by the "Stock" button of a done receipt
+    'depends': ['stock', 'sale_stock', 'sale_product_matrix', 'delivery', 'purchase',
+                'stock_quant_reservation_info'],
     'data': [
         'security/ir.model.access.csv',
         'data/sale_order_stock_location_action.xml',
