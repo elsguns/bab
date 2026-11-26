@@ -25,8 +25,8 @@ class ReportReservationMatrix(models.AbstractModel):
             # action's context (same as the slips, see report_delivery_matrix).
             docids = (data.get('context') or {}).get('active_ids')
         pickings = self.env['stock.picking'].browse(docids)
-        if data and data.get('matrix_template_ids'):
-            pickings = pickings.with_context(matrix_template_ids=data['matrix_template_ids'])
+        if data and data.get('matrix_product_ids'):
+            pickings = pickings.with_context(matrix_product_ids=data['matrix_product_ids'])
         pickings = pickings._get_matrix_report_pickings()
         return {
             'doc_ids': pickings.ids,

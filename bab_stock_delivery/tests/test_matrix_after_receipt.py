@@ -172,7 +172,7 @@ class TestMatrixAfterReceipt(TransactionCase):
         actions = self._matrix_actions(action)
         self.assertEqual(len(actions), 1)
         self.assertEqual(actions[0]['context']['active_ids'], self.pick_a.ids)
-        self.assertEqual(actions[0]['data']['matrix_template_ids'], self.broek.ids)
+        self.assertEqual(actions[0]['data']['matrix_product_ids'], self._variant(self.broek, 'S').ids)
         slips_a = self._slips(self.pick_a)
         self.assertEqual(len(slips_a), 1)
         self.assertFalse(self._slips(self.pick_b))
@@ -192,7 +192,7 @@ class TestMatrixAfterReceipt(TransactionCase):
         actions = self._matrix_actions(action)
         self.assertEqual(len(actions), 1)
         self.assertEqual(set(actions[0]['context']['active_ids']), set((self.pick_a | self.pick_b).ids))
-        self.assertEqual(actions[0]['data']['matrix_template_ids'], self.shirt.ids)
+        self.assertEqual(sorted(actions[0]['data']['matrix_product_ids']), sorted(self.shirt.product_variant_ids.ids))
         # The download in the browser: the web client puts the data in the URL
         # and the picks only in the context, no ids (see getReportUrl).
         downloaded = self.env['ir.actions.report'].with_context(actions[0]['context'])._render_qweb_html(
@@ -215,7 +215,7 @@ class TestMatrixAfterReceipt(TransactionCase):
         report = self.env.ref('bab_stock_delivery.action_report_delivery_matrix')
         html = self.env['ir.actions.report']._render_qweb_html(
             report, (self.pick_a | self.pick_b).ids,
-            data={'matrix_template_ids': self.shirt.ids})[0].decode()
+            data={'matrix_product_ids': self.shirt.product_variant_ids.ids})[0].decode()
         self.assertIn('Klant A (test)', html)
         self.assertIn('Klant B (test)', html)
         self.assertNotIn('Broek (test)', html)
@@ -271,7 +271,7 @@ class TestMatrixAfterReceipt(TransactionCase):
                    if a.get('report_name') == 'bab_stock_delivery.report_reservation_matrix']
         self.assertEqual(len(reports), 1)
         self.assertEqual(set(reports[0]['context']['active_ids']), set((self.pick_a | self.pick_b).ids))
-        self.assertEqual(reports[0]['data']['matrix_template_ids'], self.shirt.ids)
+        self.assertEqual(reports[0]['data']['matrix_product_ids'], self._variant(self.shirt, 'S').ids)
         # The download without ids (see test_02) renders the overview of Shirt only.
         downloaded = self.env['ir.actions.report'].with_context(reports[0]['context'])._render_qweb_html(
             reports[0]['report_name'], None,
@@ -402,5 +402,32 @@ class TestMatrixAfterReceipt(TransactionCase):
         self.assertIn('Klant B (test)', detail)
         # Picks, or receipts mixed with other transfers, are printed as selected.
         self.assertEqual(self.pick_a._get_matrix_report_pickings(), self.pick_a)
-        self.assertFalse(self.pick_a._get_matrix_report_pickings().env.context.get('matrix_template_ids'))
+        self.assertFalse(self.pick_a._get_matrix_report_pickings().env.context.get('matrix_product_ids'))
         self.assertEqual((receipt | self.pick_a)._get_matrix_report_pickings(), receipt | self.pick_a)
+
+    def test_13_only_the_received_variants(self):
+        """After a receipt the reports and slips cover the received variants only.
+
+        Shirt S comes in, Shirt M (ordered by A) does not: M stays off the
+        reservation overview, the detail per colour and customer, and the slip.
+        """
+        self.receipt_type.auto_print_matrix_after_receipt = True
+        receipt, _action = self._receive_purchase([(self.shirt, 'S', 5)])
+        picks = receipt._get_matrix_report_pickings()
+        self.assertEqual(picks.env.context['matrix_product_ids'], self._variant(self.shirt, 'S').ids)
+        self.assertEqual(picks, self.pick_a | self.pick_b, "Broek alone would not feed a pick")
+
+        blocks = picks._get_reservation_matrix_blocks()
+        self.assertEqual([size['name'] for size in blocks[0]['sizes']], ['S'])
+
+        # A pick printed without the filter still shows both sizes.
+        blocks = self.pick_a._get_reservation_matrix_blocks()
+        self.assertEqual(sorted(size['name'] for size in blocks[0]['sizes']), ['M', 'S'])
+
+        # Slip of A: only its 2 S, not its 1 M.
+        orders = self.pick_a._get_picking_orders()
+        grids = self.pick_a.with_context(
+            matrix_product_ids=self._variant(self.shirt, 'S').ids)._get_combined_matrixes(orders)
+        self.assertEqual([grid['total_qty'] for grid in grids], [2])
+        grids = self.pick_a._get_combined_matrixes(orders)
+        self.assertEqual(sorted(grid['total_qty'] for grid in grids), [1, 3], "Broek 1, Shirt 2 S + 1 M")

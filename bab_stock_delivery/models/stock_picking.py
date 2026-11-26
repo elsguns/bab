@@ -121,24 +121,26 @@ class StockPicking(models.Model):
             report_actions.append(action)
         return report_actions
 
-    def _get_received_templates(self):
-        """The hoofdproducten (templates with variants) these receipts brought in."""
+    def _get_received_products(self):
+        """The variants of hoofdproducten (templates with variants) these receipts
+        brought in. The reports after a receipt cover only these variants: a
+        colour or size that did not come in has nothing new to act on."""
         return self.move_ids.filtered(
             lambda m: m.state == 'done' and m.quantity
-        ).product_id.product_tmpl_id.filtered(lambda t: t.product_variant_count > 1)
+        ).product_id.filtered(lambda p: p.product_tmpl_id.product_variant_count > 1)
 
-    def _get_fed_picks(self, templates, reserved_only=True):
-        """Open pick transfers of these receipts' warehouses that hold the templates.
+    def _get_fed_picks(self, products, reserved_only=True):
+        """Open pick transfers of these receipts' warehouses that hold the variants.
 
         With ``reserved_only`` only the picks that got something reserved (the
         ones that need a slip); without, also the picks still waiting, whose
         shortage the reservation overview has to show.
         """
         pick_types = self.picking_type_id.warehouse_id.pick_type_id
-        if not templates or not pick_types:
+        if not products or not pick_types:
             return self.browse()
         move_domain = [
-            ('product_id.product_tmpl_id', 'in', templates.ids),
+            ('product_id', 'in', products.ids),
             ('state', 'not in', ('done', 'cancel')),
         ]
         if reserved_only:
@@ -178,7 +180,7 @@ class StockPicking(models.Model):
         """
         report = self.env.ref('bab_stock_delivery.action_report_delivery_matrix')
         picks = self.browse()
-        data = {'matrix_template_ids': self._get_received_templates().ids}
+        data = {'matrix_product_ids': self._get_received_products().ids}
         pdf = self.env['ir.actions.report'].with_context(force_report_rendering=True)._render_qweb_pdf(
             report, res_ids=picks.ids, data=data)[0]
         for receipt in self:
@@ -204,9 +206,9 @@ class StockPicking(models.Model):
             lambda p: p.state == 'done' and p.picking_type_id.code == 'incoming')
         if not self or receipts != self:
             return self
-        templates = receipts._get_received_templates()
-        picks = receipts._get_fed_picks(templates, reserved_only=False)
-        return picks.with_context(matrix_template_ids=templates.ids)
+        products = receipts._get_received_products()
+        picks = receipts._get_fed_picks(products, reserved_only=False)
+        return picks.with_context(matrix_product_ids=products.ids)
 
     def _print_reservation_matrix_after_receipt(self):
         """Overview of the reservations of the hoofdproducten these receipts brought in.
@@ -216,11 +218,11 @@ class StockPicking(models.Model):
         receipt keeps the PDF in its chatter: it is a snapshot of the moment of
         validation.
         """
-        templates = self._get_received_templates()
-        picks = self._get_fed_picks(templates, reserved_only=False)
+        products = self._get_received_products()
+        picks = self._get_fed_picks(products, reserved_only=False)
         if not picks:
             return False
-        data = {'matrix_template_ids': templates.ids}
+        data = {'matrix_product_ids': products.ids}
         report = self.env.ref('bab_stock_delivery.action_report_reservation_matrix')
         pdf = self.env['ir.actions.report'].with_context(force_report_rendering=True)._render_qweb_pdf(
             report, res_ids=picks.ids, data=data)[0]
@@ -249,11 +251,11 @@ class StockPicking(models.Model):
         second slip shows the full reservation and the two PDFs in the chatter
         tell what was added.
         """
-        templates = self._get_received_templates()
-        picks = self._get_fed_picks(templates)
+        products = self._get_received_products()
+        picks = self._get_fed_picks(products)
         if not picks:
             return False
-        data = {'matrix_template_ids': templates.ids}
+        data = {'matrix_product_ids': products.ids}
         report = self.env.ref('bab_stock_delivery.action_report_delivery_matrix')
         receipt_names = ", ".join(self.mapped('name'))
         # One wkhtmltopdf run for all picks, split per pick by Odoo itself (see the
@@ -361,12 +363,12 @@ class StockPicking(models.Model):
         # is keyed by its colour ptav ids and collects one cell per size.
         buckets = {}
         # The overview printed after a receipt only covers that receipt's
-        # hoofdproducten (see _print_reservation_matrix_after_receipt).
-        template_filter = self.env.context.get('matrix_template_ids')
+        # variants (see _print_reservation_matrix_after_receipt).
+        product_filter = self.env.context.get('matrix_product_ids')
         for move in self.move_ids:
             if move.state == 'cancel':
                 continue
-            if template_filter and move.product_id.product_tmpl_id.id not in template_filter:
+            if product_filter and move.product_id.id not in product_filter:
                 continue
             variant = move.product_id
             template = variant.product_tmpl_id
@@ -576,9 +578,9 @@ class StockPicking(models.Model):
         # its outgoing transfer, or over a backorder, is only counted once. We
         # deliberately do NOT restrict to outgoing transfers: the matrix must also
         # be printable from the pick step (WH/PICK) of a multi-step delivery route.
-        # Printed from a receipt only the received hoofdproducten count (see
+        # Printed from a receipt only the received variants count (see
         # _get_matrix_report_pickings).
-        template_filter = self.env.context.get('matrix_template_ids')
+        product_filter = self.env.context.get('matrix_product_ids')
         orders = self.env['sale.order']
         for picking in self:
             orders |= picking._get_picking_orders()
@@ -587,7 +589,7 @@ class StockPicking(models.Model):
                 if line.combo_item_id:
                     # Combo/kit child lines would double count against their parent.
                     continue
-                if template_filter and line.product_template_id.id not in template_filter:
+                if product_filter and line.product_id.id not in product_filter:
                     continue
                 size_ptav, colour_ptavs = self._split_size_colour(
                     line.product_template_id, line.product_template_attribute_value_ids)
@@ -605,7 +607,7 @@ class StockPicking(models.Model):
         for move in self.move_ids:
             if move.state == 'cancel' or not move.sale_line_id:
                 continue
-            if template_filter and move.product_id.product_tmpl_id.id not in template_filter:
+            if product_filter and move.product_id.id not in product_filter:
                 continue
             variant = move.product_id
             size_ptav, colour_ptavs = self._split_size_colour(
@@ -755,12 +757,18 @@ class StockPicking(models.Model):
         # (product_add_mode == 'matrix'): for this delivery slip the matrix must
         # always be built as soon as the product has variants.
         grid_templates = all_lines.filtered('is_configurable_product').product_template_id
-        # The slips printed after a receipt only carry the hoofdproducten of that
-        # receipt (see _print_matrix_after_receipt): the other hoofdproducten on
-        # the pick were already printed with their own receipt.
-        template_filter = self.env.context.get('matrix_template_ids')
-        if template_filter:
-            grid_templates = grid_templates.filtered(lambda t: t.id in template_filter)
+        # The slips printed after a receipt only carry the variants of that
+        # receipt (see _print_matrix_after_receipt): the other variants on the
+        # pick are printed with their own receipt. A grid cell is identified by
+        # its attribute-value ids (see _line_has_ptavs).
+        received_cells = None
+        product_filter = self.env.context.get('matrix_product_ids')
+        if product_filter:
+            received = self.env['product.product'].browse(product_filter)
+            grid_templates = grid_templates & received.product_tmpl_id
+            # A cell also carries no-variant values, so match on "contains".
+            received_cells = [
+                set(p.product_template_attribute_value_ids.ids) for p in received]
 
         matrixes = []
         for template in grid_templates:
@@ -782,6 +790,16 @@ class StockPicking(models.Model):
                     self._add_order_qty_to_matrix(combined, order, template)
             if combined is None:
                 continue
+            if received_cells is not None:
+                # Empty the cells of variants that did not come in, so the
+                # all-zero rows below drop the colours that were not received.
+                for row in combined['matrix']:
+                    for cell in row:
+                        if 'qty' not in cell:
+                            continue
+                        cell_ptavs = set(cell.get('ptav_ids') or [])
+                        if not any(ptavs <= cell_ptavs for ptavs in received_cells):
+                            cell['qty'] = 0
             # Drop all-zero rows, exactly as get_report_matrixes does, but only
             # after summing so a row that is zero in one order but not another
             # survives.

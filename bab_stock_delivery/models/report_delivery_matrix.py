@@ -54,8 +54,8 @@ class ReportDeliverySlipMatrix(models.AbstractModel):
         pickings.filtered(lambda p: not p.matrix_printed).matrix_printed = True
         # The slips printed after a receipt only carry that receipt's
         # hoofdproducten, see stock.picking._print_matrix_after_receipt.
-        if data and data.get('matrix_template_ids'):
-            pickings = pickings.with_context(matrix_template_ids=data['matrix_template_ids'])
+        if data and data.get('matrix_product_ids'):
+            pickings = pickings.with_context(matrix_product_ids=data['matrix_product_ids'])
         return {
             'doc_ids': docids,
             'doc_model': 'stock.picking',
