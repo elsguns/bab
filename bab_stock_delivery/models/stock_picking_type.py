@@ -1,5 +1,5 @@
 # Part of the o.s.admin add-ons.
-from odoo import fields, models
+from odoo import _, api, fields, models
 
 
 class StockPickingType(models.Model):
@@ -31,3 +31,29 @@ class StockPickingType(models.Model):
              "reservations are right, the action \"* Briefjes van de pickbonnen\" "
              "on the receipt prints the slips.",
     )
+
+    # Inventory Overview: done receipts whose slips were not printed yet, so
+    # Hilde sees which receipts still wait for "* Briefjes van de pickbonnen".
+    count_matrix_slips_to_print = fields.Integer(compute='_compute_count_matrix_slips_to_print')
+
+    def _compute_count_matrix_slips_to_print(self):
+        on_request = self.filtered(lambda t: t.code == 'incoming' and t.matrix_slips_on_request)
+        data = dict(self.env['stock.picking']._read_group(
+            [('picking_type_id', 'in', on_request.ids)] + self._matrix_slips_to_print_domain(),
+            ['picking_type_id'], ['__count'],
+        )) if on_request else {}
+        for picking_type in self:
+            picking_type.count_matrix_slips_to_print = data.get(picking_type, 0)
+
+    @api.model
+    def _matrix_slips_to_print_domain(self):
+        return [('state', '=', 'done'), ('matrix_printed', '=', False)]
+
+    def get_action_matrix_slips_to_print(self):
+        # A domain rather than a filter in the transfers' search view: such a
+        # filter would show in every database using this module.
+        self.ensure_one()
+        action = self._get_action('stock.action_picking_tree_incoming')
+        action['display_name'] = _("%s: slips to print", self.display_name)
+        action['domain'] = [('picking_type_id', '=', self.id)] + self._matrix_slips_to_print_domain()
+        return action

@@ -16,4 +16,27 @@
             </xpath>
         </field>
     </record>
+
+    <!--
+        Inventory Overview: on a receipt type that prints the reservations first,
+        a line "Slips to print" under Back Orders, to the done receipts whose
+        slips are not printed yet. Like Odoo's own lines, only when there are any.
+    -->
+    <record id="stock_picking_type_kanban_matrix_slips_to_print" model="ir.ui.view">
+        <field name="name">stock.picking.type.kanban.matrix.slips.to.print</field>
+        <field name="model">stock.picking.type</field>
+        <field name="inherit_id" ref="stock.stock_picking_type_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='picking_type_backorder_count']" position="after">
+                <div t-if="record.count_matrix_slips_to_print.raw_value > 0" class="row" name="picking_type_matrix_slips_to_print">
+                    <a class="col-8 offset-4 pe-0 text-truncate" name="get_action_matrix_slips_to_print" type="object">
+                        <div class="row">
+                            <span class="col-6">Slips to print</span>
+                            <field class="col-2 text-end" name="count_matrix_slips_to_print"/>
+                        </div>
+                    </a>
+                </div>
+            </xpath>
+        </field>
+    </record>
 </odoo>

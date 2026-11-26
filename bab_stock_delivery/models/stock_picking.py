@@ -14,8 +14,14 @@ class StockPicking(models.Model):
     # "not yet printed" -- and so does a backorder: BAB receives and confirms per
     # product, so nearly every transfer spawns backorders, and each of those
     # carries its own goods that need their own slip.
+    # On a receipt that prints the slips of its pick transfers, the same flag
+    # says those slips were printed (see _print_matrix_after_receipt), and only
+    # then; the "Slips to print" counter on the Inventory Overview counts the
+    # done receipts that still lack it.
     matrix_printed = fields.Boolean(
         string="Productenmatrix printed", default=False, copy=False, readonly=True)
+    picking_type_matrix_slips_on_request = fields.Boolean(
+        related='picking_type_id.matrix_slips_on_request')
 
     def action_print_matrix(self):
         """Print the Productenmatrix, asking to confirm a reprint.
@@ -31,15 +37,22 @@ class StockPicking(models.Model):
         report = self.env.ref('bab_stock_delivery.action_report_delivery_matrix')
         already_printed = self.filtered('matrix_printed')
         if already_printed and not self.env.context.get('matrix_reprint_confirmed'):
-            return {
-                'type': 'ir.actions.act_window',
-                'name': _("Reprint Productenmatrix?"),
-                'res_model': 'bab.matrix.reprint.confirm',
-                'view_mode': 'form',
-                'target': 'new',
-                'context': {'default_picking_ids': [(6, 0, self.ids)]},
-            }
+            return self._open_matrix_reprint_confirm('matrix')
         return report.report_action(self)
+
+    def _open_matrix_reprint_confirm(self, print_method):
+        """The dialog asking whether to print again what was already printed."""
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _("Print again?"),
+            'res_model': 'bab.matrix.reprint.confirm',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_picking_ids': [(6, 0, self.ids)],
+                'default_print_method': print_method,
+            },
+        }
 
     def action_open_received_quants(self):
         """Stock of the received products, from a done receipt.
@@ -135,12 +148,29 @@ class StockPicking(models.Model):
                 "The slips can only be printed from a done receipt whose operation type prints them:\n%s",
                 "\n".join((self - receipts).mapped('name')),
             ))
-        action = receipts._print_matrix_after_receipt()
-        if not action:
-            raise UserError(_(
-                "No open pick transfer has anything reserved of the products of %s.",
-                ", ".join(receipts.mapped('name')),
-            ))
+        if receipts.filtered('matrix_printed') and not self.env.context.get('matrix_reprint_confirmed'):
+            return receipts._open_matrix_reprint_confirm('slips')
+        return receipts._print_matrix_after_receipt() or receipts._print_no_matrix_slips()
+
+    def _print_no_matrix_slips(self):
+        """The slips run of receipts that fed no pick: an empty PDF.
+
+        Hilde still printed, so the receipts get their PDF in the chatter (it
+        says no pick got anything) and leave "Slips to print" like any other.
+        """
+        report = self.env.ref('bab_stock_delivery.action_report_delivery_matrix')
+        picks = self.browse()
+        data = {'matrix_template_ids': self._get_received_templates().ids}
+        pdf = self.env['ir.actions.report'].with_context(force_report_rendering=True)._render_qweb_pdf(
+            report, res_ids=picks.ids, data=data)[0]
+        for receipt in self:
+            receipt.message_post(
+                body=_("Productenmatrix (briefjes): no pick transfer has anything reserved"),
+                attachments=[("Briefjes - %s.pdf" % receipt.name.replace('/', '-'), pdf)],
+            )
+        self.matrix_printed = True
+        action = report.report_action(picks, data=data, config=False)
+        clean_action(action, self.env)
         return action
 
     def _print_reservation_matrix_after_receipt(self):
@@ -219,6 +249,7 @@ class StockPicking(models.Model):
                 body=_("Productenmatrix (briefjes) of %s pick transfers", len(picks)),
                 attachments=[("Briefjes - %s.pdf" % receipt.name.replace('/', '-'), combined_pdf)],
             )
+        self.matrix_printed = True
         action = report.report_action(picks, data=data, config=False)
         clean_action(action, self.env)
         return action

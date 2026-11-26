@@ -135,6 +135,11 @@
         </t>
         <t t-else="">
             <t t-call="web.basic_layout">
+                <!-- Slips run of a receipt that fed no pick, see
+                     stock.picking._print_no_matrix_slips. -->
+                <div t-if="not docs" class="page">
+                    <p>Geen pickbon heeft iets gereserveerd van de ontvangen hoofdproducten.</p>
+                </div>
                 <t t-call="bab_stock_delivery.report_deliveryslip_matrix_blocks"/>
             </t>
         </t>

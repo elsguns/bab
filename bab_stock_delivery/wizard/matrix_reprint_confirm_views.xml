@@ -6,9 +6,14 @@
         <field name="arch" type="xml">
             <form>
                 <field name="picking_ids" invisible="1"/>
-                <div class="alert alert-warning" role="alert">
+                <field name="print_method" invisible="1"/>
+                <div class="alert alert-warning" role="alert" invisible="print_method != 'matrix'">
                     The Productenmatrix has already been printed for the following
                     deliveries. Print it again?
+                </div>
+                <div class="alert alert-warning" role="alert" invisible="print_method != 'slips'">
+                    The slips of the pick transfers have already been printed for
+                    the following receipts. Print them again?
                 </div>
                 <field name="already_printed_ids" readonly="1" nolabel="1">
                     <list>

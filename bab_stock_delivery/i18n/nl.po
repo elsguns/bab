@@ -83,12 +83,82 @@ msgstr ""
 "%s"
 
 #. module: bab_stock_delivery
-#. odoo-python
-#: code:addons/bab_stock_delivery/models/stock_picking.py:0
-msgid "No open pick transfer has anything reserved of the products of %s."
-msgstr "Geen enkele open pickbon heeft iets gereserveerd van de producten van %s."
-
-#. module: bab_stock_delivery
 #: model_terms:ir.ui.view,arch_db:bab_stock_delivery.view_picking_form_received_quants
 msgid "Stock"
 msgstr "Voorraad"
+
+#. module: bab_stock_delivery
+#. odoo-python
+#: code:addons/bab_stock_delivery/models/stock_picking_type.py:0
+msgid "%s: slips to print"
+msgstr "%s: briefjes te printen"
+
+#. module: bab_stock_delivery
+#: model_terms:ir.ui.view,arch_db:bab_stock_delivery.stock_picking_type_kanban_matrix_slips_to_print
+msgid "<span class=\"col-6\">Slips to print</span>"
+msgstr "<span class=\"col-6\">Briefjes te printen</span>"
+
+#. module: bab_stock_delivery
+#: model:ir.model.fields,field_description:bab_stock_delivery.field_bab_matrix_reprint_confirm__already_printed_ids
+msgid "Already printed"
+msgstr "Al geprint"
+
+#. module: bab_stock_delivery
+#: model_terms:ir.ui.view,arch_db:bab_stock_delivery.matrix_reprint_confirm_form
+msgid "Cancel"
+msgstr "Annuleren"
+
+#. module: bab_stock_delivery
+#: model:ir.model.fields,field_description:bab_stock_delivery.field_stock_picking_type__count_matrix_slips_to_print
+msgid "Count Matrix Slips To Print"
+msgstr "Aantal briefjes te printen"
+
+#. module: bab_stock_delivery
+#: model_terms:ir.ui.view,arch_db:bab_stock_delivery.matrix_reprint_confirm_form
+msgid "Print again"
+msgstr "Opnieuw printen"
+
+#. module: bab_stock_delivery
+#. odoo-python
+#: code:addons/bab_stock_delivery/models/stock_picking.py:0
+msgid "Print again?"
+msgstr "Opnieuw printen?"
+
+#. module: bab_stock_delivery
+#: model:ir.model.fields,field_description:bab_stock_delivery.field_stock_picking__matrix_printed
+msgid "Productenmatrix printed"
+msgstr "Productenmatrix geprint"
+
+#. module: bab_stock_delivery
+#: model:ir.model.fields.selection,name:bab_stock_delivery.selection__bab_matrix_reprint_confirm__print_method__slips
+msgid "Slips of the pick transfers"
+msgstr "Briefjes van de pickbonnen"
+
+#. module: bab_stock_delivery
+#: model_terms:ir.ui.view,arch_db:bab_stock_delivery.view_picking_form_receipt_slips_printed
+msgid "Slips printed"
+msgstr "Briefjes geprint"
+
+#. module: bab_stock_delivery
+#: model_terms:ir.ui.view,arch_db:bab_stock_delivery.matrix_reprint_confirm_form
+msgid ""
+"The Productenmatrix has already been printed for the following\n"
+"                    deliveries. Print it again?"
+msgstr ""
+"De Productenmatrix werd al geprint voor de volgende\n"
+"                    leveringen. Opnieuw printen?"
+
+#. module: bab_stock_delivery
+#: model_terms:ir.ui.view,arch_db:bab_stock_delivery.matrix_reprint_confirm_form
+msgid ""
+"The slips of the pick transfers have already been printed for\n"
+"                    the following receipts. Print them again?"
+msgstr ""
+"De briefjes van de pickbonnen werden al geprint voor\n"
+"                    de volgende ontvangsten. Opnieuw printen?"
+
+#. module: bab_stock_delivery
+#. odoo-python
+#: code:addons/bab_stock_delivery/models/stock_picking.py:0
+msgid "Productenmatrix (briefjes): no pick transfer has anything reserved"
+msgstr "Productenmatrix (briefjes): geen enkele pickbon heeft iets gereserveerd"

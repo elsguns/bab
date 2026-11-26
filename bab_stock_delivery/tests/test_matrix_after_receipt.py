@@ -290,7 +290,72 @@ class TestMatrixAfterReceipt(TransactionCase):
         self.receipt_type.matrix_slips_on_request = True
         with self.assertRaises(UserError):
             self.pick_a.action_print_matrix_slips()
-        # A receipt that reserved nothing (nobody ordered Broek M) has no slips to print.
+        # A receipt that reserved nothing (nobody ordered Broek M) still prints:
+        # an empty PDF, and the receipt counts as printed.
         receipt, _action = self._receive([(self.broek, 'M', 1)])
-        with self.assertRaises(UserError):
-            receipt.action_print_matrix_slips()
+        action = receipt.action_print_matrix_slips()
+        self.assertEqual(action['report_name'], 'bab_stock_delivery.report_deliveryslip_matrix')
+        self.assertFalse(action['context'].get('active_ids'))
+        # The download (no ids, as in test_02) renders the empty slips page.
+        downloaded = self.env['ir.actions.report'].with_context(action['context'])._render_qweb_html(
+            action['report_name'], None, data=dict(action['data'], context=action['context']))[0].decode()
+        self.assertIn('Geen pickbon heeft iets gereserveerd', downloaded)
+        self.assertTrue(receipt.matrix_printed)
+        kept = receipt.message_ids.attachment_ids.filtered(lambda a: a.name.startswith('Briefjes - '))
+        self.assertEqual(len(kept), 1)
+
+    def test_08_receipt_remembers_its_slips(self):
+        """A receipt shows under "Slips to print" until its slips are printed;
+        printing them again asks first."""
+        self.receipt_type.auto_print_matrix_after_receipt = True
+        self.receipt_type.matrix_slips_on_request = True
+        count_before = self.receipt_type.count_matrix_slips_to_print
+        receipt, _action = self._receive([(self.shirt, 'S', 5)])
+        self.assertFalse(receipt.matrix_printed)
+        self.receipt_type.invalidate_recordset(['count_matrix_slips_to_print'])
+        self.assertEqual(self.receipt_type.count_matrix_slips_to_print, count_before + 1)
+        overview = self.receipt_type.get_action_matrix_slips_to_print()
+        self.assertIn(receipt, self.env['stock.picking'].search(overview['domain']))
+
+        action = receipt.action_print_matrix_slips()
+        self.assertEqual(action['report_name'], 'bab_stock_delivery.report_deliveryslip_matrix')
+        self.assertTrue(receipt.matrix_printed)
+        self.receipt_type.invalidate_recordset(['count_matrix_slips_to_print'])
+        self.assertEqual(self.receipt_type.count_matrix_slips_to_print, count_before)
+        self.assertNotIn(receipt, self.env['stock.picking'].search(overview['domain']))
+
+        # Second time: the dialog, which then prints again or skips.
+        action = receipt.action_print_matrix_slips()
+        self.assertEqual(action['res_model'], 'bab.matrix.reprint.confirm')
+        wizard = self.env['bab.matrix.reprint.confirm'].with_context(action['context']).create({})
+        self.assertEqual(wizard.print_method, 'slips')
+        self.assertEqual(wizard.already_printed_ids, receipt)
+        slips_before = len(self._slips(self.pick_a))
+        action = wizard.action_confirm()
+        self.assertEqual(action['report_name'], 'bab_stock_delivery.report_deliveryslip_matrix')
+        self.assertTrue(action['close_on_report_download'])
+        self.assertEqual(len(self._slips(self.pick_a)), slips_before + 1, "printed again")
+        self.assertEqual(wizard.action_skip_reprints(), {'type': 'ir.actions.act_window_close'})
+
+    def test_09_receipt_without_open_picks_waits_for_hilde(self):
+        """Nobody waits for what came in: the receipt still shows under "Slips
+        to print" until Hilde runs the slips, which then prints an empty PDF."""
+        self.receipt_type.auto_print_matrix_after_receipt = True
+        self.receipt_type.matrix_slips_on_request = True
+        other = self._create_template('Jas (test)')
+        count_before = self.receipt_type.count_matrix_slips_to_print
+        receipt, _action = self._receive([(other, 'S', 1)])
+        self.assertFalse(receipt.matrix_printed)
+        self.receipt_type.invalidate_recordset(['count_matrix_slips_to_print'])
+        self.assertEqual(self.receipt_type.count_matrix_slips_to_print, count_before + 1)
+        receipt.action_print_matrix_slips()
+        self.assertTrue(receipt.matrix_printed)
+        self.receipt_type.invalidate_recordset(['count_matrix_slips_to_print'])
+        self.assertEqual(self.receipt_type.count_matrix_slips_to_print, count_before)
+
+    def test_10_delivery_reprint_dialog_unchanged(self):
+        """The dialog of the Productenmatrix on a pick keeps printing that."""
+        self.pick_a.matrix_printed = True
+        action = self.pick_a.action_print_matrix()
+        wizard = self.env['bab.matrix.reprint.confirm'].with_context(action['context']).create({})
+        self.assertEqual(wizard.print_method, 'matrix')
