@@ -61,4 +61,22 @@
         </field>
     </record>
 
+
+    <!--
+        Gear menu of a transfer: only the slip action that fits it (see
+        static/src/picking_form and stock.picking.matrix_hidden_action_ids).
+    -->
+    <record id="view_picking_form_matrix_actions" model="ir.ui.view">
+        <field name="name">stock.picking.form.matrix.actions</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="/form" position="attributes">
+                <attribute name="js_class">bab_matrix_picking_form</attribute>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <field name="matrix_hidden_action_ids" invisible="1"/>
+            </xpath>
+        </field>
+    </record>
 </odoo>

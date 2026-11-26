@@ -363,3 +363,23 @@ class TestMatrixAfterReceipt(TransactionCase):
         action = self.pick_a.action_print_matrix()
         wizard = self.env['bab.matrix.reprint.confirm'].with_context(action['context']).create({})
         self.assertEqual(wizard.print_method, 'matrix')
+
+    def test_11_gear_menu_shows_the_fitting_slip_action(self):
+        """Each transfer hides the slip action that does not fit it."""
+        pick_action = self.env.ref('bab_stock_delivery.action_print_matrix_server')
+        receipt_action = self.env.ref('bab_stock_delivery.action_print_matrix_slips_server')
+        self.receipt_type.auto_print_matrix_after_receipt = True
+        self.assertEqual(self.pick_a.matrix_hidden_action_ids, [receipt_action.id])
+        receipt, _action = self._receive([(self.shirt, 'S', 1)])
+        self.assertEqual(receipt.matrix_hidden_action_ids, [pick_action.id])
+        # Any other transfer (here a delivery): neither action.
+        delivery = self.env['stock.picking'].create({
+            'picking_type_id': self.warehouse.out_type_id.id,
+            'location_id': self.warehouse.lot_stock_id.id,
+            'location_dest_id': self.env.ref('stock.stock_location_customers').id,
+        })
+        self.assertEqual(sorted(delivery.matrix_hidden_action_ids), sorted([pick_action.id, receipt_action.id]))
+        # A receipt type that does not print the slips: neither action.
+        self.receipt_type.auto_print_matrix_after_receipt = False
+        receipt.invalidate_recordset(['matrix_hidden_action_ids'])
+        self.assertEqual(sorted(receipt.matrix_hidden_action_ids), sorted([pick_action.id, receipt_action.id]))

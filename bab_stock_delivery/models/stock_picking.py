@@ -1,5 +1,5 @@
 # Part of the o.s.admin add-ons.
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.addons.web.controllers.utils import clean_action
 from odoo.tools import float_compare
@@ -20,8 +20,29 @@ class StockPicking(models.Model):
     # done receipts that still lack it.
     matrix_printed = fields.Boolean(
         string="Productenmatrix printed", default=False, copy=False, readonly=True)
+    # Ids of the slip actions that do not fit this transfer, left out of its gear
+    # menu by the bab_matrix_picking_form view: "* Productenmatrix (briefjes)"
+    # only fits a pick, "* Briefjes van de pickbonnen" only a done receipt that
+    # prints the slips.
+    matrix_hidden_action_ids = fields.Json(compute='_compute_matrix_hidden_action_ids')
     picking_type_auto_print_matrix_after_receipt = fields.Boolean(
         related='picking_type_id.auto_print_matrix_after_receipt')
+
+    @api.depends('picking_type_id', 'state')
+    def _compute_matrix_hidden_action_ids(self):
+        pick_action = self.env.ref('bab_stock_delivery.action_print_matrix_server', raise_if_not_found=False)
+        receipt_action = self.env.ref('bab_stock_delivery.action_print_matrix_slips_server', raise_if_not_found=False)
+        for picking in self:
+            picking_type = picking.picking_type_id
+            hidden = []
+            if pick_action and (not picking_type or picking_type != picking_type.warehouse_id.pick_type_id):
+                hidden.append(pick_action.id)
+            if receipt_action and not (
+                    picking.state == 'done'
+                    and picking_type.code == 'incoming'
+                    and picking_type.auto_print_matrix_after_receipt):
+                hidden.append(receipt_action.id)
+            picking.matrix_hidden_action_ids = hidden
 
     def action_print_matrix(self):
         """Print the Productenmatrix, asking to confirm a reprint.

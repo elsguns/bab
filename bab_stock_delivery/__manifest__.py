@@ -1,7 +1,7 @@
 # Part of the o.s.admin add-ons.
 {
     'name': 'Delivery Slip with Variant Matrix',
-    'version': '18.0.1.5.0',
+    'version': '18.0.1.6.0',
     'category': 'Inventory/Delivery',
     'summary': "Adds a delivery report showing the product variant matrix of the sales order",
     'description': """
@@ -42,6 +42,11 @@ the new report.
         'report/reservation_matrix_report.xml',
         'report/product_overview_report.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'bab_stock_delivery/static/src/picking_form/*',
+        ],
+    },
     'license': 'LGPL-3',
     'installable': True,
     'application': False,
