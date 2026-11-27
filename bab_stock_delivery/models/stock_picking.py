@@ -1,8 +1,9 @@
 # Part of the o.s.admin add-ons.
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
-from odoo.addons.web.controllers.utils import clean_action
 from odoo.tools import float_compare
+
+from odoo.addons.web.controllers.utils import clean_action
 
 
 class StockPicking(models.Model):
@@ -20,6 +21,12 @@ class StockPicking(models.Model):
     # done receipts that still lack it.
     matrix_printed = fields.Boolean(
         string="Productenmatrix printed", default=False, copy=False, readonly=True)
+    # On a done receipt that prints the slips: what its last slips run put on
+    # paper, so unticking "Slips printed" takes exactly that back off (Els,
+    # 27/11). {'moves': {pick move id: quantity added}, 'receipt_ids': [the
+    # receipts that run marked printed]}. The same dict sits on every receipt of
+    # the run: they were printed together, so they are released together.
+    matrix_slips_undo = fields.Json(copy=False, readonly=True)
     # Ids of the slip actions that do not fit this transfer, left out of its gear
     # menu by the bab_matrix_picking_form view: "* Productenmatrix (briefjes)"
     # only fits a pick, "* Briefjes van de pickbonnen" only a done receipt that
@@ -62,10 +69,10 @@ class StockPicking(models.Model):
         report = self.env.ref('bab_stock_delivery.action_report_delivery_matrix')
         already_printed = self.filtered('matrix_printed')
         if already_printed and not self.env.context.get('matrix_reprint_confirmed'):
-            return self._open_matrix_reprint_confirm('matrix')
+            return self._open_matrix_reprint_confirm()
         return report.report_action(self)
 
-    def _open_matrix_reprint_confirm(self, print_method):
+    def _open_matrix_reprint_confirm(self):
         """The dialog asking whether to print again what was already printed."""
         return {
             'type': 'ir.actions.act_window',
@@ -75,21 +82,33 @@ class StockPicking(models.Model):
             'target': 'new',
             'context': {
                 'default_picking_ids': [(6, 0, self.ids)],
-                'default_print_method': print_method,
             },
         }
+
+    def _is_matrix_slip_receipt(self):
+        """True for a done receipt whose operation type prints the slips of its picks."""
+        self.ensure_one()
+        return (self.state == 'done'
+                and self.picking_type_id.code == 'incoming'
+                and self.picking_type_id.auto_print_matrix_after_receipt)
 
     def _get_matrix_pick_batches(self):
         """Open batches of the picks that reserved something of the received variants."""
         self.ensure_one()
-        if self.state != 'done' or self.picking_type_id.code != 'incoming':
+        if not self._is_matrix_slip_receipt():
             return self.env['stock.picking.batch']
         picks = self._get_fed_picks(self._get_received_products())
         return picks.batch_id.filtered(lambda b: b.state not in ('done', 'cancel'))
 
+    @api.depends('state', 'picking_type_id.auto_print_matrix_after_receipt')
     def _compute_matrix_pick_batch_count(self):
-        for picking in self:
-            picking.matrix_pick_batch_count = len(picking._get_matrix_pick_batches())
+        # Only the receipts that print the slips search their picks: the form of
+        # any other transfer (and every receipt where the box is off) runs no
+        # query for this button.
+        receipts = self.filtered(lambda p: p.id and p._is_matrix_slip_receipt())
+        (self - receipts).matrix_pick_batch_count = 0
+        for receipt in receipts:
+            receipt.matrix_pick_batch_count = len(receipt._get_matrix_pick_batches())
 
     def action_open_matrix_pick_batches(self):
         """The pick batches holding reservations of what this receipt brought in."""
@@ -118,22 +137,6 @@ class StockPicking(models.Model):
         return self.move_ids.filtered(
             lambda m: m.state == 'done' and m.quantity
         ).product_id.action_open_quants()
-
-    def _matrix_allowed_before_done(self):
-        """True if this pick may get its slips before it is done.
-
-        That is the case as soon as one receipt type of the pick's warehouse prints
-        the slips after a receipt: the slips then follow the reservation, not the
-        validated pick. Hilde's own print action relies on the same rule, so it
-        keeps working on those picks too.
-        """
-        self.ensure_one()
-        warehouse = self.picking_type_id.warehouse_id
-        return bool(warehouse) and bool(self.env['stock.picking.type'].search_count([
-            ('warehouse_id', '=', warehouse.id),
-            ('code', '=', 'incoming'),
-            ('auto_print_matrix_after_receipt', '=', True),
-        ], limit=1))
 
     def _action_done(self):
         """Record how much of each receipt went to the customers' picks.
@@ -238,11 +241,7 @@ class StockPicking(models.Model):
         validation have been checked (and moved where needed). Can be repeated:
         every run adds a new PDF to the chatters, the earlier ones stay.
         """
-        receipts = self.filtered(
-            lambda p: p.state == 'done'
-            and p.picking_type_id.code == 'incoming'
-            and p.picking_type_id.auto_print_matrix_after_receipt
-        )
+        receipts = self.filtered(lambda p: p._is_matrix_slip_receipt())
         if receipts != self:
             raise UserError(_(
                 "The slips can only be printed from a done receipt whose operation type prints them:\n%s",
@@ -278,7 +277,43 @@ class StockPicking(models.Model):
         for receipt in self:
             receipt.message_post(body=_(
                 "Productenmatrix (briefjes): the reservations of the received products are already on earlier slips"))
-        self.matrix_printed = True
+        self.write({'matrix_printed': True, 'matrix_slips_undo': {'moves': {}, 'receipt_ids': self.ids}})
+
+    def write(self, vals):
+        # "Slips printed" unticked on a receipt: take its last run back off the
+        # paper first, so the next run prints those slips as if for the first time.
+        if vals.get('matrix_printed') is False:
+            self.filtered(lambda p: p.matrix_printed and p._is_matrix_slip_receipt())._undo_matrix_slips()
+        return super().write(vals)
+
+    def _undo_matrix_slips(self):
+        """Take the last slips run of these receipts back off the paper.
+
+        Subtracts what that run added on each pick move, never below zero, so a
+        later run of another receipt on the same variants stays on paper. The
+        other receipts of the run are released too; the PDFs stay in the chatters.
+        """
+        missing = self.filtered(lambda r: not r.matrix_slips_undo)
+        if missing:
+            raise UserError(_(
+                "The slips of %s were printed before unticking was possible: there is no record "
+                "of what they put on paper, so they cannot be released.",
+                ", ".join(missing.mapped('name'))))
+        receipts = self
+        added = {}
+        for undo in {repr(r.matrix_slips_undo): r.matrix_slips_undo for r in self}.values():
+            receipts |= self.browse(undo['receipt_ids']).exists()
+            for move_id, qty in undo['moves'].items():
+                added[int(move_id)] = added.get(int(move_id), 0) + qty
+        moves = self.env['stock.move'].browse(list(added)).exists().filtered(
+            lambda m: m.state not in ('done', 'cancel'))
+        for move in moves:
+            move.matrix_printed_qty = max(move.matrix_printed_qty - added[move.id], 0)
+        for receipt in receipts:
+            receipt.message_post(body=_(
+                "Productenmatrix (briefjes): released, the next run prints these slips again"))
+        # Through super(): this write must not undo once more.
+        super(StockPicking, receipts).write({'matrix_printed': False, 'matrix_slips_undo': False})
 
     def _get_backorder_chain(self):
         """The receipt with all its backorders and the transfers they came from."""
@@ -306,7 +341,7 @@ class StockPicking(models.Model):
                 body=_("Productenmatrix (briefjes): no pick transfer has anything reserved"),
                 attachments=[("Briefjes - %s.pdf" % receipt.name.replace('/', '-'), pdf)],
             )
-        self.matrix_printed = True
+        self.write({'matrix_printed': True, 'matrix_slips_undo': {'moves': {}, 'receipt_ids': self.ids}})
         # Download the stored PDF, not the report: a report action without picks
         # keeps the receipts as active_ids, and the report would refuse those.
         return self._download_slips_attachment(messages)
@@ -323,14 +358,15 @@ class StockPicking(models.Model):
     def _get_matrix_report_pickings(self):
         """The transfers a reservation report covers when printed from Print.
 
-        Printed on done receipts, the reports would read the receipt's own moves
-        (received quantities, no customers). Like the overview printed at
-        validation, they then cover the open picks holding the received
-        hoofdproducten instead, limited to those hoofdproducten. Any other
-        selection, or one mixing receipts with other transfers, is left as is.
+        Printed on done receipts that print the slips of their picks, the
+        reports would read the receipt's own moves (received quantities, no
+        customers). Like the overview printed at validation, they then cover the
+        open picks holding the received hoofdproducten instead, limited to those
+        hoofdproducten. Any other selection, one mixing receipts with other
+        transfers, or receipts of a type without the box (Vasa: r is only
+        measured with the box on) is left as is.
         """
-        receipts = self.filtered(
-            lambda p: p.state == 'done' and p.picking_type_id.code == 'incoming')
+        receipts = self.filtered(lambda p: p._is_matrix_slip_receipt())
         if not self or receipts != self:
             return self
         products = receipts._get_received_products()
@@ -382,11 +418,9 @@ class StockPicking(models.Model):
         keeps the combined PDF of all its slips, and the return value prints them
         in one go, grouped per hoofdproduct.
 
-        No difference with what an earlier receipt already reserved is computed:
-        Lucati receives per hoofdproduct, so the filter on hoofdproduct already
-        keeps earlier slips off. When the same hoofdproduct comes in twice, the
-        second slip shows the full reservation and the two PDFs in the chatter
-        tell what was added.
+        Each slip prints what changed since the previous slips of its pick (see
+        _get_matrix_slip_quantities), so a second receipt of the same variant
+        only adds what it brought in.
         """
         products = self._get_received_products()
         picks = self._get_picks_with_slip_changes(products)
@@ -399,16 +433,17 @@ class StockPicking(models.Model):
         receipt_names = ", ".join(self.mapped('name'))
         # One wkhtmltopdf run for all picks, split per pick by Odoo itself (see the
         # split_per_picking branch of the report template).
-        streams = self.env['ir.actions.report']._render_qweb_pdf_prepare_streams(
+        Report = self.env['ir.actions.report'].with_context(force_report_rendering=True)
+        streams = Report._render_qweb_pdf_prepare_streams(
             report, dict(data, matrix_split_per_picking=True), res_ids=picks.ids)
         for pick in picks:
             stream = streams.get(pick.id, {}).get('stream')
             if stream:
                 pdf = stream.getvalue()
             else:
-                # Odoo could not split (no headings found): render this pick alone.
-                pdf = self.env['ir.actions.report'].with_context(force_report_rendering=True)._render_qweb_pdf(
-                    report, res_ids=pick.ids, data=data)[0]
+                # Odoo could not split (no headings found): render this pick
+                # alone. Only then: normally the split above is the one run.
+                pdf = Report._render_qweb_pdf(report, res_ids=pick.ids, data=data)[0]
             pick.message_post(
                 body=_("Productenmatrix (briefjes) after receipt %s", receipt_names),
                 attachments=[(
@@ -418,8 +453,9 @@ class StockPicking(models.Model):
             )
         # The receipt keeps the combined PDF too (all slips of this receipt, as
         # printed), so a whole delivery's slips can be found again in one place.
-        combined_pdf = self.env['ir.actions.report'].with_context(force_report_rendering=True)._render_qweb_pdf(
-            report, res_ids=picks.ids, data=data)[0]
+        # A second render on purpose: the combined PDF is grouped per
+        # hoofdproduct across the picks, the split one above per pick.
+        combined_pdf = Report._render_qweb_pdf(report, res_ids=picks.ids, data=data)[0]
         messages = self.env['mail.message']
         for receipt in self:
             messages |= receipt.message_post(
@@ -433,14 +469,27 @@ class StockPicking(models.Model):
         waiting = self._get_backorder_chain().filtered(lambda r: (
             r not in self and r.state == 'done' and not r.matrix_printed
             and r.picking_type_id == self[:1].picking_type_id))
-        # Now on paper: the next run prints only what changes from here.
-        for move in picks.move_ids.filtered(lambda m: m in m.picking_id._get_matrix_slip_moves(products)):
-            move.matrix_printed_qty = move.quantity
+        # Now on paper: the next run prints only what changes from here. One
+        # write per quantity, not one per move.
+        printed_moves = picks.move_ids.filtered(
+            lambda m: m.state != 'cancel' and m.product_id in products)
+        # What this run adds to the paper, kept for unticking "Slips printed".
+        added = {
+            str(move.id): move.quantity - move.matrix_printed_qty
+            for move in printed_moves
+            if float_compare(move.quantity, move.matrix_printed_qty,
+                             precision_rounding=move.product_uom.rounding)
+        }
+        for quantity, moves in printed_moves.grouped('quantity').items():
+            moves.matrix_printed_qty = quantity
+        released = self
         for receipt in waiting:
             if not receipt._get_picks_with_slip_changes(receipt._get_received_products()):
                 receipt.message_post(body=_(
                     "Productenmatrix (briefjes): printed with %s", ", ".join(self.mapped('name'))))
                 receipt.matrix_printed = True
+                released |= receipt
+        released.matrix_slips_undo = {'moves': added, 'receipt_ids': released.ids}
         # Download the stored PDF, not the report: rendered again it would show
         # the differences with what was just printed, i.e. nothing.
         return self._download_slips_attachment(messages)

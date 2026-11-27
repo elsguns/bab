@@ -218,25 +218,11 @@
 
     <!--
         The "Productenmatrix met reservaties" report, bound to the Print menu on
-        deliveries. Deliberately declared in a data file loaded BEFORE
-        product_overview_report.xml so it gets a LOWER ir.actions id than the
-        overview report: the Print menu orders report bindings purely by their
-        action id (ir.actions.actions._get_bindings sorts reports by id, the
-        sequence field only affects the Action/cog menu), so a lower id makes
-        this report appear first in Print. product_overview_report.xml then
-        re-creates the overview report after this one to keep that order on an
-        already-installed database (see the <delete> there).
+        deliveries. Its place in Print (last, before the overview per kleur en
+        klant) comes from ir.actions.actions._get_bindings in this module, not
+        from its id: the record is kept on update, so a link made to it (e.g. an
+        IoT printer) stays.
     -->
-    <!--
-        Re-created on every update as well: a module installed later (delivery_iot
-        with Verzendlabels / Verzenddocumenten) gets higher ids and would land
-        BETWEEN this report and the overview. Re-creating both keeps the two
-        Productenmatrix reports next to each other at the end of Print. A link
-        made by hand to one of them (e.g. an IoT printer) is lost on update.
-    -->
-    <delete model="ir.actions.report"
-            search="[('report_name', '=', 'bab_stock_delivery.report_reservation_matrix')]"/>
-
     <record id="action_report_reservation_matrix" model="ir.actions.report">
         <field name="name">Productenmatrix met reservaties</field>
         <field name="model">stock.picking</field>

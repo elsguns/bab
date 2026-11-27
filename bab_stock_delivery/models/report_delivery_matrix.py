@@ -35,13 +35,15 @@ class ReportDeliverySlipMatrix(models.AbstractModel):
             # without ids in the URL: the picks only travel in the action's context.
             docids = (data.get('context') or {}).get('active_ids')
         pickings = self.env['stock.picking'].browse(docids)
+        # One query for the whole selection, not one per pick.
+        slip_warehouses = pickings.picking_type_id.warehouse_id._get_matrix_slip_warehouses()
         refused = []
         for picking in pickings:
             if picking.picking_type_id != picking.picking_type_id.warehouse_id.pick_type_id:
                 refused.append(_("%s (not a pick transfer)", picking.name))
             elif picking.state != 'done' and not (
                     picking.state not in ('draft', 'cancel')
-                    and picking._matrix_allowed_before_done()):
+                    and picking.picking_type_id.warehouse_id in slip_warehouses):
                 refused.append(_("%s (not done yet)", picking.name))
         if refused:
             raise UserError(_(
@@ -61,9 +63,14 @@ class ReportDeliverySlipMatrix(models.AbstractModel):
                 matrix_product_ids=data['matrix_product_ids'],
                 matrix_slip_changes=data.get('matrix_slip_changes', False))
         else:
-            # A full slip of the pick: everything reserved is now on paper.
-            for move in pickings.move_ids.filtered(lambda m: m.state != 'cancel'):
-                move.matrix_printed_qty = move.quantity
+            # A full slip of the pick: everything reserved is now on paper. Only
+            # the open moves matter: the slips after a receipt only look at open
+            # picks, so a done pick (the only kind a warehouse without slips
+            # after a receipt prints) writes nothing. One write per quantity,
+            # not one per move.
+            open_moves = pickings.move_ids.filtered(lambda m: m.state not in ('done', 'cancel'))
+            for quantity, moves in open_moves.grouped('quantity').items():
+                moves.matrix_printed_qty = quantity
         return {
             'doc_ids': docids,
             'doc_model': 'stock.picking',

@@ -1,4 +1,5 @@
 # Part of the o.s.admin add-ons.
+from . import ir_actions
 from . import product_template_attribute_value
 from . import report_delivery_matrix
 from . import report_product_overview
@@ -9,3 +10,4 @@ from . import sale_order
 from . import stock_move
 from . import stock_picking
 from . import stock_picking_type
+from . import stock_warehouse

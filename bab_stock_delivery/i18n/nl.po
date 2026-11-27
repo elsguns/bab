@@ -97,11 +97,6 @@ msgid "Productenmatrix printed"
 msgstr "Productenmatrix geprint"
 
 #. module: bab_stock_delivery
-#: model:ir.model.fields.selection,name:bab_stock_delivery.selection__bab_matrix_reprint_confirm__print_method__slips
-msgid "Slips of the pick transfers"
-msgstr "Briefjes van de pickbonnen"
-
-#. module: bab_stock_delivery
 #: model_terms:ir.ui.view,arch_db:bab_stock_delivery.view_picking_form_receipt_slips_printed
 msgid "Slips printed"
 msgstr "Briefjes geprint"
@@ -114,15 +109,6 @@ msgid ""
 msgstr ""
 "De Productenmatrix werd al geprint voor de volgende\n"
 "                    leveringen. Opnieuw printen?"
-
-#. module: bab_stock_delivery
-#: model_terms:ir.ui.view,arch_db:bab_stock_delivery.matrix_reprint_confirm_form
-msgid ""
-"The slips of the pick transfers have already been printed for\n"
-"                    the following receipts. Print them again?"
-msgstr ""
-"De briefjes van de pickbonnen werden al geprint voor\n"
-"                    de volgende ontvangsten. Opnieuw printen?"
 
 #. module: bab_stock_delivery
 #. odoo-python
@@ -206,3 +192,49 @@ msgstr "Pickbatches van %s"
 #: model:ir.model.fields,field_description:bab_stock_delivery.field_stock_move__matrix_reserved_qty
 msgid "Reserved for customers"
 msgstr "Gereserveerd voor klanten"
+
+#. module: bab_stock_delivery
+#. odoo-python
+#: code:addons/bab_stock_delivery/models/report_delivery_matrix.py:0
+msgid "%s (not a pick transfer)"
+msgstr "%s (geen pickbon)"
+
+#. module: bab_stock_delivery
+#. odoo-python
+#: code:addons/bab_stock_delivery/models/report_delivery_matrix.py:0
+msgid "%s (not done yet)"
+msgstr "%s (nog niet voltooid)"
+
+#. module: bab_stock_delivery
+#. odoo-python
+#: code:addons/bab_stock_delivery/models/report_delivery_matrix.py:0
+msgid ""
+"The Productenmatrix can only be printed for pick transfers that are done.\n"
+"%s"
+msgstr ""
+"De Productenmatrix kan enkel geprint worden voor pickbonnen die voltooid zijn.\n"
+"%s"
+
+#. module: bab_stock_delivery
+#. odoo-python
+#: code:addons/bab_stock_delivery/models/stock_picking.py:0
+msgid ""
+"The slips of %s were printed before unticking was possible: there is no "
+"record of what they put on paper, so they cannot be released."
+msgstr ""
+"De briefjes van %s werden geprint voordat afvinken mogelijk was: er is niet "
+"bijgehouden wat ze op papier zetten, dus ze kunnen niet vrijgegeven worden."
+
+#. module: bab_stock_delivery
+#. odoo-python
+#: code:addons/bab_stock_delivery/models/stock_picking.py:0
+msgid ""
+"Productenmatrix (briefjes): released, the next run prints these slips again"
+msgstr ""
+"Productenmatrix (briefjes): vrijgegeven, de volgende run print deze briefjes "
+"opnieuw"
+
+#. module: bab_stock_delivery
+#: model_terms:ir.ui.view,arch_db:bab_stock_delivery.view_picking_form_received_quants
+msgid "Reservations"
+msgstr "Reservaties"
