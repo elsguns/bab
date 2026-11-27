@@ -1,7 +1,7 @@
 # Part of the o.s.admin add-ons.
 {
     'name': 'Batch Transfers: Previous and Next Step',
-    'version': '18.0.1.0.2',
+    'version': '18.0.1.1.0',
     'category': 'Inventory/Inventory',
     'summary': "Links a batch transfer to the batches of the step before and after it",
     'description': """
@@ -17,6 +17,10 @@ stock moves (pick -> pack -> ship) and shows, on every batch transfer:
 * the same batches as two columns in the list of batch transfers.
 
 Nothing is stored: the link is read from the moves each time.
+
+The Batches button of an operation type on the Inventory Overview ignores a
+default favorite on the batch transfers (for instance one grouped by operation
+type), so the list keeps its filter on that operation type.
     """,
     'author': 'o.s.admin',
     'website': 'www.osadmin.be',
