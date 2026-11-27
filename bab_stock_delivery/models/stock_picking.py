@@ -114,13 +114,18 @@ class StockPicking(models.Model):
         """The pick batches holding reservations of what this receipt brought in."""
         self.ensure_one()
         batches = self._get_matrix_pick_batches()
-        action = self.env['ir.actions.act_window']._for_xml_id(
-            'stock_picking_batch.stock_picking_batch_action')
-        action.update({
+        # A window action of its own, not stock_picking_batch_action: the default
+        # favourite on that action (Lucati: grouped by operation type) would
+        # also apply here, while these batches are all pick batches.
+        action = {
+            'type': 'ir.actions.act_window',
+            'res_model': 'stock.picking.batch',
+            'view_mode': 'list,form',
+            'views': [(False, 'list'), (False, 'form')],
             'domain': [('id', 'in', batches.ids)],
             'context': {'create': False},
-            'display_name': _("Pick batches of %s", self.name),
-        })
+            'name': _("Pick batches of %s", self.name),
+        }
         if len(batches) == 1:
             action.update({'view_mode': 'form', 'views': [(False, 'form')], 'res_id': batches.id})
         return action
@@ -174,6 +179,18 @@ class StockPicking(models.Model):
             ('state', 'not in', ('draft', 'done', 'cancel')),
         ], ['product_id'], ['quantity:sum'])
         return {product.id: quantity for product, quantity in groups}
+
+    def button_validate(self):
+        # The reservation overview printed at validation goes through Odoo's
+        # do_multi_print, which ends by reloading the whole page from its URL;
+        # that rebuilds the breadcrumbs with an extra "To Do" crumb. Reloading
+        # only the receipt keeps them as they were.
+        res = super().button_validate()
+        if (isinstance(res, dict) and res.get('tag') == 'do_multi_print'
+                and not res['params'].get('anotherAction')
+                and self.filtered(lambda p: p.state == 'done' and p._is_matrix_slip_receipt())):
+            res['params']['anotherAction'] = {'type': 'ir.actions.client', 'tag': 'soft_reload'}
+        return res
 
     def _get_autoprint_report_actions(self):
         # Called by button_validate right after _action_done, i.e. after the
@@ -348,11 +365,13 @@ class StockPicking(models.Model):
 
     @api.model
     def _download_slips_attachment(self, messages):
-        """Download the slips PDF stored with these chatter messages."""
+        """Download the slips PDF stored with these chatter messages, then
+        reload the receipt so "Slips printed" shows without a refresh (see
+        static/src/download_and_reload)."""
         return {
-            'type': 'ir.actions.act_url',
-            'url': '/web/content/%s?download=true' % messages.attachment_ids[:1].id,
-            'target': 'download',
+            'type': 'ir.actions.client',
+            'tag': 'bab_download_and_reload',
+            'params': {'url': '/web/content/%s?download=true' % messages.attachment_ids[:1].id},
         }
 
     def _get_matrix_report_pickings(self):

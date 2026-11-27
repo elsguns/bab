@@ -144,8 +144,8 @@ class TestMatrixAfterReceipt(TransactionCase):
     def _assert_downloads_slips(self, receipt, action):
         """The slips run downloads the PDF it stored on the receipt."""
         kept = receipt.message_ids.attachment_ids.filtered(lambda a: a.name.startswith('Briefjes - '))
-        self.assertEqual(action['type'], 'ir.actions.act_url')
-        self.assertEqual(action['url'], '/web/content/%s?download=true' % kept.sorted('id')[-1].id)
+        self.assertEqual(action['tag'], 'bab_download_and_reload')
+        self.assertEqual(action['params']['url'], '/web/content/%s?download=true' % kept.sorted('id')[-1].id)
 
     def _text(self, attachments):
         """Text of the slip PDFs (real PDFs: one wkhtmltopdf run, split per pick).
@@ -564,6 +564,8 @@ class TestMatrixAfterReceipt(TransactionCase):
         self.assertEqual(receipt.matrix_pick_batch_count, 1)
         action = receipt.action_open_matrix_pick_batches()
         self.assertEqual(action['res_id'], batch.id)
+        # No action id: the default favourite of the batches menu stays out.
+        self.assertNotIn('id', action)
         other, _action = self._receive([(self.broek, 'M', 1)])  # nobody ordered it
         self.assertEqual(other.matrix_pick_batch_count, 0)
 
@@ -722,3 +724,11 @@ class TestMatrixAfterReceipt(TransactionCase):
         first.matrix_slips_undo = False
         with self.assertRaises(UserError):
             first.matrix_printed = False
+
+    def test_30_validation_print_keeps_the_breadcrumbs(self):
+        """The overview printed at validation reloads only the receipt, not the
+        whole page (that rebuilt the breadcrumbs with an extra crumb)."""
+        self.receipt_type.auto_print_matrix_after_receipt = True
+        _receipt, action = self._receive([(self.shirt, 'S', 1)])
+        self.assertEqual(action['tag'], 'do_multi_print')
+        self.assertEqual(action['params']['anotherAction'], {'type': 'ir.actions.client', 'tag': 'soft_reload'})
