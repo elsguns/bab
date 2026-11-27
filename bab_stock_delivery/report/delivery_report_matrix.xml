@@ -186,6 +186,11 @@
                 table.o_product_variant_grid th:not(:first-child),
                 table.o_product_variant_grid td:not(:first-child) { width: 13mm; }
                 table.o_product_variant_grid th:not(:first-child) { text-align: center; }
+                /* The Totaal column is wider than the size columns: in 13mm the bold
+                   10pt "Totaal" is wider than the cell minus its padding, so its last
+                   letter wrapped onto a second line. nowrap keeps the header whole. */
+                table.o_product_variant_grid th:last-child,
+                table.o_product_variant_grid td:last-child { width: 16mm; white-space: nowrap; }
             </style>
             <t t-foreach="blocks" t-as="block">
                 <t t-set="picking" t-value="block['picking']"/>
