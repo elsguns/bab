@@ -144,10 +144,13 @@ msgstr "Op briefjes geprint"
 #: code:addons/bab_stock_delivery/models/stock_picking.py:0
 msgid ""
 "No reservation of the received products changed since the previous slips of "
-"%s."
+"%s. Those slips are in the chatter of the receipt as a PDF. To print them "
+"again as if for the first time, untick \"Slips printed\" first."
 msgstr ""
 "Geen enkele reservatie van de ontvangen producten veranderde sinds de "
-"vorige briefjes van %s."
+"vorige briefjes van %s. Die briefjes staan als PDF in de chatter van de "
+"ontvangst. Wil je ze opnieuw printen alsof het de eerste keer is, vink dan "
+"eerst 'Briefjes geprint' af."
 
 #. module: bab_stock_delivery
 #. odoo-python

@@ -271,7 +271,9 @@ class StockPicking(models.Model):
         # prints what changed since, and nothing did.
         if receipts.filtered('matrix_printed'):
             raise UserError(_(
-                "No reservation of the received products changed since the previous slips of %s.",
+                "No reservation of the received products changed since the previous slips of %s. "
+                "Those slips are in the chatter of the receipt as a PDF. To print them again as "
+                "if for the first time, untick \"Slips printed\" first.",
                 ", ".join(receipts.mapped('name'))))
         # Reserved, but already on the slips of another receipt (e.g. a later
         # backorder of the same order printed them): nothing left to print.
