@@ -300,15 +300,25 @@ class StockPicking(models.Model):
         data = {'matrix_product_ids': self._get_received_products().ids}
         pdf = self.env['ir.actions.report'].with_context(force_report_rendering=True)._render_qweb_pdf(
             report, res_ids=picks.ids, data=data)[0]
+        messages = self.env['mail.message']
         for receipt in self:
-            receipt.message_post(
+            messages |= receipt.message_post(
                 body=_("Productenmatrix (briefjes): no pick transfer has anything reserved"),
                 attachments=[("Briefjes - %s.pdf" % receipt.name.replace('/', '-'), pdf)],
             )
         self.matrix_printed = True
-        action = report.report_action(picks, data=data, config=False)
-        clean_action(action, self.env)
-        return action
+        # Download the stored PDF, not the report: a report action without picks
+        # keeps the receipts as active_ids, and the report would refuse those.
+        return self._download_slips_attachment(messages)
+
+    @api.model
+    def _download_slips_attachment(self, messages):
+        """Download the slips PDF stored with these chatter messages."""
+        return {
+            'type': 'ir.actions.act_url',
+            'url': '/web/content/%s?download=true' % messages.attachment_ids[:1].id,
+            'target': 'download',
+        }
 
     def _get_matrix_report_pickings(self):
         """The transfers a reservation report covers when printed from Print.
@@ -433,12 +443,7 @@ class StockPicking(models.Model):
                 receipt.matrix_printed = True
         # Download the stored PDF, not the report: rendered again it would show
         # the differences with what was just printed, i.e. nothing.
-        attachment = messages.attachment_ids[:1]
-        return {
-            'type': 'ir.actions.act_url',
-            'url': '/web/content/%s?download=true' % attachment.id,
-            'target': 'download',
-        }
+        return self._download_slips_attachment(messages)
 
     def _split_size_colour(self, template, ptavs):
         """Split a variant's attribute values into its size (maat) and its colour.

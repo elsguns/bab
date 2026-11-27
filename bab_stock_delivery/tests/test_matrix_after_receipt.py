@@ -1,4 +1,6 @@
 # Part of the o.s.admin add-ons.
+import importlib.util
+import os
 import shutil
 import subprocess
 
@@ -304,13 +306,13 @@ class TestMatrixAfterReceipt(TransactionCase):
         # A receipt that reserved nothing (nobody ordered Broek M) still prints:
         # an empty PDF, and the receipt counts as printed.
         receipt, _action = self._receive([(self.broek, 'M', 1)])
-        action = receipt.action_print_matrix_slips()
-        self.assertEqual(action['report_name'], 'bab_stock_delivery.report_deliveryslip_matrix')
-        self.assertFalse(action['context'].get('active_ids'))
-        # The download (no ids, as in test_02) renders the empty slips page.
-        downloaded = self.env['ir.actions.report'].with_context(action['context'])._render_qweb_html(
-            action['report_name'], None, data=dict(action['data'], context=action['context']))[0].decode()
-        self.assertIn('Geen pickbon heeft iets gereserveerd', downloaded)
+        # As from the gear menu: the server action runs with the receipt as active_ids.
+        action = receipt.with_context(active_ids=receipt.ids).action_print_matrix_slips()
+        # The download is the stored empty PDF, not a report action that would
+        # render the receipt itself and refuse it ("not a pick transfer").
+        self._assert_downloads_slips(receipt, action)
+        self.assertIn('Geen pickbon heeft iets gereserveerd', self._text(
+            receipt.message_ids.attachment_ids.filtered(lambda a: a.name.startswith('Briefjes - '))))
         self.assertTrue(receipt.matrix_printed)
         kept = receipt.message_ids.attachment_ids.filtered(lambda a: a.name.startswith('Briefjes - '))
         self.assertEqual(len(kept), 1)
@@ -567,3 +569,39 @@ class TestMatrixAfterReceipt(TransactionCase):
         blocks = receipt._get_matrix_report_pickings()._get_customer_matrix_blocks()
         customers = [row['customer'] for block in blocks for row in block['rows']]
         self.assertNotIn(self.customer_a, customers, "A's shirts went on to the next step")
+
+    def _run_migration_1_12(self):
+        path = os.path.join(os.path.dirname(__file__), '..', 'migrations', '18.0.1.12.0', 'post-migrate.py')
+        spec = importlib.util.spec_from_file_location('bab_migrate_1_12', path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.env.flush_all()
+        module.migrate(self.env.cr, '18.0.1.11.0')
+        self.env.invalidate_all()
+
+    def test_24_migration_keeps_pending_slips(self):
+        """The 1.12.0 migration only counts as printed what really went on slips:
+        a receipt still waiting for its slips keeps them, and a database whose
+        receipts do not print the slips (Vasa) is left alone."""
+        pick_moves = (self.pick_a | self.pick_b).move_ids
+        # Vasa: nothing on paper before a pick is done.
+        vasa_receipt, _action = self._receive([(self.shirt, 'S', 5)])
+        pick_moves.matrix_printed_qty = 0
+        self._run_migration_1_12()
+        self.assertFalse(any(pick_moves.mapped('matrix_printed_qty')))
+        # As the 1.4.0 migration does for receipts done before the box existed.
+        vasa_receipt.matrix_printed = True
+
+        # Lucati: Shirt's slips were printed, Broek's receipt still waits.
+        self.receipt_type.auto_print_matrix_after_receipt = True
+        shirt_receipt, _action = self._receive([(self.shirt, 'M', 1)])
+        shirt_receipt.action_print_matrix_slips()
+        self._receive([(self.broek, 'S', 1)])
+        pick_moves.matrix_printed_qty = 0
+        self._run_migration_1_12()
+        shirt_moves = pick_moves.filtered(lambda m: m.product_id.product_tmpl_id == self.shirt and m.quantity)
+        broek_moves = pick_moves.filtered(lambda m: m.product_id.product_tmpl_id == self.broek and m.quantity)
+        self.assertTrue(shirt_moves and broek_moves)
+        for move in shirt_moves:
+            self.assertEqual(move.matrix_printed_qty, move.quantity)
+        self.assertFalse(any(broek_moves.mapped('matrix_printed_qty')), "Broek's slips still to print")
